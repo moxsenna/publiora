@@ -1,5 +1,6 @@
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 function slugify(s: string): string {
   return s
@@ -63,7 +64,7 @@ export async function POST(
           id: s.id,
           position: s.position,
           title: s.title,
-          content_html: s.content_html,
+          content_html: sanitizeHtml(String(s.content_html ?? "")),
         })),
         is_public: body.is_public ?? true,
         total_readers: 0,

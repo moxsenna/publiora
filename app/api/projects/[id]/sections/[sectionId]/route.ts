@@ -1,6 +1,7 @@
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
 import type { Section, SectionUpdateInput } from "@/types/section";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -35,8 +36,9 @@ export async function PATCH(
     };
     if (body.title !== undefined) patch.title = body.title;
     if (body.content_html !== undefined) {
-      patch.content_html = body.content_html;
-      patch.word_count = body.content_html
+      const clean = sanitizeHtml(body.content_html);
+      patch.content_html = clean;
+      patch.word_count = clean
         .replace(/<[^>]+>/g, " ")
         .split(/\s+/)
         .filter(Boolean).length;

@@ -5,6 +5,7 @@ import { chargeGeneration, grantCredits } from "@/lib/credits";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 import type { Outline, OutlineSection } from "@/types/outline";
 import type { Section } from "@/types/section";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -177,7 +178,7 @@ async function generateOne(opts: {
       .eq("project_id", project.id);
   }
 
-  const written = await runWriter({
+  const writtenRaw = await runWriter({
     project: {
       title: project.title,
       audience: project.audience,
@@ -190,6 +191,16 @@ async function generateOne(opts: {
       key_points: outlineSection.key_points,
     },
   });
+
+  const written = {
+    ...writtenRaw,
+    content_html: sanitizeHtml(writtenRaw.content_html),
+    word_count:
+      sanitizeHtml(writtenRaw.content_html)
+        .replace(/<[^>]+>/g, " ")
+        .split(/\s+/)
+        .filter(Boolean).length,
+  };
 
   const now = new Date().toISOString();
   const { data: existing } = await supabase

@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError } from "@/lib/api/errors";
+import { rateLimit } from "@/lib/rate-limit";
+import { headers } from "next/headers";
 
 export async function GET(
   _req: Request,
@@ -66,6 +68,23 @@ export async function POST(
 ) {
   try {
     const { token } = await ctx.params;
+    const h = await headers();
+    const ip =
+      h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      h.get("x-real-ip") ||
+      "unknown";
+    const rl = rateLimit({
+      key: `claim:${ip}:${token.toUpperCase()}`,
+      limit: 20,
+      windowMs: 60_000,
+    });
+    if (!rl.ok) {
+      return jsonError(
+        `Terlalu banyak percobaan claim. Coba lagi dalam ${rl.retryAfterSec}s.`,
+        429,
+        "rate_limited"
+      );
+    }
     const supabase = await createClient();
     const {
       data: { user },

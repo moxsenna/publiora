@@ -159,10 +159,24 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
 
 // Small client-side wrappers around mock api via dynamic import to keep this client-only.
 async function fetchTitlesApi(projectId: string): Promise<string[]> {
-  const api = await import("@/lib/mock/api");
-  return api.generateTitles(projectId);
+  const useMock = process.env.NEXT_PUBLIC_USE_MOCK_API !== "false";
+  if (useMock) {
+    const api = await import("@/lib/mock/api");
+    return api.generateTitles(projectId);
+  }
+  const res = await fetch(`/api/projects/${projectId}/titles`, { method: "POST" });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body?.error?.message || "Title generate failed");
+  return body as string[];
 }
 async function fetchCtasApi(projectId: string): Promise<string[]> {
-  const api = await import("@/lib/mock/api");
-  return api.generateCtas(projectId);
+  const useMock = process.env.NEXT_PUBLIC_USE_MOCK_API !== "false";
+  if (useMock) {
+    const api = await import("@/lib/mock/api");
+    return api.generateCtas(projectId);
+  }
+  const res = await fetch(`/api/projects/${projectId}/ctas`, { method: "POST" });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body?.error?.message || "CTA generate failed");
+  return body as string[];
 }

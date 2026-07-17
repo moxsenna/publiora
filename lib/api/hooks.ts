@@ -24,6 +24,8 @@ import type {
   CreditTransaction,
   Entitlement,
   ExportCreateInput,
+  ExportJob,
+  Template,
   Outline,
   PlanId,
   Project,
@@ -478,7 +480,10 @@ export function useUpdateReadingProgress() {
 export function useExports(ebookId: string) {
   return useQuery({
     queryKey: qk.exports(ebookId),
-    queryFn: () => api.listExports(ebookId),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listExports(ebookId)
+        : apiFetch<ExportJob[]>(`/api/published/${ebookId}/exports`),
     enabled: !!ebookId,
   });
 }
@@ -486,7 +491,13 @@ export function useExports(ebookId: string) {
 export function useCreateExport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: ExportCreateInput) => api.createExport(input),
+    mutationFn: (input: ExportCreateInput) =>
+      shouldUseMock()
+        ? api.createExport(input)
+        : apiFetch<ExportJob>(`/api/published/${input.ebook_id}/exports`, {
+            method: "POST",
+            body: JSON.stringify({ format: input.format }),
+          }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: qk.exports(data.ebook_id) });
     },
@@ -593,25 +604,62 @@ export function usePurchaseCreditPack() {
 }
 
 // Templates
-// Templates
 export function useTemplates() {
-  return useQuery({ queryKey: qk.templates, queryFn: api.listTemplates });
+  return useQuery({
+    queryKey: qk.templates,
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listTemplates()
+        : apiFetch<Template[]>("/api/templates"),
+  });
 }
 
 // Title / CTA agents
 export function useGenerateTitles(projectId: string) {
   return useQuery({
     queryKey: qk.titles(projectId),
-    queryFn: () => api.generateTitles(projectId),
-    enabled: false, // manual trigger
+    queryFn: () =>
+      shouldUseMock()
+        ? api.generateTitles(projectId)
+        : apiFetch<string[]>(`/api/projects/${projectId}/titles`, {
+            method: "POST",
+          }),
+    enabled: false,
   });
 }
 
 export function useGenerateCtas(projectId: string) {
   return useQuery({
     queryKey: qk.ctas(projectId),
-    queryFn: () => api.generateCtas(projectId),
-    enabled: false, // manual trigger
+    queryFn: () =>
+      shouldUseMock()
+        ? api.generateCtas(projectId)
+        : apiFetch<string[]>(`/api/projects/${projectId}/ctas`, {
+            method: "POST",
+          }),
+    enabled: false,
+  });
+}
+
+export function useEnhanceSection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      sectionId,
+    }: {
+      projectId: string;
+      sectionId: string;
+    }) =>
+      apiFetch<{ project_id?: string }>(`/api/projects/${projectId}/sections/${sectionId}/enhance`, {
+        method: "POST",
+      }),
+    onSuccess: (data: { project_id?: string }) => {
+      if (data?.project_id) {
+        qc.invalidateQueries({ queryKey: qk.sections(data.project_id) });
+      }
+      qc.invalidateQueries({ queryKey: qk.billing.balance });
+    },
   });
 }
 
