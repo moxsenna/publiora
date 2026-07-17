@@ -1,4 +1,5 @@
-// Server-only AI completion helpers (Gemini / OpenAI).
+// Server-only AI completion helpers.
+// Supports: router (OpenAI-compatible), openai, gemini.
 
 import { getServerEnv } from "@/lib/env";
 
@@ -13,10 +14,43 @@ export async function completeText(opts: {
   user: string;
 }): Promise<string> {
   const env = getServerEnv();
-  if (env.AI_PROVIDER === "openai") {
-    return completeOpenAI(opts, env.OPENAI_API_KEY!);
+
+  if (env.AI_PROVIDER === "gemini" && env.GEMINI_API_KEY && !env.AI_API_KEY) {
+    return completeGemini(opts, env.GEMINI_API_KEY);
   }
-  return completeGemini(opts, env.GEMINI_API_KEY!);
+
+  // router | openai | gemini-with-AI_API_KEY → OpenAI-compatible chat completions
+  const baseUrl =
+    env.AI_BASE_URL ||
+    (env.AI_PROVIDER === "openai"
+      ? "https://api.openai.com/v1"
+      : "https://9router.appvibe.web.id/v1");
+  const apiKey = env.AI_API_KEY || env.OPENAI_API_KEY || env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("No AI API key configured (AI_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY)");
+  }
+
+  const primary = env.AI_MODEL || "gcli/grok-4.5-high";
+  const fallback = env.AI_MODEL_FALLBACK || "ag/gemini-pro-agent";
+
+  try {
+    return await completeOpenAICompatible(opts, {
+      baseUrl,
+      apiKey,
+      model: primary,
+    });
+  } catch (primaryErr) {
+    console.error("[ai] primary model failed:", primary, primaryErr);
+    if (fallback && fallback !== primary) {
+      console.warn("[ai] trying fallback model:", fallback);
+      return await completeOpenAICompatible(opts, {
+        baseUrl,
+        apiKey,
+        model: fallback,
+      });
+    }
+    throw primaryErr;
+  }
 }
 
 export async function completeJson<T>(opts: {
@@ -31,7 +65,6 @@ export async function completeJson<T>(opts: {
   try {
     return JSON.parse(cleaned) as T;
   } catch {
-    // try extract first {...}
     const start = cleaned.indexOf("{");
     const end = cleaned.lastIndexOf("}");
     if (start >= 0 && end > start) {
@@ -39,6 +72,49 @@ export async function completeJson<T>(opts: {
     }
     throw new Error("AI returned invalid JSON");
   }
+}
+
+async function completeOpenAICompatible(
+  opts: { system: string; user: string },
+  cfg: { baseUrl: string; apiKey: string; model: string }
+): Promise<string> {
+  const url = `${cfg.baseUrl.replace(/\/$/, "")}/chat/completions`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${cfg.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: cfg.model,
+      temperature: 0.7,
+      // Some gateways ignore response_format; still request JSON in system prompt
+      messages: [
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.user },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.statusText);
+    throw new Error(
+      `AI error ${res.status} model=${cfg.model}: ${errText.slice(0, 400)}`
+    );
+  }
+
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string | null } }[];
+    error?: { message?: string };
+  };
+
+  if (data.error?.message) {
+    throw new Error(`AI error: ${data.error.message}`);
+  }
+
+  const text = data.choices?.[0]?.message?.content ?? "";
+  if (!text) throw new Error(`AI empty response model=${cfg.model}`);
+  return text;
 }
 
 async function completeGemini(
@@ -66,39 +142,9 @@ async function completeGemini(
   const data = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[];
   };
-  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+  const text =
+    data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+    "";
   if (!text) throw new Error("Gemini empty response");
-  return text;
-}
-
-async function completeOpenAI(
-  opts: { system: string; user: string },
-  apiKey: string
-): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: opts.system },
-        { role: "user", content: opts.user },
-      ],
-    }),
-  });
-  if (!res.ok) {
-    const errText = await res.text().catch(() => res.statusText);
-    throw new Error(`OpenAI error ${res.status}: ${errText.slice(0, 300)}`);
-  }
-  const data = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  const text = data.choices?.[0]?.message?.content ?? "";
-  if (!text) throw new Error("OpenAI empty response");
   return text;
 }
