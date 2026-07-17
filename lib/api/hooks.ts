@@ -14,16 +14,23 @@ import { apiFetch } from "./client";
 import { qk } from "./keys";
 
 import type {
+  BillingPlan,
   ClaimCreateInput,
+  CreditBalance,
+  CreditPack,
+  CreditTransaction,
   ExportCreateInput,
+  PlanId,
   Project,
   ProjectInput,
   ProjectUpdate,
   OutlineGenerateInput,
   OutlineUpdateInput,
   SectionUpdateInput,
+  Subscription,
 } from "@/types";
 import type { SendMessageInput } from "@/types/message";
+import { CREDIT_COSTS } from "@/lib/billing/plans";
 
 const READER_ID = "reader@publiora.demo";
 
@@ -357,36 +364,78 @@ export function useCreateExport() {
 
 // Billing / credits
 export function useCreditBalance() {
-  return useQuery({ queryKey: qk.billing.balance, queryFn: api.getCreditBalance });
+  return useQuery({
+    queryKey: qk.billing.balance,
+    queryFn: () =>
+      shouldUseMock()
+        ? api.getCreditBalance()
+        : apiFetch<CreditBalance>("/api/billing/balance"),
+  });
 }
 
 export function useCreditTransactions() {
-  return useQuery({ queryKey: qk.billing.txns, queryFn: api.listCreditTransactions });
+  return useQuery({
+    queryKey: qk.billing.txns,
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listCreditTransactions()
+        : apiFetch<CreditTransaction[]>("/api/billing/transactions"),
+  });
 }
 
 export function usePlans() {
-  return useQuery({ queryKey: qk.billing.plans, queryFn: api.listPlans });
+  return useQuery({
+    queryKey: qk.billing.plans,
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listPlans()
+        : apiFetch<BillingPlan[]>("/api/billing/plans"),
+  });
 }
 
 export function useCreditPacks() {
-  return useQuery({ queryKey: qk.billing.packs, queryFn: api.listCreditPacks });
+  return useQuery({
+    queryKey: qk.billing.packs,
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listCreditPacks()
+        : apiFetch<CreditPack[]>("/api/billing/packs"),
+  });
 }
 
 export function useSubscription() {
   return useQuery({
     queryKey: qk.billing.subscription,
-    queryFn: api.getSubscription,
+    queryFn: () =>
+      shouldUseMock()
+        ? api.getSubscription()
+        : apiFetch<Subscription>("/api/billing/subscription"),
   });
 }
 
 export function useCreditCosts() {
-  return useQuery({ queryKey: qk.billing.costs, queryFn: api.getCreditCosts });
+  return useQuery({
+    queryKey: qk.billing.costs,
+    queryFn: () =>
+      shouldUseMock()
+        ? api.getCreditCosts()
+        : apiFetch<typeof CREDIT_COSTS>("/api/billing/costs"),
+  });
 }
 
 export function useChangePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (plan_id: import("@/types").PlanId) => api.changePlan(plan_id),
+    mutationFn: (plan_id: PlanId) =>
+      shouldUseMock()
+        ? api.changePlan(plan_id)
+        : apiFetch<{ subscription: Subscription; balance: CreditBalance }>(
+            "/api/billing/change-plan",
+            {
+              method: "POST",
+              body: JSON.stringify({ plan_id }),
+            }
+          ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["billing"] });
     },
@@ -396,7 +445,16 @@ export function useChangePlan() {
 export function usePurchaseCreditPack() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (pack_id: string) => api.purchaseCreditPack(pack_id),
+    mutationFn: (pack_id: string) =>
+      shouldUseMock()
+        ? api.purchaseCreditPack(pack_id)
+        : apiFetch<{ balance: CreditBalance; txn: CreditTransaction }>(
+            "/api/billing/purchase-pack",
+            {
+              method: "POST",
+              body: JSON.stringify({ pack_id }),
+            }
+          ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["billing"] });
     },
