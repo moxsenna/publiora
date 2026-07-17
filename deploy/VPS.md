@@ -3,7 +3,7 @@
 ## Target
 - Host: `43.228.213.148`
 - Path: `/opt/publiora`
-- Port: `5300` → Caddy → `publiora.appvibe.web.id`
+- Port: `5300` → Caddy → `publiora.appvibe.biz.id`
 - Network: `wacrm_edge`
 
 ## Deploy / update
@@ -26,7 +26,7 @@ ssh -i ~/.ssh/id_ed25519 root@43.228.213.148 '
   docker compose build --no-cache
   docker compose up -d
   # merge Caddy snippet if missing
-  if ! docker exec wacrm-caddy-1 cat /etc/caddy/Caddyfile | grep -q publiora.appvibe.web.id; then
+  if ! docker exec wacrm-caddy-1 cat /etc/caddy/Caddyfile | grep -q publiora.appvibe.biz.id; then
     cat deploy/Caddyfile.snippet >> /opt/wacrm/deploy/Caddyfile.publiora
     # append into running config
     docker exec wacrm-caddy-1 sh -c "cat >> /etc/caddy/Caddyfile" < deploy/Caddyfile.snippet
@@ -38,7 +38,7 @@ ssh -i ~/.ssh/id_ed25519 root@43.228.213.148 '
 ```
 
 ## DNS
-A record `publiora.appvibe.web.id` → `43.228.213.148` (DNS only until cert green).
+A record `publiora.appvibe.biz.id` → `43.228.213.148` (DNS only until cert green).
 
 ## Rollback
 ```bash
