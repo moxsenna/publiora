@@ -54,3 +54,4 @@ build-out.txt
 *.sqlite
 *.sqlite-*
 
+deploy/.env.production

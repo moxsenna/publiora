@@ -1,0 +1,7 @@
+# Add to active Caddyfile on VPS (/etc/caddy/Caddyfile inside wacrm-caddy-1)
+# DNS A: publiora.appvibe.web.id → 43.228.213.148 (DNS only until cert OK)
+
+publiora.appvibe.web.id {
+	encode gzip
+	reverse_proxy publiora-web:5300
+}
