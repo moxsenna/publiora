@@ -9,6 +9,55 @@ function stripFences(text: string): string {
   return m ? m[1].trim() : t;
 }
 
+/** Parse OpenAI JSON or SSE stream body into assistant text. */
+function extractAssistantText(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+
+  // Non-stream JSON object
+  if (trimmed.startsWith("{")) {
+    try {
+      const data = JSON.parse(trimmed) as {
+        choices?: { message?: { content?: string | null }; delta?: { content?: string } }[];
+        error?: { message?: string };
+      };
+      if (data.error?.message) throw new Error(data.error.message);
+      const content = data.choices?.[0]?.message?.content;
+      if (content) return content;
+    } catch (e) {
+      if (e instanceof Error && e.message && !e.message.includes("JSON")) throw e;
+    }
+  }
+
+  // SSE: data: {...}\n\n
+  if (trimmed.includes("data:")) {
+    let acc = "";
+    for (const line of trimmed.split(/\r?\n/)) {
+      const s = line.trim();
+      if (!s.startsWith("data:")) continue;
+      const payload = s.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        const chunk = JSON.parse(payload) as {
+          choices?: {
+            delta?: { content?: string | null };
+            message?: { content?: string | null };
+          }[];
+        };
+        const delta = chunk.choices?.[0]?.delta?.content;
+        const msg = chunk.choices?.[0]?.message?.content;
+        if (delta) acc += delta;
+        else if (msg) acc = msg;
+      } catch {
+        // skip bad chunk
+      }
+    }
+    return acc;
+  }
+
+  return trimmed;
+}
+
 export async function completeText(opts: {
   system: string;
   user: string;
@@ -19,7 +68,6 @@ export async function completeText(opts: {
     return completeGemini(opts, env.GEMINI_API_KEY);
   }
 
-  // router | openai | gemini-with-AI_API_KEY → OpenAI-compatible chat completions
   const baseUrl =
     env.AI_BASE_URL ||
     (env.AI_PROVIDER === "openai"
@@ -27,7 +75,9 @@ export async function completeText(opts: {
       : "https://9router.appvibe.web.id/v1");
   const apiKey = env.AI_API_KEY || env.OPENAI_API_KEY || env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("No AI API key configured (AI_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY)");
+    throw new Error(
+      "No AI API key configured (AI_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY)"
+    );
   }
 
   const primary = env.AI_MODEL || "gcli/grok-4.5-high";
@@ -88,7 +138,7 @@ async function completeOpenAICompatible(
     body: JSON.stringify({
       model: cfg.model,
       temperature: 0.7,
-      // Some gateways ignore response_format; still request JSON in system prompt
+      stream: false,
       messages: [
         { role: "system", content: opts.system },
         { role: "user", content: opts.user },
@@ -96,24 +146,17 @@ async function completeOpenAICompatible(
     }),
   });
 
+  const raw = await res.text();
   if (!res.ok) {
-    const errText = await res.text().catch(() => res.statusText);
     throw new Error(
-      `AI error ${res.status} model=${cfg.model}: ${errText.slice(0, 400)}`
+      `AI error ${res.status} model=${cfg.model}: ${raw.slice(0, 400)}`
     );
   }
 
-  const data = (await res.json()) as {
-    choices?: { message?: { content?: string | null } }[];
-    error?: { message?: string };
-  };
-
-  if (data.error?.message) {
-    throw new Error(`AI error: ${data.error.message}`);
+  const text = extractAssistantText(raw);
+  if (!text) {
+    throw new Error(`AI empty response model=${cfg.model}`);
   }
-
-  const text = data.choices?.[0]?.message?.content ?? "";
-  if (!text) throw new Error(`AI empty response model=${cfg.model}`);
   return text;
 }
 
