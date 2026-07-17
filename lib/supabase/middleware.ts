@@ -1,15 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getPublicSupabaseEnv() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return null;
-  if (url.includes("your-project-ref") || anonKey.includes("your-anon-key")) {
-    return null;
-  }
-  return { url, anonKey };
-}
+import { getPublicSupabaseEnv } from "@/lib/supabase/env";
 
 /** Build request-scoped Supabase client that can write refreshed cookies. */
 export function createClient(request: NextRequest) {
@@ -17,12 +8,12 @@ export function createClient(request: NextRequest) {
     request: { headers: request.headers },
   });
 
-  const env = getPublicSupabaseEnv();
+  const env = getPublicSupabaseEnv({ soft: true });
   if (!env) {
-    return { supabase: null, response };
+    return { supabase: null as null, response };
   }
 
-  const supabase = createServerClient(env.url, env.anonKey, {
+  const supabase = createServerClient(env.url, env.key, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -45,7 +36,6 @@ export async function updateSession(request: NextRequest) {
   const { supabase, response } = createClient(request);
   if (!supabase) return response;
 
-  // Touch session so expired tokens refresh into cookies
   await supabase.auth.getUser();
   return response;
 }
