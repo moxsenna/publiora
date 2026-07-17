@@ -1,0 +1,136 @@
+import { createClient } from "@/lib/supabase/server";
+import { jsonError } from "@/lib/api/errors";
+import type { ProjectUpdate } from "@/types/project";
+
+type RouteCtx = { params: Promise<{ id: string }> };
+
+const PATCH_KEYS = [
+  "title",
+  "author",
+  "subtitle",
+  "description",
+  "audience",
+  "tone",
+  "niche",
+  "cover_color",
+] as const satisfies readonly (keyof ProjectUpdate)[];
+
+export async function GET(_req: Request, ctx: RouteCtx) {
+  try {
+    const { id } = await ctx.params;
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return jsonError("Unauthorized", 401, "unauthorized");
+    }
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", id)
+      .eq("owner_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      return jsonError(error.message, 500, "db_error");
+    }
+    if (!data) {
+      return jsonError("Project not found", 404, "not_found");
+    }
+
+    return Response.json(data);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Server error";
+    return jsonError(message, 503, "unavailable");
+  }
+}
+
+export async function PATCH(req: Request, ctx: RouteCtx) {
+  try {
+    const { id } = await ctx.params;
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return jsonError("Unauthorized", 401, "unauthorized");
+    }
+
+    const body = (await req.json().catch(() => null)) as ProjectUpdate | null;
+    if (!body || typeof body !== "object") {
+      return jsonError("Invalid body", 400, "validation_error");
+    }
+
+    const patch: ProjectUpdate = {};
+    for (const key of PATCH_KEYS) {
+      if (key in body && body[key] !== undefined) {
+        patch[key] = body[key] as never;
+      }
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return jsonError("No updatable fields provided", 400, "validation_error");
+    }
+
+    const { data, error } = await supabase
+      .from("projects")
+      .update(patch)
+      .eq("id", id)
+      .eq("owner_id", user.id)
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      return jsonError(error.message, 500, "db_error");
+    }
+    if (!data) {
+      return jsonError("Project not found", 404, "not_found");
+    }
+
+    return Response.json(data);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Server error";
+    return jsonError(message, 503, "unavailable");
+  }
+}
+
+export async function DELETE(_req: Request, ctx: RouteCtx) {
+  try {
+    const { id } = await ctx.params;
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return jsonError("Unauthorized", 401, "unauthorized");
+    }
+
+    const { data, error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", id)
+      .eq("owner_id", user.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      return jsonError(error.message, 500, "db_error");
+    }
+    if (!data) {
+      return jsonError("Project not found", 404, "not_found");
+    }
+
+    return Response.json({ ok: true as const });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Server error";
+    return jsonError(message, 503, "unavailable");
+  }
+}
