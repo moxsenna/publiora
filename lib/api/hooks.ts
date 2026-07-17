@@ -15,17 +15,25 @@ import { qk } from "./keys";
 
 import type {
   BillingPlan,
+  ChatMessage,
   ClaimCreateInput,
+  ClaimEvent,
+  ClaimLink,
   CreditBalance,
   CreditPack,
   CreditTransaction,
+  Entitlement,
   ExportCreateInput,
+  Outline,
   PlanId,
   Project,
   ProjectInput,
   ProjectUpdate,
+  PublishedEbook,
   OutlineGenerateInput,
   OutlineUpdateInput,
+  ReadingProgress,
+  Section,
   SectionUpdateInput,
   Subscription,
 } from "@/types";
@@ -112,7 +120,10 @@ export function useDeleteProject() {
 export function useOutline(projectId: string) {
   return useQuery({
     queryKey: qk.outline(projectId),
-    queryFn: () => api.getOutline(projectId),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.getOutline(projectId)
+        : apiFetch<Outline | null>(`/api/projects/${projectId}/outline`),
     enabled: !!projectId,
     placeholderData: keepPreviousData,
   });
@@ -122,10 +133,16 @@ export function useGenerateOutline() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ projectId, input }: { projectId: string; input?: OutlineGenerateInput }) =>
-      api.generateOutline(projectId, input ?? {}),
+      shouldUseMock()
+        ? api.generateOutline(projectId, input ?? {})
+        : apiFetch<Outline>(`/api/projects/${projectId}/outline/generate`, {
+            method: "POST",
+            body: JSON.stringify(input ?? {}),
+          }),
     onSuccess: (data) => {
       qc.setQueryData(qk.outline(data.project_id), data);
       qc.invalidateQueries({ queryKey: qk.project(data.project_id) });
+      qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });
 }
@@ -134,7 +151,12 @@ export function useUpdateOutline() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ projectId, patch }: { projectId: string; patch: OutlineUpdateInput }) =>
-      api.updateOutline(projectId, patch),
+      shouldUseMock()
+        ? api.updateOutline(projectId, patch)
+        : apiFetch<Outline>(`/api/projects/${projectId}/outline`, {
+            method: "PATCH",
+            body: JSON.stringify(patch),
+          }),
     onSuccess: (data) => {
       qc.setQueryData(qk.outline(data.project_id), data);
     },
@@ -144,7 +166,10 @@ export function useUpdateOutline() {
 export function useApproveOutline() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (projectId: string) => api.approveOutline(projectId),
+    mutationFn: (projectId: string) =>
+      shouldUseMock()
+        ? api.approveOutline(projectId)
+        : apiFetch<Outline>(`/api/projects/${projectId}/outline/approve`, { method: "POST" }),
     onSuccess: (data) => {
       qc.setQueryData(qk.outline(data.project_id), data);
       qc.invalidateQueries({ queryKey: qk.project(data.project_id) });
@@ -157,7 +182,10 @@ export function useApproveOutline() {
 export function useSections(projectId: string) {
   return useQuery({
     queryKey: qk.sections(projectId),
-    queryFn: () => api.listSections(projectId),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listSections(projectId)
+        : apiFetch<Section[]>(`/api/projects/${projectId}/sections`),
     enabled: !!projectId,
   });
 }
@@ -166,11 +194,17 @@ export function useGenerateSection() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ projectId, outlineSectionId }: { projectId: string; outlineSectionId: string }) =>
-      api.generateSection(projectId, outlineSectionId),
+      shouldUseMock()
+        ? api.generateSection(projectId, outlineSectionId)
+        : apiFetch<Section>(`/api/projects/${projectId}/sections/generate`, {
+            method: "POST",
+            body: JSON.stringify({ outline_section_id: outlineSectionId }),
+          }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: qk.sections(data.project_id) });
       qc.invalidateQueries({ queryKey: qk.outline(data.project_id) });
       qc.invalidateQueries({ queryKey: qk.project(data.project_id) });
+      qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });
 }
@@ -178,11 +212,18 @@ export function useGenerateSection() {
 export function useGenerateAllSections() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (projectId: string) => api.generateAllSections(projectId),
+    mutationFn: (projectId: string) =>
+      shouldUseMock()
+        ? api.generateAllSections(projectId)
+        : apiFetch<Section[]>(`/api/projects/${projectId}/sections/generate`, {
+            method: "POST",
+            body: JSON.stringify({ all: true }),
+          }),
     onSuccess: (_data, projectId) => {
       qc.invalidateQueries({ queryKey: qk.sections(projectId) });
       qc.invalidateQueries({ queryKey: qk.outline(projectId) });
       qc.invalidateQueries({ queryKey: qk.project(projectId) });
+      qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });
 }
@@ -190,8 +231,21 @@ export function useGenerateAllSections() {
 export function useUpdateSection() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: SectionUpdateInput }) =>
-      api.updateSection(id, patch),
+    mutationFn: ({
+      id,
+      projectId,
+      patch,
+    }: {
+      id: string;
+      projectId?: string;
+      patch: SectionUpdateInput;
+    }) =>
+      shouldUseMock()
+        ? api.updateSection(id, patch)
+        : apiFetch<Section>(`/api/projects/${projectId}/sections/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(patch),
+          }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: qk.sections(data.project_id) });
     },
@@ -202,7 +256,10 @@ export function useUpdateSection() {
 export function useMessages(projectId: string) {
   return useQuery({
     queryKey: qk.messages(projectId),
-    queryFn: () => api.listMessages(projectId),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listMessages(projectId)
+        : apiFetch<ChatMessage[]>(`/api/projects/${projectId}/messages`),
     enabled: !!projectId,
   });
 }
@@ -210,7 +267,13 @@ export function useMessages(projectId: string) {
 export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: SendMessageInput) => api.sendMessage(input),
+    mutationFn: (input: SendMessageInput) =>
+      shouldUseMock()
+        ? api.sendMessage(input)
+        : apiFetch<ChatMessage>(`/api/projects/${input.project_id}/chat`, {
+            method: "POST",
+            body: JSON.stringify({ content: input.content, agent: input.agent }),
+          }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: qk.messages(data.project_id) });
     },
@@ -221,14 +284,20 @@ export function useSendMessage() {
 export function usePublishedEbooks() {
   return useQuery({
     queryKey: qk.published,
-    queryFn: api.listPublishedEbooks,
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listPublishedEbooks()
+        : apiFetch<PublishedEbook[]>("/api/published"),
   });
 }
 
 export function usePublishedEbook(id: string) {
   return useQuery({
     queryKey: qk.publishedEbook(id),
-    queryFn: () => api.getPublishedEbook(id),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.getPublishedEbook(id)
+        : apiFetch<PublishedEbook>(`/api/published/${id}`),
     enabled: !!id,
   });
 }
@@ -236,7 +305,10 @@ export function usePublishedEbook(id: string) {
 export function usePublishedBySlug(slug: string) {
   return useQuery({
     queryKey: qk.publishedSlug(slug),
-    queryFn: () => api.getPublishedBySlug(slug),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.getPublishedBySlug(slug)
+        : apiFetch<PublishedEbook>(`/api/published/by-slug/${slug}`),
     enabled: !!slug,
   });
 }
@@ -245,9 +317,15 @@ export function usePublishEbook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { project_id: string; is_public?: boolean }) =>
-      api.publishEbook(input),
+      shouldUseMock()
+        ? api.publishEbook(input)
+        : apiFetch<PublishedEbook>(`/api/projects/${input.project_id}/publish`, {
+            method: "POST",
+            body: JSON.stringify({ is_public: input.is_public }),
+          }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.published });
+      qc.invalidateQueries({ queryKey: qk.projects });
     },
   });
 }
@@ -256,7 +334,10 @@ export function usePublishEbook() {
 export function useClaimLinks(ebookId: string) {
   return useQuery({
     queryKey: qk.claimLinks(ebookId),
-    queryFn: () => api.listClaimLinks(ebookId),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listClaimLinks(ebookId)
+        : apiFetch<ClaimLink[]>(`/api/published/${ebookId}/claim-links`),
     enabled: !!ebookId,
   });
 }
@@ -264,7 +345,13 @@ export function useClaimLinks(ebookId: string) {
 export function useCreateClaimLink() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: ClaimCreateInput) => api.createClaimLink(input),
+    mutationFn: (input: ClaimCreateInput) =>
+      shouldUseMock()
+        ? api.createClaimLink(input)
+        : apiFetch<ClaimLink>(`/api/published/${input.ebook_id}/claim-links`, {
+            method: "POST",
+            body: JSON.stringify(input),
+          }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: qk.claimLinks(data.ebook_id) });
     },
@@ -274,7 +361,13 @@ export function useCreateClaimLink() {
 export function useRevokeClaimLink() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.revokeClaimLink(id),
+    mutationFn: (id: string) =>
+      shouldUseMock()
+        ? api.revokeClaimLink(id)
+        : apiFetch<ClaimLink>(`/api/claim-links/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ action: "revoke" }),
+          }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: qk.claimLinks(data.ebook_id) });
       qc.invalidateQueries({ queryKey: qk.claimEvents(data.id) });
@@ -285,7 +378,10 @@ export function useRevokeClaimLink() {
 export function useDeleteClaimLink() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.deleteClaimLink(id),
+    mutationFn: (id: string) =>
+      shouldUseMock()
+        ? api.deleteClaimLink(id)
+        : apiFetch<{ ok: true }>(`/api/claim-links/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["published"] });
     },
@@ -295,19 +391,42 @@ export function useDeleteClaimLink() {
 export function useClaimEvents(linkId: string) {
   return useQuery({
     queryKey: qk.claimEvents(linkId),
-    queryFn: () => api.listClaimEvents(linkId),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listClaimEvents(linkId)
+        : apiFetch<ClaimEvent[]>(`/api/claim-links/${linkId}/events`),
     enabled: !!linkId,
   });
 }
 
+export type ResolveClaimResult =
+  | { status: "claimed"; ebook: { slug: string }; entitlement?: unknown }
+  | { status: "already_owned"; ebook: { slug: string } }
+  | { status: "expired" }
+  | { status: "revoked" }
+  | { status: "limit_reached" }
+  | { status: "not_found" };
+
 export function useResolveClaim() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ token, reader_id }: { token: string; reader_id: string }) =>
-      api.resolveClaim(token, reader_id),
+    mutationFn: async ({
+      token,
+      reader_id,
+    }: {
+      token: string;
+      reader_id: string;
+    }): Promise<ResolveClaimResult> => {
+      if (shouldUseMock()) {
+        return (await api.resolveClaim(token, reader_id)) as ResolveClaimResult;
+      }
+      return apiFetch<ResolveClaimResult>(`/api/claim/${token}`, {
+        method: "POST",
+      });
+    },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.library(READER_ID) });
-      qc.invalidateQueries({ queryKey: qk.readingProgress(READER_ID) });
+      qc.invalidateQueries({ queryKey: ["library"] });
+      qc.invalidateQueries({ queryKey: ["reading-progress"] });
     },
   });
 }
@@ -316,14 +435,20 @@ export function useResolveClaim() {
 export function useLibrary() {
   return useQuery({
     queryKey: qk.library(READER_ID),
-    queryFn: () => api.listLibrary(READER_ID),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listLibrary(READER_ID)
+        : apiFetch<Entitlement[]>("/api/library"),
   });
 }
 
 export function useReadingProgress() {
   return useQuery({
     queryKey: qk.readingProgress(READER_ID),
-    queryFn: () => api.listReadingProgress(READER_ID),
+    queryFn: () =>
+      shouldUseMock()
+        ? api.listReadingProgress(READER_ID)
+        : apiFetch<ReadingProgress[]>("/api/reading-progress"),
   });
 }
 
@@ -336,9 +461,15 @@ export function useUpdateReadingProgress() {
     }: {
       ebook_id: string;
       patch: { progress?: number; current_section?: number };
-    }) => api.updateReadingProgress(READER_ID, ebook_id, patch),
+    }) =>
+      shouldUseMock()
+        ? api.updateReadingProgress(READER_ID, ebook_id, patch)
+        : apiFetch<ReadingProgress>("/api/reading-progress", {
+            method: "PATCH",
+            body: JSON.stringify({ ebook_id, ...patch }),
+          }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.readingProgress(READER_ID) });
+      qc.invalidateQueries({ queryKey: ["reading-progress"] });
     },
   });
 }
