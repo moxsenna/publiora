@@ -45,3 +45,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local tooling noise
+.wrangler/
+.zcode/
+.kiro/
+build-out.txt
+*.sqlite
+*.sqlite-*
+
