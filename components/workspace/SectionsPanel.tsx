@@ -64,8 +64,13 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     try {
       await generateAll.mutateAsync(projectId);
       pushToast({ title: "Semua section ter-generate", variant: "success" });
-    } catch {
-      pushToast({ title: "Generate gagal", variant: "danger" });
+    } catch (err) {
+      const e = err as { code?: string };
+      pushToast({
+        title: e?.code === "insufficient_credits" ? "Kredit tidak cukup" : "Generate gagal",
+        description: e?.code === "insufficient_credits" ? "Buka Billing untuk top-up." : undefined,
+        variant: "danger",
+      });
     }
   };
 
