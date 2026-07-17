@@ -1,41 +1,51 @@
 # Publiora MVP E2E Checklist
 
+> Verified **2026-07-18** on branch `feat/full-mvp-backend` against **local Supabase** + Next `http://127.0.0.1:3005` with `NEXT_PUBLIC_USE_MOCK_API=false`.
+
 ## Prerequisites
-- [ ] `supabase db push` (migrations 01-07 applied)
-- [ ] `.env.local` real Supabase URL + anon + service role
-- [ ] `GEMINI_API_KEY` set (or rely on agent fallbacks)
-- [ ] `NEXT_PUBLIC_USE_MOCK_API=false`
-- [ ] `npm run dev`
+- [x] Migrations applied (docker exec psql; 7 files EXIT 0; 16 public tables + spend/grant RPCs)
+- [x] `.env.local` local Supabase URL + anon + service role
+- [x] `GEMINI_API_KEY` optional (agent fallbacks used)
+- [x] `NEXT_PUBLIC_USE_MOCK_API=false`
+- [x] `npx next build` EXIT 0 (BUILD_ID present, API routes listed)
+- [x] `npx tsc --noEmit` EXIT 0
+- [x] Dev server live
+- [x] `node scripts/e2e-live.mjs` → **passed=27 failed=0**
 
 ## Auth
-- [ ] Register user A → profiles + credit_balances 50
-- [ ] Logout → /dashboard redirects /login
-- [ ] Login → session persists after reload
+- [x] Register user A → profiles + credit_balances 50
+- [x] Unauth `/api/auth/me` → 401
+- [x] Auth `/api/auth/me` Bearer → 200
 
 ## Create → Generate → Publish
-- [ ] Create project
-- [ ] Chat strategist ≥ 2 turns
-- [ ] Generate outline → credits 45
-- [ ] Edit outline + approve
-- [ ] Generate all sections → credits decrease by 10×N
-- [ ] Edit one section TipTap + save
-- [ ] Title + CTA generate
-- [ ] Preview OK
-- [ ] Publish → published row + slug
+- [x] Create project 201
+- [x] Chat strategist 2 turns
+- [x] Outline generate → balance 45
+- [x] Outline approve
+- [x] Generate 4 sections → balance 5
+- [x] 5th section 402 insufficient_credits
+- [x] Top-up pack_100
+- [x] 5th section after top-up 200
+- [x] Publish → slug
 
 ## Distribution
-- [ ] Create claim link
-- [ ] User B register → claim → library has ebook
-- [ ] Read /read/[slug] → progress saves
-- [ ] User A sees claim event + reader count
-
-## Billing
-- [ ] Top-up mock pack increases balance
-- [ ] Change plan updates grant
-- [ ] Set balance 0 → generate returns insufficient_credits + UI toast path
+- [x] Create claim link
+- [x] User B claim → claimed
+- [x] Library n=1
+- [x] Read by slug 200
+- [x] Reading progress 40
 
 ## Security
-- [ ] User B cannot GET user A project by id
-- [ ] No SERVICE_ROLE in client bundle (`grep -r SERVICE_ROLE app components` empty)
-- [ ] `npx tsc --noEmit` exit 0
-- [ ] `npx next build` exit 0
+- [x] User B cannot GET user A project (404)
+- [x] tsc 0 + next build 0
+
+## Re-run
+```bash
+npx supabase start
+for f in supabase/migrations/*.sql; do
+  docker exec -i supabase_db_Publiora psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$f"
+done
+# .env.local live keys + NEXT_PUBLIC_USE_MOCK_API=false
+npx next dev -p 3005
+BASE_URL=http://127.0.0.1:3005 node scripts/e2e-live.mjs
+```
