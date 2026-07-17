@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { cookies, headers } from "next/headers";
 
 function getPublicSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,8 +16,21 @@ function getPublicSupabaseEnv() {
 
 export async function createClient() {
   const { url, anonKey } = getPublicSupabaseEnv();
-  const cookieStore = await cookies();
+  const headerStore = await headers();
+  const auth = headerStore.get("authorization") || headerStore.get("Authorization");
+  const bearer = auth?.toLowerCase().startsWith("bearer ")
+    ? auth.slice(7).trim()
+    : null;
 
+  // E2E / API clients may pass Authorization: Bearer <access_token>
+  if (bearer) {
+    return createSupabaseClient(url, anonKey, {
+      global: { headers: { Authorization: `Bearer ${bearer}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+
+  const cookieStore = await cookies();
   return createServerClient(url, anonKey, {
     cookies: {
       getAll() {
