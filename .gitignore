@@ -68,3 +68,6 @@ testsprite_tests/**/*.log
 
 # git worktrees
 .worktrees/
+
+# Stitch html exports (png binaries)
+docs/stitch/exports/html/*.png
