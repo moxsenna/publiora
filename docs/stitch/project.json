@@ -5,7 +5,19 @@
   "designSystemResource": "assets/c9d7b3741d144200b30a8db2ee0ededa",
   "designMdScreenInstanceId": "16330234547753424208",
   "designMdSourceScreen": "projects/2847802891368404139/screens/16330234547753424208",
-  "screens": {},
+  "screens": {
+    "landing": "565188e29b8c46bcb64c2b857359a92c",
+    "login": "ed9c6390898c4531b8f737addc25c7a3",
+    "register": "ab73a7b86cf34936b77a0997db51b39a",
+    "forgotPassword": "c8d28ca6402e407e92b7e06a7bf49ba3",
+    "dashboard": "be2d85dbc30c4d2dbf88a1d6e004a55d",
+    "projects": "12353279dadc4180a89d544b5209f66b",
+    "workspace": "bcc3de7c1e0549eba692dab584999d5b",
+    "library": "ba32cede3feb4a978f81600ba72d07b9",
+    "published": "badfc4784c2f47589e643f556151b16f",
+    "reader": "1ce58a8aafb74ad0a376219cd050ebc9",
+    "billing": "4effc5187ab54aae9841944fee483889"
+  },
   "notes": {
     "designSystemDisplayName": "Editorial Intelligence",
     "createdVia": "create_design_system_from_design_md",
