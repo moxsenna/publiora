@@ -1,9 +1,15 @@
 import { getPayCoreConfig } from "./config";
 import { signPayCoreRequest } from "./crypto";
 
-/** Duitku V2 methods — required when merchant profile api_variant=v2. */
+/**
+ * Duitku V2 methods allowlisted by PayCore.
+ * Sandbox note: SQ (Nusapay) often OFF — prefer NQ / BR.
+ */
 export type DuitkuV2PaymentMethod =
-  | "SQ" // QRIS Nusapay
+  | "SQ"
+  | "NQ"
+  | "SP"
+  | "GQ"
   | "BR"
   | "DM"
   | "BV"
@@ -14,6 +20,11 @@ export type DuitkuV2PaymentMethod =
   | "A1"
   | "FT";
 
+/** Default for Publiora checkout when UI has not chosen a method yet. */
+export const DEFAULT_DUITKU_V2_METHOD: DuitkuV2PaymentMethod =
+  (process.env.PAYCORE_DEFAULT_PAYMENT_METHOD as DuitkuV2PaymentMethod) ||
+  "BR";
+
 export type CreateOrderInput = {
   external_order_id: string;
   product_key: string;
@@ -23,7 +34,7 @@ export type CreateOrderInput = {
   customer: { name: string; email: string; phone?: string };
   fulfillment_data: Record<string, unknown>;
   idempotency_key: string;
-  /** Required for Duitku V2. Default SQ (QRIS). */
+  /** Required for Duitku V2. Default NQ (QRIS Nobu). */
   payment_method?: DuitkuV2PaymentMethod;
 };
 
@@ -35,6 +46,8 @@ export type CreateOrderResponse = {
   provider: string;
   checkout_url: string;
   expires_at?: string;
+  provider_variant?: string;
+  payment_method?: string | null;
 };
 
 export type OrderStatusResponse = {
@@ -52,8 +65,7 @@ export async function createPayCoreOrder(
 ): Promise<CreateOrderResponse> {
   const cfg = getPayCoreConfig();
   const path = "/v1/orders";
-  // Do NOT send merchant_profile_id unless it equals apps.default_merchant_profile_id.
-  // PayCore uses app default → mp_appvibe_duitku_v2 (api_variant=v2).
+  // App default merchant on PayCore is Duitku V2 — always send payment_method.
   const bodyObj = {
     external_order_id: input.external_order_id,
     product_key: input.product_key,
@@ -63,7 +75,7 @@ export async function createPayCoreOrder(
     customer: input.customer,
     return_url: cfg.returnUrl,
     fulfillment_data: input.fulfillment_data,
-    payment_method: input.payment_method ?? "SQ",
+    payment_method: input.payment_method ?? DEFAULT_DUITKU_V2_METHOD,
   };
   const rawBody = JSON.stringify(bodyObj);
   const timestamp = new Date().toISOString();

@@ -54,9 +54,14 @@ Amounts IDR (MVP): pack 79k / 299k / 749k · plan 299k / 749k
 
 ### Duitku V2 vs POP
 
-- App default = **Duitku V2** → create order **wajib** `payment_method` (Publiora default `SQ` QRIS).
-- Smoke 2026-07-18: **HMAC app auth OK**; **POP createInvoice 201** dengan merchant sandbox `DS32***`.
-- **V2 inquiry** masih `create_failed` dengan key sandbox yang sama — biasanya merchant sandbox hanya aktif di POP, atau channel `SQ` belum diaktifkan di dashboard Duitku. Aktifkan API V2 + metode QRIS di Duitku, atau sementara switch app ke `mp_appvibe_default` (POP).
+- App default = **Duitku V2** → create order **wajib** `payment_method`.
+- Merchant code + API key **sama** untuk POP dan V2 (env global PayCore).
+- Smoke 2026-07-18:
+  - HMAC app auth OK
+  - POP createInvoice **201**
+  - V2 + **`BR` / `NQ`** **SUCCESS** + `checkout_url`
+  - V2 + **`SQ` (Nusapay)** gagal di sandbox ini — channel tidak available
+- Publiora default method: **`NQ`** (QRIS Nobu). Override: `PAYCORE_DEFAULT_PAYMENT_METHOD=BR`.
 
 ## Migration
 
