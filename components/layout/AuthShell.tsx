@@ -22,7 +22,7 @@ export function AuthShell({
         <div className="my-12 max-w-[440px] w-full mx-auto"> 
           <h1 className="text-3xl font-bold tracking-tight text-[var(--color-publiora-black)]">{title}</h1>
           {description && (
-            <p className="mt-3 text-[var(--color-medium-gray)]">{description}</p>
+            <p className="mt-3 text-[var(--color-medium-gray)] leading-relaxed">{description}</p>
           )}
           <div className="mt-8">{children}</div>
         </div>

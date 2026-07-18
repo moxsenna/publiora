@@ -81,9 +81,10 @@ export function RegisterForm() {
           placeholder="Mox Demo"
           autoComplete="name"
           {...register("name")}
+          className={errors.name ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
         />
         {errors.name && (
-          <p className="text-xs text-[var(--color-danger)] mt-1">
+          <p className="text-xs text-[var(--color-danger)] mt-1.5 font-medium">
             {errors.name.message}
           </p>
         )}
@@ -96,9 +97,10 @@ export function RegisterForm() {
           placeholder="you@example.com"
           autoComplete="email"
           {...register("email")}
+          className={errors.email ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
         />
         {errors.email && (
-          <p className="text-xs text-[var(--color-danger)] mt-1">
+          <p className="text-xs text-[var(--color-danger)] mt-1.5 font-medium">
             {errors.email.message}
           </p>
         )}
@@ -111,14 +113,19 @@ export function RegisterForm() {
           placeholder="min 8 karakter"
           autoComplete="new-password"
           {...register("password")}
+          className={errors.password ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
         />
         {errors.password && (
-          <p className="text-xs text-[var(--color-danger)] mt-1">
+          <p className="text-xs text-[var(--color-danger)] mt-1.5 font-medium">
             {errors.password.message}
           </p>
         )}
       </div>
-      {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
+      {error && (
+        <p className="text-sm text-[var(--color-danger)] p-3 rounded-xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/15">
+          {error}
+        </p>
+      )}
       <Button
         type="submit"
         className="w-full"
