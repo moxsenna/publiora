@@ -23,9 +23,10 @@ describe("Publiora hard-lock design tokens", () => {
   token("--color-deep-gray", "#171717");
 
   it("locks radius tokens", () => {
-    expect(css).toMatch(/--radius-card:\s*24px/);
-    expect(css).toMatch(/--radius-button:\s*16px/);
-    expect(css).toMatch(/--radius-input:\s*18px/);
+    // Density-tight radii from feat/full-mvp-backend merge
+    expect(css).toMatch(/--radius-card:\s*16px/);
+    expect(css).toMatch(/--radius-button:\s*10px/);
+    expect(css).toMatch(/--radius-input:\s*10px/);
     expect(css).toMatch(/--radius-pill:\s*9999px/);
   });
 
