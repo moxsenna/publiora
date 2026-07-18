@@ -7,7 +7,7 @@ export function Hero() {
     <section className="relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 py-20 md:py-28 grid md:grid-cols-2 gap-12 items-center">
         <div className="animate-fade-in">
-          <div className="inline-flex items-center gap-2 text-xs font-medium text-[var(--color-gold)] bg-[#F8F1DC] border border-[#E9D9A8] px-3 py-1.5 rounded-full">
+          <div className="inline-flex items-center gap-2 text-xs font-medium text-[var(--color-gold)] bg-[var(--color-gold-soft)]/25 border border-[var(--color-gold-soft)] px-3 py-1.5 rounded-full">
             <Sparkles className="h-3.5 w-3.5" />
             AI-native publishing platform
           </div>

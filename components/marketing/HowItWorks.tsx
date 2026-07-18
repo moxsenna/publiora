@@ -10,7 +10,7 @@ const steps = [
 export function HowItWorks() {
   return (
     <section id="how" className="bg-[var(--color-surface-2)]">
-      <div className="max-w-7xl mx-auto px-6 py-20">
+      <div className="max-w-7xl mx-auto px-6 py-20 md:py-28">
         <div className="max-w-2xl">
           <div className="text-sm font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
             How it works
