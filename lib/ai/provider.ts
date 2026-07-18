@@ -1,7 +1,9 @@
 // Server-only AI completion helpers.
 // Supports: router (OpenAI-compatible), openai, gemini.
 
-import { getServerEnv } from "@/lib/env";
+import { getServerEnv, resolveAiModelChain } from "@/lib/env";
+
+const ATTEMPT_TIMEOUT_MS = 60_000;
 
 function stripFences(text: string): string {
   const t = text.trim();
@@ -14,11 +16,13 @@ function extractAssistantText(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "";
 
-  // Non-stream JSON object
   if (trimmed.startsWith("{")) {
     try {
       const data = JSON.parse(trimmed) as {
-        choices?: { message?: { content?: string | null }; delta?: { content?: string } }[];
+        choices?: {
+          message?: { content?: string | null };
+          delta?: { content?: string };
+        }[];
         error?: { message?: string };
       };
       if (data.error?.message) throw new Error(data.error.message);
@@ -29,7 +33,6 @@ function extractAssistantText(raw: string): string {
     }
   }
 
-  // SSE: data: {...}\n\n
   if (trimmed.includes("data:")) {
     let acc = "";
     for (const line of trimmed.split(/\r?\n/)) {
@@ -80,27 +83,26 @@ export async function completeText(opts: {
     );
   }
 
-  const primary = env.AI_MODEL || "gcli/grok-4.5-high";
-  const fallback = env.AI_MODEL_FALLBACK || "ag/gemini-pro-agent";
+  const models = resolveAiModelChain(env);
+  const errors: string[] = [];
 
-  try {
-    return await completeOpenAICompatible(opts, {
-      baseUrl,
-      apiKey,
-      model: primary,
-    });
-  } catch (primaryErr) {
-    console.error("[ai] primary model failed:", primary, primaryErr);
-    if (fallback && fallback !== primary) {
-      console.warn("[ai] trying fallback model:", fallback);
+  for (const model of models) {
+    try {
       return await completeOpenAICompatible(opts, {
         baseUrl,
         apiKey,
-        model: fallback,
+        model,
       });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[ai] model failed:", model, msg);
+      errors.push(`${model}: ${msg}`);
     }
-    throw primaryErr;
   }
+
+  throw new Error(
+    `AI all models failed (${models.join(" → ")}): ${errors.join(" | ")}`
+  );
 }
 
 export async function completeJson<T>(opts: {
@@ -129,35 +131,49 @@ async function completeOpenAICompatible(
   cfg: { baseUrl: string; apiKey: string; model: string }
 ): Promise<string> {
   const url = `${cfg.baseUrl.replace(/\/$/, "")}/chat/completions`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${cfg.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: cfg.model,
-      temperature: 0.7,
-      stream: false,
-      messages: [
-        { role: "system", content: opts.system },
-        { role: "user", content: opts.user },
-      ],
-    }),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cfg.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: cfg.model,
+        temperature: 0.7,
+        stream: false,
+        messages: [
+          { role: "system", content: opts.system },
+          { role: "user", content: opts.user },
+        ],
+      }),
+      signal: controller.signal,
+    });
 
-  const raw = await res.text();
-  if (!res.ok) {
-    throw new Error(
-      `AI error ${res.status} model=${cfg.model}: ${raw.slice(0, 400)}`
-    );
-  }
+    const raw = await res.text();
+    if (!res.ok) {
+      throw new Error(
+        `AI error ${res.status} model=${cfg.model}: ${raw.slice(0, 400)}`
+      );
+    }
 
-  const text = extractAssistantText(raw);
-  if (!text) {
-    throw new Error(`AI empty response model=${cfg.model}`);
+    const text = extractAssistantText(raw);
+    if (!text) {
+      throw new Error(`AI empty response model=${cfg.model}`);
+    }
+    return text;
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(
+        `AI timeout ${ATTEMPT_TIMEOUT_MS}ms model=${cfg.model}`
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
   }
-  return text;
 }
 
 async function completeGemini(
