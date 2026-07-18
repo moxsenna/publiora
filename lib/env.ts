@@ -11,8 +11,17 @@ const serverSchema = z
     AI_PROVIDER: z.enum(["gemini", "openai", "router"]).default("router"),
     /** Primary model id for router, e.g. gcli/grok-4.5-high */
     AI_MODEL: z.string().min(1).default("gcli/grok-4.5-high"),
-    /** Fallback model if primary fails */
-    AI_MODEL_FALLBACK: z.string().min(1).default("ag/gemini-pro-agent"),
+    /** Legacy single fallback (merged into FALLBACKS if present) */
+    AI_MODEL_FALLBACK: z.string().min(1).optional(),
+    /**
+     * Comma-separated ordered fallbacks after AI_MODEL.
+     * Default chain matches product router inventory.
+     */
+    AI_MODEL_FALLBACKS: z
+      .string()
+      .default(
+        "ag/gemini-pro-agent,ag/gemini-3.1-pro-low,cx/gpt-5.6-terra,cx/gpt-5.6-sol"
+      ),
     /** OpenAI-compatible base URL ending with /v1 */
     AI_BASE_URL: z.string().url().optional(),
     /** API key for router / openai-compatible endpoint */
@@ -23,19 +32,22 @@ const serverSchema = z
 
     CREDITS_MOCK_TOPUP: z
       .enum(["true", "false"])
-      .default("true")
+      .default("false")
       .transform((v) => v === "true"),
     USE_MOCK_API: z
       .enum(["true", "false"])
-      .default("true")
+      .default("false")
       .transform((v) => v === "true"),
     NEXT_PUBLIC_USE_MOCK_API: z
       .enum(["true", "false"])
-      .default("true")
+      .default("false")
       .transform((v) => v === "true"),
   })
   .superRefine((val, ctx) => {
-    if (!val.NEXT_PUBLIC_SUPABASE_ANON_KEY && !val.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    if (
+      !val.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+      !val.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:
@@ -47,6 +59,28 @@ const serverSchema = z
 
 export type ServerEnv = z.infer<typeof serverSchema>;
 
+/** Ordered unique model list: primary, then FALLBACKS, then legacy FALLBACK. */
+export function resolveAiModelChain(env: {
+  AI_MODEL: string;
+  AI_MODEL_FALLBACK?: string;
+  AI_MODEL_FALLBACKS?: string;
+}): string[] {
+  const primary = env.AI_MODEL.trim();
+  const fromList = (env.AI_MODEL_FALLBACKS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const legacy = env.AI_MODEL_FALLBACK?.trim();
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const m of [primary, ...fromList, ...(legacy ? [legacy] : [])]) {
+    if (!m || seen.has(m)) continue;
+    seen.add(m);
+    out.push(m);
+  }
+  return out;
+}
+
 export function getServerEnv(): ServerEnv {
   const parsed = serverSchema.safeParse(process.env);
   if (!parsed.success) {
@@ -55,7 +89,6 @@ export function getServerEnv(): ServerEnv {
   }
   const data = parsed.data;
 
-  // Normalize defaults for router when unset in process.env
   if (!process.env.AI_BASE_URL && data.AI_PROVIDER === "router") {
     (data as { AI_BASE_URL?: string }).AI_BASE_URL =
       "https://9router.appvibe.web.id/v1";
@@ -69,18 +102,28 @@ export function getServerEnv(): ServerEnv {
         );
       }
     }
-    if (data.AI_PROVIDER === "gemini" && !data.GEMINI_API_KEY && !data.AI_API_KEY) {
+    if (
+      data.AI_PROVIDER === "gemini" &&
+      !data.GEMINI_API_KEY &&
+      !data.AI_API_KEY
+    ) {
       throw new Error(
         "GEMINI_API_KEY required when AI_PROVIDER=gemini and USE_MOCK_API=false"
       );
     }
-    if (data.AI_PROVIDER === "openai" && !data.OPENAI_API_KEY && !data.AI_API_KEY) {
+    if (
+      data.AI_PROVIDER === "openai" &&
+      !data.OPENAI_API_KEY &&
+      !data.AI_API_KEY
+    ) {
       throw new Error(
         "OPENAI_API_KEY required when AI_PROVIDER=openai and USE_MOCK_API=false"
       );
     }
     if (!data.SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error("SUPABASE_SERVICE_ROLE_KEY required when USE_MOCK_API=false");
+      throw new Error(
+        "SUPABASE_SERVICE_ROLE_KEY required when USE_MOCK_API=false"
+      );
     }
   }
   return data;

@@ -71,7 +71,7 @@ export function RegisterForm() {
       method="post"
       action="/register"
       onSubmit={onFormSubmit}
-      className="space-y-4"
+      className="space-y-3"
       noValidate
     >
       <div>

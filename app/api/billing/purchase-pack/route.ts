@@ -3,6 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError } from "@/lib/api/errors";
 import { CREDIT_PACKS } from "@/lib/billing/plans";
 import { grantCredits, mapCreditBalance } from "@/lib/credits";
+import { useMockBilling } from "@/lib/paycore/config";
+import { resolvePackProduct } from "@/lib/paycore/catalog";
+import { startCheckout } from "@/lib/paycore/orders";
 import type { CreditBalance, CreditTransaction, CreditTxnType } from "@/types/billing";
 
 function mapTxn(row: Record<string, unknown>): CreditTransaction {
@@ -34,21 +37,55 @@ export async function POST(req: Request) {
       return jsonError("Unauthorized", 401, "unauthorized");
     }
 
-    const body = (await req.json().catch(() => null)) as { pack_id?: unknown } | null;
+    const body = (await req.json().catch(() => null)) as {
+      pack_id?: unknown;
+      payment_method?: unknown;
+    } | null;
     if (!body || typeof body.pack_id !== "string" || !body.pack_id.trim()) {
       return jsonError("pack_id is required", 400, "validation_error");
     }
+
+    const { isPaymentMethodCode } = await import("@/lib/paycore/methods");
+    const paymentMethod = isPaymentMethodCode(body.payment_method)
+      ? body.payment_method
+      : undefined;
 
     const pack = CREDIT_PACKS.find((p) => p.id === body.pack_id);
     if (!pack) {
       return jsonError("Pack not found", 404, "not_found");
     }
 
-    const mockTopup = process.env.CREDITS_MOCK_TOPUP !== "false";
-    if (!mockTopup) {
-      return jsonError("Payment provider not configured", 501, "not_implemented");
+    // —— PayCore checkout path ——
+    if (!useMockBilling()) {
+      const product = resolvePackProduct(pack.id);
+      if (!product) {
+        return jsonError("Pack price not configured", 500, "config_error");
+      }
+      try {
+        const { resolveCheckoutCustomer } = await import("@/lib/paycore/customer");
+        const customer = await resolveCheckoutCustomer(user);
+        const checkout = await startCheckout({
+          userId: user.id,
+          email: customer.email,
+          name: customer.name,
+          product,
+          paymentMethod,
+        });
+        return Response.json({
+          checkout_url: checkout.checkout_url,
+          order_id: checkout.order_id,
+          external_order_id: checkout.external_order_id,
+          amount: checkout.amount,
+          currency: checkout.currency,
+        });
+      } catch (payErr) {
+        const message =
+          payErr instanceof Error ? payErr.message : "PayCore create order failed";
+        return jsonError(message, 502, "paycore_error");
+      }
     }
 
+    // —— Mock top-up (dev / CREDITS_MOCK_TOPUP=true) ——
     let balance: CreditBalance;
     try {
       const granted = await grantCredits({
@@ -67,7 +104,6 @@ export async function POST(req: Request) {
       return jsonError(message, 500, "db_error");
     }
 
-    // Latest purchase txn for response
     const admin = createAdminClient();
     const { data: txnRow, error: txnError } = await admin
       .from("credit_transactions")
@@ -79,7 +115,6 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (txnError || !txnRow) {
-      // balance granted; synthesize txn shape from balance
       const now = new Date().toISOString();
       const txn: CreditTransaction = {
         id: "unknown",
@@ -91,19 +126,19 @@ export async function POST(req: Request) {
         meta: { pack_id: pack.id },
         created_at: now,
       };
-      // refresh balance
       const { data: balRow } = await admin
         .from("credit_balances")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
       if (balRow) balance = mapCreditBalance(balRow as Record<string, unknown>);
-      return Response.json({ balance, txn });
+      return Response.json({ balance, txn, mock: true });
     }
 
     return Response.json({
       balance,
       txn: mapTxn(txnRow as Record<string, unknown>),
+      mock: true,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Server error";

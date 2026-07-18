@@ -96,27 +96,27 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 h-[calc(100vh-4rem)]">
+    <div className="flex flex-col flex-1 min-h-0 h-[calc(100vh-3rem)]">
       {/* Header */}
-      <div className="border-b border-[var(--color-publiora-border)] bg-white px-4 sm:px-6 py-3 space-y-3 shrink-0">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
+      <div className="border-b border-[var(--color-publiora-border)] bg-white px-2.5 sm:px-3 py-2 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
             <Link href="/projects">
               <Button variant="ghost" size="icon" aria-label="Back">
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-3.5 w-3.5" />
               </Button>
             </Link>
             <div className="min-w-0">
               {isLoading ? (
-                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-40" />
               ) : (
-                <h1 className="text-base font-semibold truncate text-[var(--color-publiora-black)]">
+                <h1 className="text-sm font-semibold truncate text-[var(--color-publiora-black)]">
                   {project?.title}
                 </h1>
               )}
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 {project && <ProjectStatusPill status={project.status} />}
-                <span className="text-xs text-[var(--color-soft-gray)]">
+                <span className="text-xs text-[var(--color-medium-gray)]">
                   {project?.sections_generated ?? 0}/{project?.total_sections ?? 0}{" "}
                   sections
                   {project && project.total_sections > 0
@@ -127,7 +127,7 @@ export default function WorkspacePage() {
                 </span>
               </div>
               {project && project.total_sections > 0 && (
-                <div className="mt-2 max-w-xs hidden sm:block">
+                <div className="mt-1.5 max-w-xs hidden sm:block">
                   <ProgressBar
                     value={Math.round(
                       (project.sections_generated / project.total_sections) * 100
@@ -143,7 +143,7 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <Button
               size="sm"
               variant="ghost"
@@ -151,7 +151,7 @@ export default function WorkspacePage() {
               onClick={() => setDeleteOpen(true)}
               aria-label="Delete project"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
             <Button
               size="sm"
@@ -159,7 +159,7 @@ export default function WorkspacePage() {
               onClick={() => setPublishOpen(true)}
               disabled={!project || project.sections_generated === 0}
             >
-              <Rocket className="h-4 w-4" />
+              <Rocket className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Publish</span>
             </Button>
           </div>

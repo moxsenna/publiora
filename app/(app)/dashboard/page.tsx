@@ -40,36 +40,36 @@ export default function DashboardPage() {
   const generating = (projects ?? []).filter((p) => p.status === "generating").length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="max-w-7xl mx-auto px-3 sm:px-5 py-5 space-y-5">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">
+          <h1 className="text-xl font-bold text-[var(--color-publiora-black)]">
             {greeting(profile?.name)}
           </h1>
-          <p className="text-[var(--color-medium-gray)] mt-1 leading-relaxed">
+          <p className="text-sm text-[var(--color-medium-gray)] mt-0.5">
             Ringkasan aktivitas Publiora Anda.
             {generating > 0 ? ` · ${generating} project sedang generate.` : ""}
           </p>
         </div>
         <Link href="/projects/new">
-          <Button>
-            <Plus className="h-4 w-4" />
+          <Button size="sm">
+            <Plus className="h-3.5 w-3.5" />
             New project
           </Button>
         </Link>
       </div>
 
       {/* Quick actions */}
-      <div className="grid sm:grid-cols-3 gap-3">
+      <div className="grid sm:grid-cols-3 gap-2.5">
         <QuickAction
           href="/projects/new"
-          icon={<Plus className="h-4 w-4" />}
+          icon={<Plus className="h-3.5 w-3.5" />}
           title="Buat project"
           desc="Mulai ebook baru dari brief"
         />
         <QuickAction
           href="/settings/billing"
-          icon={<CreditCard className="h-4 w-4" />}
+          icon={<CreditCard className="h-3.5 w-3.5" />}
           title="Billing"
           desc={
             balance
@@ -79,67 +79,67 @@ export default function DashboardPage() {
         />
         <QuickAction
           href="/library"
-          icon={<Gift className="h-4 w-4" />}
+          icon={<Gift className="h-3.5 w-3.5" />}
           title="Library"
           desc="Ebook yang sudah diklaim"
         />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5">
         <StatCard
           label="Credits"
           value={balance?.balance ?? 0}
-          icon={<Coins className="h-4 w-4" />}
+          icon={<Coins className="h-3.5 w-3.5" />}
           loading={lb}
         />
         <StatCard
           label="Projects"
           value={projects?.length ?? 0}
-          icon={<Folder className="h-4 w-4" />}
+          icon={<Folder className="h-3.5 w-3.5" />}
           loading={lp}
         />
         <StatCard
           label="Published"
           value={published?.length ?? 0}
-          icon={<BookOpen className="h-4 w-4" />}
+          icon={<BookOpen className="h-3.5 w-3.5" />}
           loading={lpub}
         />
         <StatCard
           label="Total readers"
           value={totalReaders}
-          icon={<Users className="h-4 w-4" />}
+          icon={<Users className="h-3.5 w-3.5" />}
           loading={lpub}
         />
         <StatCard
           label="Active claims"
           value={activeClaims}
-          icon={<Link2 className="h-4 w-4" />}
+          icon={<Link2 className="h-3.5 w-3.5" />}
           loading={lpub}
         />
       </div>
 
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-[var(--color-publiora-black)]">
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-base font-semibold text-[var(--color-publiora-black)]">
             Recent projects
           </h2>
           <Link
             href="/projects"
-            className="text-sm font-medium text-[var(--color-publiora-blue)] hover:underline inline-flex items-center gap-1"
+            className="text-xs font-medium text-[var(--color-publiora-blue)] hover:underline inline-flex items-center gap-1"
           >
-            Lihat semua <ArrowRight className="h-3.5 w-3.5" />
+            Lihat semua <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
         {lp ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-40" />
+              <Skeleton key={i} className="h-32" />
             ))}
           </div>
         ) : recentProjects.length === 0 ? (
           <Card>
             <EmptyState
-              icon={<Folder className="h-6 w-6" />}
+              icon={<Folder className="h-5 w-5" />}
               title="Belum ada project"
               description="Mulai project pertama untuk membuat ebook."
               action={
@@ -150,12 +150,12 @@ export default function DashboardPage() {
             />
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {recentProjects.map((p) => (
               <Link key={p.id} href={`/projects/${p.id}`}>
-                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all h-full cursor-pointer">
+                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform h-full cursor-pointer">
                   <div
-                    className="h-24 rounded-t-[var(--radius-card)] relative overflow-hidden"
+                    className="h-16 rounded-t-[var(--radius-card)] relative overflow-hidden"
                     style={{ background: p.cover_color }}
                   >
                     {(p.status === "generating" || p.progress > 0) &&
@@ -173,7 +173,7 @@ export default function DashboardPage() {
                     <h3 className="mt-2 font-semibold text-[var(--color-publiora-black)] line-clamp-1">
                       {p.title}
                     </h3>
-                    <p className="text-xs text-[var(--color-soft-gray)] mt-1">
+                    <p className="text-xs text-[var(--color-medium-gray)] mt-1">
                       Updated {formatRelativeTime(p.updated_at)}
                     </p>
                   </CardBody>
@@ -185,44 +185,44 @@ export default function DashboardPage() {
       </section>
 
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-[var(--color-publiora-black)]">
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-base font-semibold text-[var(--color-publiora-black)]">
             Published ebooks
           </h2>
         </div>
         {lpub ? (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-2.5">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-32" />
+              <Skeleton key={i} className="h-28" />
             ))}
           </div>
         ) : recentPublished.length === 0 ? (
           <Card>
             <EmptyState
-              icon={<TrendingUp className="h-6 w-6" />}
+              icon={<TrendingUp className="h-5 w-5" />}
               title="Belum ada ebook terpublished"
               description="Generate project hingga semua section siap, lalu publish."
             />
           </Card>
         ) : (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-2.5">
             {recentPublished.map((p) => (
               <Link key={p.id} href={`/published/${p.id}`}>
-                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all cursor-pointer">
+                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer">
                   <CardHeader>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2.5">
                       <div
-                        className="h-12 w-12 rounded-xl shrink-0"
+                        className="h-9 w-9 rounded-lg shrink-0"
                         style={{ background: p.cover_color }}
                       />
                       <div className="min-w-0">
-                        <CardTitle className="truncate text-base">{p.title}</CardTitle>
+                        <CardTitle className="truncate text-sm">{p.title}</CardTitle>
                         <CardDescription>{p.author}</CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardBody className="pt-0">
-                    <div className="flex items-center gap-4 text-xs text-[var(--color-medium-gray)]">
+                    <div className="flex items-center gap-3 text-xs text-[var(--color-medium-gray)]">
                       <span>{p.total_readers} readers</span>
                       <span>{p.active_claims} claims</span>
                       <span>{p.sections.length} sections</span>
@@ -251,18 +251,18 @@ function QuickAction({
 }) {
   return (
     <Link href={href}>
-      <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all cursor-pointer h-full">
-        <CardBody className="flex items-center gap-3 py-4">
-          <div className="h-10 w-10 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] grid place-items-center text-[var(--color-deep-gray)] shrink-0">
+      <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer h-full">
+        <CardBody className="flex items-center gap-2.5 py-2.5">
+          <div className="h-8 w-8 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] grid place-items-center text-[var(--color-deep-gray)] shrink-0">
             {icon}
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
               {title}
             </div>
-            <div className="text-xs text-[var(--color-soft-gray)] truncate">{desc}</div>
+            <div className="text-xs text-[var(--color-medium-gray)] truncate">{desc}</div>
           </div>
-          <ArrowRight className="h-4 w-4 text-[var(--color-soft-gray)] ml-auto shrink-0" />
+          <ArrowRight className="h-3.5 w-3.5 text-[var(--color-medium-gray)] ml-auto shrink-0" />
         </CardBody>
       </Card>
     </Link>
@@ -282,20 +282,20 @@ function StatCard({
 }) {
   return (
     <Card>
-      <CardBody>
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-[var(--color-soft-gray)] uppercase tracking-wide">
+      <CardBody className="py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] font-medium text-[var(--color-medium-gray)] uppercase tracking-wide">
             {label}
           </span>
-          <div className="h-7 w-7 rounded-lg bg-[var(--color-surface-2)] grid place-items-center text-[var(--color-medium-gray)]">
+          <div className="h-6 w-6 rounded-md bg-[var(--color-surface-2)] grid place-items-center text-[var(--color-medium-gray)]">
             {icon}
           </div>
         </div>
-        <div className="mt-3">
+        <div className="mt-1.5">
           {loading ? (
-            <Skeleton className="h-7 w-16" />
+            <Skeleton className="h-6 w-12" />
           ) : (
-            <div className="text-2xl font-bold text-[var(--color-publiora-black)]">
+            <div className="text-xl font-bold tabular-nums text-[var(--color-publiora-black)]">
               {value}
             </div>
           )}

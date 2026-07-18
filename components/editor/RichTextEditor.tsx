@@ -48,7 +48,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   }, [value]);
 
   if (!editor || !hydrated) {
-    return <div className="px-5 py-4 text-sm text-[var(--color-soft-gray)]">Loading editor…</div>;
+    return <div className="px-5 py-4 text-sm text-[var(--color-medium-gray)]">Loading editor…</div>;
   }
 
   const tools: { icon: React.ReactNode; onClick: () => void; active?: boolean; label: string }[] = [

@@ -71,3 +71,4 @@ testsprite_tests/**/*.log
 
 # Stitch html exports (png binaries)
 docs/stitch/exports/html/*.png
+deploy/paycore.env.snippet

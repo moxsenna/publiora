@@ -28,7 +28,7 @@ export function ProgressBar({
     >
       <div
         className={cn(
-          "h-full rounded-full bg-[var(--color-publiora-blue)] transition-all duration-500",
+          "h-full rounded-full bg-[var(--color-publiora-blue)] transition-[width] duration-500",
           barClassName
         )}
         style={{ width: `${pct}%` }}

@@ -22,41 +22,42 @@ export function TopBar({ title }: { title?: string }) {
   };
 
   return (
-    <header className="h-16 border-b border-[var(--color-publiora-border)] bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 flex items-center gap-3 px-4 sticky top-0 z-30">
+    <header className="h-12 border-b border-[var(--color-publiora-border)] bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 flex items-center gap-2 px-3 sm:px-4 sticky top-0 z-30">
       {/* Mobile menu */}
       <button
         onClick={toggleMobileNav}
-        className="md:hidden text-[var(--color-soft-gray)] hover:text-[var(--color-deep-gray)] p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"
+        className="md:hidden text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] p-1.5 rounded-md hover:bg-[var(--color-surface-2)]"
         aria-label="Open menu"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-4 w-4" />
       </button>
 
       {/* Desktop collapse */}
       <button
         onClick={toggleSidebar}
-        className="hidden md:inline-flex text-[var(--color-soft-gray)] hover:text-[var(--color-deep-gray)] p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"
+        className="hidden md:inline-flex text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] p-1.5 rounded-md hover:bg-[var(--color-surface-2)]"
         aria-label="Toggle sidebar"
       >
-        <PanelLeft className="h-5 w-5" />
+        <PanelLeft className="h-4 w-4" />
       </button>
 
       {title && (
-        <h1 className="text-base font-semibold text-[var(--color-publiora-black)] truncate">
+        <h1 className="text-sm font-semibold text-[var(--color-publiora-black)] truncate">
           {title}
         </h1>
       )}
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1.5">
         <Link href="/library" className="hidden sm:block">
           <Button variant="ghost" size="sm">
-            <BookOpen className="h-4 w-4" />
+            <BookOpen className="h-3.5 w-3.5" />
             Library
           </Button>
         </Link>
         <Dropdown
+          aria-label="Menu akun"
           trigger={
-            <div className="inline-flex items-center gap-2 px-1.5 py-1 rounded-full hover:bg-[var(--color-surface-2)] transition-colors">
+            <div className="inline-flex items-center gap-2 px-1 py-0.5 rounded-full hover:bg-[var(--color-surface-2)] transition-colors">
               <Avatar
                 name={profile?.name ?? "Guest"}
                 src={profile?.avatar_url}

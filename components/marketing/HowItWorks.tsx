@@ -10,24 +10,24 @@ const steps = [
 export function HowItWorks() {
   return (
     <section id="how" className="bg-[var(--color-surface-2)]">
-      <div className="max-w-7xl mx-auto px-6 py-20 md:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16">
         <div className="max-w-2xl">
-          <div className="text-sm font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
-            How it works
+          <div className="text-xs font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
+            Cara kerja
           </div>
-          <h2 className="mt-3 text-4xl font-bold tracking-tight text-[var(--color-publiora-black)]">
+          <h2 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-pretty text-[var(--color-publiora-black)]">
             Dari brief ke audience dalam 6 langkah.
           </h2>
         </div>
-        <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {steps.map((s) => (
             <div
               key={s.num}
-              className="p-6 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-white"
+              className="p-4 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-white"
             >
-              <div className="text-3xl font-bold text-[var(--color-gold)]">{s.num}</div>
-              <h3 className="mt-3 text-lg font-semibold text-[var(--color-publiora-black)]">{s.title}</h3>
-              <p className="mt-2 text-sm text-[var(--color-medium-gray)] leading-relaxed">{s.description}</p>
+              <div className="text-xl font-bold text-[var(--color-gold)]">{s.num}</div>
+              <h3 className="mt-2 text-base font-semibold text-[var(--color-publiora-black)]">{s.title}</h3>
+              <p className="mt-1.5 text-sm text-[var(--color-medium-gray)] leading-relaxed">{s.description}</p>
             </div>
           ))}
         </div>

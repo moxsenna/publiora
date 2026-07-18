@@ -31,7 +31,7 @@ export default function ReadPage({
     return (
       <div className="min-h-full grid place-items-center px-6">
         <div className="text-center max-w-md">
-          <div className="h-14 w-14 rounded-2xl bg-[var(--color-surface-2)] grid place-items-center mx-auto text-[var(--color-soft-gray)]">
+          <div className="h-14 w-14 rounded-2xl bg-[var(--color-surface-2)] grid place-items-center mx-auto text-[var(--color-medium-gray)]">
             <BookOpen className="h-6 w-6" />
           </div>
           <h1 className="mt-4 text-xl font-bold text-[var(--color-publiora-black)]">

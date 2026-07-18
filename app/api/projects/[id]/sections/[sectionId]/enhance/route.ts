@@ -40,17 +40,16 @@ export async function POST(
       throw err;
     }
 
-    let content_html = String(section.content_html ?? "");
-    try {
-      const result = await completeJson<{ content_html: string }>({
-        system:
-          "You polish marketing ebook HTML. Keep structure, improve clarity, keep language. Return JSON { content_html } only. No script tags.",
-        user: `Polish this HTML:\n${content_html.slice(0, 12000)}`,
-      });
-      if (result.content_html) content_html = result.content_html;
-    } catch {
-      // fallback: keep original
+    const original = String(section.content_html ?? "");
+    const result = await completeJson<{ content_html: string }>({
+      system:
+        "You polish marketing ebook HTML. Keep structure, improve clarity, keep language. Return JSON { content_html } only. No script tags.",
+      user: `Polish this HTML:\n${original.slice(0, 12000)}`,
+    });
+    if (!result.content_html?.trim()) {
+      throw new Error("Enhancement returned empty content_html");
     }
+    let content_html = result.content_html;
 
     content_html = sanitizeHtml(content_html);
     const word_count = content_html

@@ -14,10 +14,6 @@ type ClaimPreview =
   | { status: "limit_reached" }
   | { status: "not_found" };
 
-function shouldUseMock() {
-  return process.env.NEXT_PUBLIC_USE_MOCK_API !== "false";
-}
-
 export default function ClaimRoutePage({
   params,
 }: {
@@ -26,32 +22,8 @@ export default function ClaimRoutePage({
   const { token } = use(params);
   const { data, isLoading } = useQuery({
     queryKey: ["claim-preview", token],
-    queryFn: async (): Promise<ClaimPreview> => {
-      if (shouldUseMock()) {
-        const api = await import("@/lib/mock/api");
-        const db = await import("@/lib/mock/db").then((m) => m.getDb());
-        const link = db.claimLinks.find((l) => l.token === token.toUpperCase());
-        if (!link) return { status: "not_found" };
-        if (link.status === "revoked") return { status: "revoked" };
-        if (
-          link.status === "expired" ||
-          (link.expires_at && new Date(link.expires_at).getTime() < Date.now())
-        ) {
-          return { status: "expired" };
-        }
-        if (link.max_uses != null && link.used_count >= link.max_uses) {
-          return { status: "limit_reached" };
-        }
-        try {
-          const ebook: PublishedEbook = await api.getPublishedEbook(link.ebook_id);
-          return { status: "ready", ebook, token: link.token };
-        } catch {
-          return { status: "not_found" };
-        }
-      }
-
-      return apiFetch<ClaimPreview>(`/api/claim/${encodeURIComponent(token)}`);
-    },
+    queryFn: () =>
+      apiFetch<ClaimPreview>(`/api/claim/${encodeURIComponent(token)}`),
   });
 
   if (isLoading || !data) {

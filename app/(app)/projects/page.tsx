@@ -38,41 +38,41 @@ export default function ProjectsPage() {
   }, [projects, q, status]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="max-w-7xl mx-auto px-3 sm:px-5 py-5 space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">Projects</h1>
-          <p className="text-[var(--color-medium-gray)] mt-1 leading-relaxed">
+          <h1 className="text-xl font-bold text-[var(--color-publiora-black)]">Projects</h1>
+          <p className="text-sm text-[var(--color-medium-gray)] mt-0.5">
             Semua project ebook Anda.
             {!isLoading && projects ? ` · ${projects.length} total` : ""}
           </p>
         </div>
         <Link href="/projects/new">
-          <Button>
-            <Plus className="h-4 w-4" />
+          <Button size="sm">
+            <Plus className="h-3.5 w-3.5" />
             New project
           </Button>
         </Link>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+      <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center">
         <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-soft-gray)]" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--color-medium-gray)]" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cari project…"
-            className="h-10 w-full pl-9 pr-3 rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white text-sm outline-none focus:border-[var(--color-publiora-blue)]"
+            className="h-9 w-full pl-8 pr-3 rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white text-sm text-[var(--color-deep-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)]"
           />
         </div>
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+        <div className="flex gap-1 overflow-x-auto no-scrollbar pb-0.5">
           {FILTERS.map((f) => (
             <button
               key={f.id}
               type="button"
               onClick={() => setStatus(f.id)}
               className={
-                "px-3 h-9 rounded-full text-xs font-medium whitespace-nowrap border transition-colors " +
+                "px-2.5 h-8 rounded-full text-xs font-medium whitespace-nowrap border transition-colors " +
                 (status === f.id
                   ? "bg-[var(--color-publiora-black)] text-white border-[var(--color-publiora-black)]"
                   : "bg-white text-[var(--color-medium-gray)] border-[var(--color-publiora-border)] hover:bg-[var(--color-surface-2)]")
@@ -85,9 +85,9 @@ export default function ProjectsPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-44" />
+            <Skeleton key={i} className="h-36" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -110,7 +110,7 @@ export default function ProjectsPage() {
           />
         </Card>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {filtered.map((p) => {
             const pct =
               p.total_sections > 0
@@ -118,19 +118,19 @@ export default function ProjectsPage() {
                 : p.progress;
             return (
               <Link key={p.id} href={`/projects/${p.id}`}>
-                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer h-full">
                   <div
-                    className="h-28 rounded-t-[var(--radius-card)] flex items-end p-4 relative overflow-hidden"
+                    className="h-20 rounded-t-[var(--radius-card)] flex items-end p-3 relative overflow-hidden"
                     style={{ background: p.cover_color }}
                   >
-                    <h3 className="text-white font-semibold text-lg line-clamp-2 drop-shadow relative z-10">
+                    <h3 className="text-white font-semibold text-base line-clamp-2 drop-shadow relative z-10">
                       {p.title}
                     </h3>
                   </div>
                   <CardBody>
                     <div className="flex items-center justify-between gap-2">
                       <ProjectStatusPill status={p.status} />
-                      <span className="text-xs text-[var(--color-soft-gray)] truncate">
+                      <span className="text-xs text-[var(--color-medium-gray)] truncate">
                         {p.niche}
                       </span>
                     </div>
@@ -138,7 +138,7 @@ export default function ProjectsPage() {
                       {p.description}
                     </p>
                     <div className="mt-3 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs text-[var(--color-soft-gray)]">
+                      <div className="flex items-center justify-between text-xs text-[var(--color-medium-gray)]">
                         <span>
                           {p.sections_generated}/{p.total_sections || "—"} sections
                         </span>

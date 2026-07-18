@@ -8,8 +8,8 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
     <input
       ref={ref}
       className={cn(
-        "h-11 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-4 text-sm",
-        "placeholder:text-[var(--color-soft-gray)] focus:border-[var(--color-publiora-blue)] focus:ring-2 focus:ring-[var(--color-publiora-blue)]/10 outline-none transition-colors",
+        "h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm text-[var(--color-deep-gray)]",
+        "placeholder:text-[var(--color-medium-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] transition-colors",
         className
       )}
       {...props}
@@ -25,8 +25,8 @@ export const Textarea = React.forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      "w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white p-4 text-sm",
-      "placeholder:text-[var(--color-soft-gray)] focus:border-[var(--color-publiora-blue)] focus:ring-2 focus:ring-[var(--color-publiora-blue)]/10 outline-none transition-colors resize-y",
+      "w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-deep-gray)]",
+      "placeholder:text-[var(--color-medium-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] transition-colors resize-y",
       className
     )}
     {...props}
@@ -38,7 +38,7 @@ export function Label({ className, children, htmlFor }: { className?: string; ch
   return (
     <label
       htmlFor={htmlFor}
-      className={cn("block text-sm font-medium text-[var(--color-deep-gray)] mb-1.5", className)}
+      className={cn("block text-xs font-medium text-[var(--color-deep-gray)] mb-1", className)}
     >
       {children}
     </label>

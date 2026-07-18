@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useMessages, useSendMessage } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
-import { AGENT_LABELS, AGENT_COLORS } from "@/lib/mock/ai";
+import { AGENT_LABELS, AGENT_COLORS } from "@/lib/ai/agents/meta";
 import type { AgentName } from "@/types/message";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -89,7 +89,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface-2)]">
-      <div className="border-b border-[var(--color-publiora-border)] bg-white px-4 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div className="border-b border-[var(--color-publiora-border)] bg-white px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {AGENTS.map((a) => {
           const active = agent === a.slug;
           return (
@@ -98,7 +98,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               type="button"
               onClick={() => setAgent(a.slug as AgentName)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-all",
+                "px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap border transition-colors",
                 active
                   ? "bg-[var(--color-publiora-black)] text-white border-[var(--color-publiora-black)]"
                   : "bg-white text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)] border-[var(--color-publiora-border)]"
@@ -114,18 +114,17 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         })}
       </div>
 
-      {/* Chat messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-5">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3">
         {isLoading ? (
-          <div className="space-y-4 max-w-xl">
+          <div className="space-y-2.5 max-w-xl">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-20" />
+              <Skeleton key={i} className="h-16" />
             ))}
           </div>
         ) : empty ? (
-          <div className="max-w-xl mx-auto pt-6">
+          <div className="max-w-xl mx-auto pt-4">
             <EmptyState
-              icon={<MessageSquare className="h-6 w-6" />}
+              icon={<MessageSquare className="h-5 w-5" />}
               title="Mulai percakapan"
               description={`Chat dengan ${AGENT_LABELS[agent]} untuk membentuk brief ebook.`}
             />
@@ -166,7 +165,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               )}
               <div
                 className={cn(
-                  "px-4 py-3 rounded-2xl max-w-xl text-sm whitespace-pre-wrap",
+                  "px-3 py-2.5 rounded-xl max-w-xl text-sm whitespace-pre-wrap",
                   m.role === "user"
                     ? "bg-[var(--color-publiora-black)] text-white rounded-tr-sm"
                     : "bg-white border border-[var(--color-publiora-border)] text-[var(--color-deep-gray)] rounded-tl-sm"
@@ -174,7 +173,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               >
                 {m.content}
                 {m.role === "assistant" && m.agent && (
-                  <div className="mt-2 text-[10px] uppercase tracking-wide text-[var(--color-soft-gray)]">
+                  <div className="mt-2 text-xs uppercase tracking-wide text-[var(--color-medium-gray)]">
                     {AGENT_LABELS[m.agent]}
                   </div>
                 )}
@@ -196,7 +195,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               key={s}
               type="button"
               onClick={() => setText(s)}
-              className="px-2.5 py-1 rounded-full border border-[var(--color-publiora-border)] bg-white text-[11px] text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] hover:bg-[var(--color-surface-2)]"
+              className="px-2.5 py-1.5 rounded-full border border-[var(--color-publiora-border)] bg-white text-xs text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] hover:bg-[var(--color-surface-2)]"
             >
               {s}
             </button>
@@ -204,7 +203,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      <div className="border-t border-[var(--color-publiora-border)] bg-white p-3">
+      <div className="border-t border-[var(--color-publiora-border)] bg-white p-2.5">
         <div className="flex items-end gap-2">
           <textarea
             ref={taRef}
@@ -217,17 +216,17 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               }
             }}
             rows={1}
-            placeholder={`Pesan ke ${AGENT_LABELS[agent]}… (⌘/Ctrl+Enter)`}
-            className="flex-1 max-h-32 resize-none rounded-2xl border border-[var(--color-publiora-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-publiora-blue)] bg-white"
+            placeholder={`Pesan ke ${AGENT_LABELS[agent]}…`}
+            className="flex-1 max-h-32 resize-none rounded-xl border border-[var(--color-publiora-border)] px-3 py-2 text-sm text-[var(--color-deep-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] bg-white"
           />
           <Button
             onClick={() => onSend()}
             loading={send.isPending}
             size="icon"
             disabled={!text.trim()}
-            aria-label="Send"
+            aria-label="Kirim pesan"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
