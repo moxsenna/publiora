@@ -1,18 +1,38 @@
 import { z } from "zod";
 
+/** Empty / whitespace env vars → undefined so .optional() works. */
+const emptyToUndefined = (v: unknown) =>
+  typeof v === "string" && v.trim() === "" ? undefined : v;
+
+const optionalNonEmpty = z.preprocess(
+  emptyToUndefined,
+  z.string().min(1).optional()
+);
+
+const optionalKey20 = z.preprocess(
+  emptyToUndefined,
+  z.string().min(20).optional()
+);
+
+const optionalKey10 = z.preprocess(
+  emptyToUndefined,
+  z.string().min(10).optional()
+);
+
 const serverSchema = z
   .object({
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(20).optional(),
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(20).optional(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
+    // Empty string in .env is common when only PUBLISHABLE_KEY is set
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: optionalKey20,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: optionalKey20,
+    SUPABASE_SERVICE_ROLE_KEY: optionalKey20,
 
     /** gemini | openai | router (OpenAI-compatible gateway) */
     AI_PROVIDER: z.enum(["gemini", "openai", "router"]).default("router"),
     /** Primary model id for router, e.g. gcli/grok-4.5-high */
     AI_MODEL: z.string().min(1).default("gcli/grok-4.5-high"),
     /** Legacy single fallback (merged into FALLBACKS if present) */
-    AI_MODEL_FALLBACK: z.string().min(1).optional(),
+    AI_MODEL_FALLBACK: optionalNonEmpty,
     /**
      * Comma-separated ordered fallbacks after AI_MODEL.
      * Default chain matches product router inventory.
@@ -23,12 +43,15 @@ const serverSchema = z
         "ag/gemini-pro-agent,ag/gemini-3.1-pro-low,cx/gpt-5.6-terra,cx/gpt-5.6-sol"
       ),
     /** OpenAI-compatible base URL ending with /v1 */
-    AI_BASE_URL: z.string().url().optional(),
+    AI_BASE_URL: z.preprocess(
+      emptyToUndefined,
+      z.string().url().optional()
+    ),
     /** API key for router / openai-compatible endpoint */
-    AI_API_KEY: z.string().min(10).optional(),
+    AI_API_KEY: optionalKey10,
 
-    GEMINI_API_KEY: z.string().min(10).optional(),
-    OPENAI_API_KEY: z.string().min(10).optional(),
+    GEMINI_API_KEY: optionalKey10,
+    OPENAI_API_KEY: optionalKey10,
 
     CREDITS_MOCK_TOPUP: z
       .enum(["true", "false"])

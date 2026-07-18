@@ -3,7 +3,8 @@
 
 import { getServerEnv, resolveAiModelChain } from "@/lib/env";
 
-const ATTEMPT_TIMEOUT_MS = 60_000;
+/** Per-model timeout. Short so hung models (e.g. some gcli/*) fail over quickly. */
+const ATTEMPT_TIMEOUT_MS = 25_000;
 
 function stripFences(text: string): string {
   const t = text.trim();
