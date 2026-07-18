@@ -8,9 +8,9 @@ interface AvatarProps {
 }
 
 const sizes = {
-  sm: "h-7 w-7 text-xs",
-  md: "h-10 w-10 text-sm",
-  lg: "h-12 w-12 text-base",
+  sm: "h-6 w-6 text-[10px]",
+  md: "h-8 w-8 text-xs",
+  lg: "h-10 w-10 text-sm",
 };
 
 const palette = ["#0A0A0A", "#2563EB", "#059669", "#C8A24B", "#7C3AED"];

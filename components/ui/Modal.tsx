@@ -109,12 +109,12 @@ export function Modal({
           sizeMap[size]
         )}
       >
-        <div className="flex items-start justify-between px-6 pt-6">
-          <div>
+        <div className="flex items-start justify-between px-4 pt-4 gap-3">
+          <div className="min-w-0">
             {title && (
               <h2
                 id={titleId}
-                className="text-xl font-semibold text-[var(--color-publiora-black)]"
+                className="text-base font-semibold text-[var(--color-publiora-black)]"
               >
                 {title}
               </h2>
@@ -122,7 +122,7 @@ export function Modal({
             {description && (
               <p
                 id={descriptionId}
-                className="text-sm text-[var(--color-medium-gray)] mt-1"
+                className="text-sm text-[var(--color-medium-gray)] mt-0.5"
               >
                 {description}
               </p>
@@ -131,15 +131,15 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            className="text-[var(--color-medium-gray)] hover:text-[var(--color-publiora-black)] rounded-lg p-1.5 min-h-11 min-w-11 grid place-items-center"
+            className="text-[var(--color-medium-gray)] hover:text-[var(--color-publiora-black)] rounded-md p-1.5 min-h-9 min-w-9 grid place-items-center shrink-0"
             aria-label="Tutup"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="px-4 py-3">{children}</div>
         {footer && (
-          <div className="px-6 pb-6 pt-3 border-t border-[var(--color-publiora-border)] flex justify-end gap-2">
+          <div className="px-4 pb-4 pt-2 border-t border-[var(--color-publiora-border)] flex justify-end gap-2">
             {footer}
           </div>
         )}

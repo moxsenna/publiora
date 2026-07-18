@@ -36,31 +36,31 @@ const features = [
 export function Features() {
   return (
     <section id="features" className="bg-white border-y border-[var(--color-publiora-border)]">
-      <div className="max-w-7xl mx-auto px-6 py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16">
         <div className="max-w-2xl">
-          <div className="text-sm font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
+          <div className="text-xs font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
             Fitur
           </div>
-          <h2 className="mt-3 text-4xl font-bold tracking-tight text-pretty text-[var(--color-publiora-black)]">
+          <h2 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-pretty text-[var(--color-publiora-black)]">
             Semua yang dibutuhkan untuk publikasi ebook marketing.
           </h2>
-          <p className="mt-4 text-[var(--color-medium-gray)] text-lg">
+          <p className="mt-3 text-[var(--color-medium-gray)] text-base">
             Dari brainstorm sampai claim link — satu workspace terintegrasi.
           </p>
         </div>
-        <div className="mt-12 grid md:grid-cols-3 gap-6">
+        <div className="mt-8 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
           {features.map((f) => {
             const Icon = f.icon;
             return (
               <div
                 key={f.title}
-                className="p-6 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] hover:bg-white hover:shadow-[var(--shadow-card-hover)] transition-colors transition-shadow"
+                className="p-4 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] hover:bg-white hover:shadow-[var(--shadow-card-hover)] transition-colors transition-shadow"
               >
-                <div className="h-12 w-12 rounded-2xl bg-[var(--color-publiora-black)] grid place-items-center text-white">
-                  <Icon className="h-5 w-5" />
+                <div className="h-9 w-9 rounded-lg bg-[var(--color-publiora-black)] grid place-items-center text-white">
+                  <Icon className="h-4 w-4" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold text-[var(--color-publiora-black)]">{f.title}</h3>
-                <p className="mt-2 text-sm text-[var(--color-medium-gray)] leading-relaxed">{f.description}</p>
+                <h3 className="mt-3 text-base font-semibold text-[var(--color-publiora-black)]">{f.title}</h3>
+                <p className="mt-1.5 text-sm text-[var(--color-medium-gray)] leading-relaxed">{f.description}</p>
               </div>
             );
           })}

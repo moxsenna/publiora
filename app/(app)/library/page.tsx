@@ -24,25 +24,25 @@ export default function LibraryPage() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-5 py-5 space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">Library</h1>
-        <p className="text-[var(--color-medium-gray)] mt-1">
+        <h1 className="text-xl font-bold text-[var(--color-publiora-black)]">Library</h1>
+        <p className="text-sm text-[var(--color-medium-gray)] mt-0.5">
           Ebook yang sudah Anda klaim. Akses kapan saja.
           {!libLoading && library ? ` · ${library.length} ebook` : ""}
         </p>
       </div>
 
       {libLoading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-2.5">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-48" />
+            <Skeleton key={i} className="h-40" />
           ))}
         </div>
       ) : items.length === 0 ? (
         <Card>
           <EmptyState
-            icon={<BookOpen className="h-6 w-6" />}
+            icon={<BookOpen className="h-5 w-5" />}
             title="Library kosong"
             description="Klaim ebook lewat claim link untuk menambahkannya."
             action={
@@ -53,17 +53,17 @@ export default function LibraryPage() {
           />
         </Card>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-2.5">
           {items.map((e) => {
             const p = progressMap.get(e.ebook_id);
             return (
               <Link key={e.id} href={`/read/${e.ebook_slug}`}>
                 <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer h-full">
                   <div
-                    className="h-32 rounded-t-[var(--radius-card)] flex items-end p-4"
+                    className="h-24 rounded-t-[var(--radius-card)] flex items-end p-3"
                     style={{ background: e.cover_color }}
                   >
-                    <h3 className="text-white font-semibold text-base line-clamp-3 drop-shadow">
+                    <h3 className="text-white font-semibold text-sm line-clamp-3 drop-shadow">
                       {e.ebook_title}
                     </h3>
                   </div>

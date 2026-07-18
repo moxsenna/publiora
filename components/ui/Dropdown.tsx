@@ -75,7 +75,7 @@ export function Dropdown({
           id={menuId}
           role="menu"
           className={cn(
-            "absolute top-full mt-2 min-w-[200px] rounded-2xl border border-[var(--color-publiora-border)] bg-white shadow-[var(--shadow-pop)] py-2 z-50 animate-fade-in",
+            "absolute top-full mt-1.5 min-w-[180px] rounded-xl border border-[var(--color-publiora-border)] bg-white shadow-[var(--shadow-pop)] py-1 z-50 animate-fade-in",
             align === "end" ? "right-0" : "left-0"
           )}
         >
@@ -97,7 +97,7 @@ export function Dropdown({
                   buttonRef.current?.focus();
                 }}
                 className={cn(
-                  "w-full px-4 py-2.5 text-sm text-left flex items-center gap-2 hover:bg-[var(--color-surface-2)] min-h-11",
+                  "w-full px-3 py-2 text-sm text-left flex items-center gap-2 hover:bg-[var(--color-surface-2)] min-h-9",
                   item.danger && "text-[var(--color-danger)]"
                 )}
               >

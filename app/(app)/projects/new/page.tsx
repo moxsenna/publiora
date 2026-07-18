@@ -80,19 +80,19 @@ export default function NewProjectPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-3 sm:px-5 py-5 space-y-5">
       <Link href="/projects">
         <Button variant="ghost" size="sm">
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Kembali ke projects
         </Button>
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">
+        <h1 className="text-xl font-bold text-[var(--color-publiora-black)]">
           New Project
         </h1>
-        <p className="text-[var(--color-medium-gray)] mt-1">
+        <p className="text-sm text-[var(--color-medium-gray)] mt-0.5">
           Pilih tipe ebook, template, lalu isi brief.
         </p>
       </div>
@@ -114,7 +114,7 @@ export default function NewProjectPage() {
                   })
                 }
                 className={cn(
-                  "p-4 rounded-2xl border-2 text-left bg-white transition-colors",
+                  "p-3 rounded-xl border-2 text-left bg-white transition-colors",
                   active
                     ? "border-[var(--color-publiora-black)]"
                     : "border-[var(--color-publiora-border)]"
@@ -127,7 +127,7 @@ export default function NewProjectPage() {
                   {t.description}
                 </p>
                 {active && (
-                  <Check className="h-4 w-4 text-[var(--color-publiora-black)] mt-2" />
+                  <Check className="h-3.5 w-3.5 text-[var(--color-publiora-black)] mt-1.5" />
                 )}
               </button>
             );
@@ -144,7 +144,7 @@ export default function NewProjectPage() {
           <button
             type="button"
             onClick={() => setSelectedTemplate(null)}
-            className="p-4 rounded-2xl border-2 text-left transition-colors bg-white"
+            className="p-3 rounded-xl border-2 text-left transition-colors bg-white"
             style={{
               borderColor: !selectedTemplate
                 ? "var(--color-publiora-black)"
@@ -158,7 +158,7 @@ export default function NewProjectPage() {
               Mulai dari nol.
             </p>
             {!selectedTemplate && (
-              <Check className="h-4 w-4 text-[var(--color-publiora-black)] mt-2" />
+              <Check className="h-3.5 w-3.5 text-[var(--color-publiora-black)] mt-1.5" />
             )}
           </button>
           {(templates ?? []).map((t) => (
@@ -166,7 +166,7 @@ export default function NewProjectPage() {
               key={t.id}
               type="button"
               onClick={() => applyTemplate(t.id)}
-              className="p-4 rounded-2xl border-2 text-left bg-white transition-colors"
+              className="p-3 rounded-xl border-2 text-left bg-white transition-colors"
               style={{
                 borderColor:
                   selectedTemplate === t.id

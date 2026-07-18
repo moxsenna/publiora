@@ -31,38 +31,38 @@ function NavBody({ onNavigate }: { onNavigate?: () => void }) {
   const profile = useAuthStore((s) => s.profile);
 
   return (
-    <div className="w-64 flex flex-col h-full">
-      <div className="px-5 py-5 flex items-center justify-between">
+    <div className="w-56 flex flex-col h-full">
+      <div className="px-3 py-3 flex items-center justify-between">
         <Logo size="sm" href="/dashboard" />
         {onNavigate ? (
           <button
             onClick={onNavigate}
-            className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] md:hidden"
+            className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] md:hidden p-1 rounded-md"
             aria-label="Close menu"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         ) : (
           <button
             onClick={() => useUiStore.getState().toggleSidebar()}
-            className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] hidden md:inline-flex"
+            className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] hidden md:inline-flex p-1 rounded-md"
             aria-label="Collapse sidebar"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
 
-      <div className="px-3 mt-2">
+      <div className="px-2.5 mt-1">
         <Link href="/projects/new" onClick={onNavigate}>
           <Button variant="primary" size="sm" className="w-full">
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             New Project
           </Button>
         </Link>
       </div>
 
-      <nav className="flex-1 px-3 mt-5 space-y-1">
+      <nav className="flex-1 px-2.5 mt-3 space-y-0.5">
         {items.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
@@ -73,31 +73,31 @@ function NavBody({ onNavigate }: { onNavigate?: () => void }) {
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm font-medium transition-colors",
+                "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors",
                 active
                   ? "bg-[var(--color-publiora-black)] text-white"
                   : "text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-deep-gray)]"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-3.5 w-3.5 shrink-0" />
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="px-3 pb-4 mt-auto">
-        <div className="flex items-center gap-3 px-3 py-3 rounded-[12px] bg-[var(--color-surface-2)]">
+      <div className="px-2.5 pb-3 mt-auto">
+        <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-[var(--color-surface-2)]">
           <Avatar
             name={profile?.name ?? "Guest"}
             src={profile?.avatar_url}
             size="sm"
           />
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium truncate text-[var(--color-deep-gray)]">
+            <div className="text-xs font-medium truncate text-[var(--color-deep-gray)]">
               {profile?.name ?? "Guest"}
             </div>
-            <div className="text-xs text-[var(--color-medium-gray)] truncate">
+            <div className="text-[11px] text-[var(--color-medium-gray)] truncate">
               {profile?.email}
             </div>
           </div>
@@ -115,7 +115,7 @@ export function Sidebar() {
     <aside
       className={cn(
         "hidden md:flex flex-col border-r border-[var(--color-publiora-border)] bg-white transition-[width] duration-200 shrink-0 h-full sticky top-0",
-        open ? "w-64" : "w-0 overflow-hidden"
+        open ? "w-56" : "w-0 overflow-hidden"
       )}
     >
       <NavBody />
@@ -150,7 +150,7 @@ export function MobileSidebar() {
         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
         onClick={() => setMobileNav(false)}
       />
-      <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-[var(--shadow-pop)] animate-slide-in-left border-r border-[var(--color-publiora-border)]">
+      <aside className="absolute left-0 top-0 bottom-0 w-56 bg-white shadow-[var(--shadow-pop)] animate-slide-in-left border-r border-[var(--color-publiora-border)]">
         <NavBody onNavigate={() => setMobileNav(false)} />
       </aside>
     </div>

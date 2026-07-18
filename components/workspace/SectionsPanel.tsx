@@ -131,7 +131,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   };
 
   const sectionList = (
-    <ul className="p-2 space-y-1">
+    <ul className="p-1.5 space-y-0.5">
       {outline.sections.map((os) => {
         const s = sectionsByOutline.get(os.id);
         const active = current?.id === s?.id || (!current && os.id === currentOutline?.id);
@@ -141,7 +141,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               type="button"
               onClick={() => selectSection(os.id, s?.id)}
               className={cn(
-                "w-full text-left p-3 rounded-xl transition-colors",
+                "w-full text-left p-2 rounded-lg transition-colors",
                 active ? "bg-[var(--color-surface-2)]" : "hover:bg-[var(--color-surface-2)]"
               )}
             >
@@ -185,10 +185,10 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   );
 
   return (
-    <div className="grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] h-full">
+    <div className="grid md:grid-cols-[240px_1fr] lg:grid-cols-[260px_1fr] h-full">
       {/* Desktop / tablet sidebar */}
       <aside className="hidden md:flex flex-col border-r border-[var(--color-publiora-border)] bg-white overflow-y-auto min-h-0">
-        <div className="p-4 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 border-b border-[var(--color-publiora-border)]">
+        <div className="p-2.5 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 border-b border-[var(--color-publiora-border)]">
           <span className="text-sm font-semibold text-[var(--color-publiora-black)]">
             Sections
           </span>
@@ -208,11 +208,11 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       <div className="overflow-y-auto bg-[var(--color-surface-2)] min-h-0 flex flex-col">
         {/* Mobile section picker */}
         <div className="md:hidden sticky top-0 z-20 border-b border-[var(--color-publiora-border)] bg-white">
-          <div className="p-3 flex items-center gap-2">
+          <div className="p-2.5 flex items-center gap-2">
             <button
               type="button"
               onClick={() => setPickerOpen((v) => !v)}
-              className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-left"
+              className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-lg border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-2.5 py-2 text-left"
               aria-expanded={pickerOpen}
               aria-haspopup="listbox"
             >
@@ -306,15 +306,15 @@ function SectionEditor({
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-3xl mx-auto">
-      <div className="flex items-center gap-2 flex-wrap">
+    <div className="p-3 space-y-3 max-w-3xl mx-auto">
+      <div className="flex items-center gap-1.5 flex-wrap">
         <Input
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
             setDirty(true);
           }}
-          className="text-base font-semibold min-w-[12rem] flex-1"
+          className="text-sm font-semibold min-w-[10rem] flex-1"
         />
         <Button
           variant="outline"

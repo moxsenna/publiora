@@ -152,32 +152,32 @@ export default function BillingPage() {
       : 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-3 sm:px-5 py-5 space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">
+        <h1 className="text-xl font-bold text-[var(--color-publiora-black)]">
           Billing & Credits
         </h1>
-        <p className="text-[var(--color-medium-gray)] mt-1">
+        <p className="text-sm text-[var(--color-medium-gray)] mt-0.5">
           Langganan + kredit untuk generate outline, section, title, dan CTA.
         </p>
       </div>
 
       {/* Balance */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-2.5">
         <Card>
-          <CardBody className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-[var(--color-publiora-black)] text-white grid place-items-center">
-                <Coins className="h-5 w-5" />
+          <CardBody className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-[var(--color-publiora-black)] text-white grid place-items-center">
+                <Coins className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-[var(--color-medium-gray)]">
+                <div className="text-[11px] uppercase tracking-wide text-[var(--color-medium-gray)]">
                   Saldo kredit
                 </div>
                 {lb ? (
-                  <Skeleton className="h-8 w-24 mt-1" />
+                  <Skeleton className="h-7 w-20 mt-0.5" />
                 ) : (
-                  <div className="text-3xl font-bold text-[var(--color-publiora-black)]">
+                  <div className="text-2xl font-bold tabular-nums text-[var(--color-publiora-black)]">
                     {balance?.balance ?? 0}
                   </div>
                 )}
@@ -186,7 +186,7 @@ export default function BillingPage() {
             {balance && (
               <>
                 <div>
-                  <div className="flex justify-between text-xs text-[var(--color-medium-gray)] mb-1.5">
+                  <div className="flex justify-between text-xs text-[var(--color-medium-gray)] mb-1">
                     <span>Pemakaian periode</span>
                     <span>
                       {Math.max(0, balance.period_grant - balance.balance)} /{" "}
@@ -206,20 +206,20 @@ export default function BillingPage() {
         </Card>
 
         <Card>
-          <CardBody className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] grid place-items-center text-[var(--color-deep-gray)]">
-                <CreditCard className="h-5 w-5" />
+          <CardBody className="space-y-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] grid place-items-center text-[var(--color-deep-gray)]">
+                <CreditCard className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-[var(--color-medium-gray)]">
+                <div className="text-[11px] uppercase tracking-wide text-[var(--color-medium-gray)]">
                   Subscription
                 </div>
                 {ls ? (
-                  <Skeleton className="h-7 w-28 mt-1" />
+                  <Skeleton className="h-6 w-24 mt-0.5" />
                 ) : (
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xl font-bold capitalize text-[var(--color-publiora-black)]">
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-lg font-bold capitalize text-[var(--color-publiora-black)]">
                       {sub?.plan_id}
                     </span>
                     <Badge
@@ -234,13 +234,13 @@ export default function BillingPage() {
               </div>
             </div>
             {sub?.renews_at && (
-              <p className="text-sm text-[var(--color-medium-gray)]">
+              <p className="text-xs text-[var(--color-medium-gray)]">
                 Renews {formatDate(sub.renews_at)}
               </p>
             )}
             {costs && (
-              <div className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] p-3 text-xs text-[var(--color-medium-gray)] space-y-1">
-                <div className="font-medium text-[var(--color-deep-gray)] mb-1">
+              <div className="rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] p-2.5 text-xs text-[var(--color-medium-gray)] space-y-0.5">
+                <div className="font-medium text-[var(--color-deep-gray)] mb-0.5">
                   Biaya generate
                 </div>
                 <div className="flex justify-between">
@@ -265,17 +265,17 @@ export default function BillingPage() {
 
       {/* Plans */}
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-2.5">
           Plans
         </h2>
         {lp ? (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-2.5">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-64" />
+              <Skeleton key={i} className="h-56" />
             ))}
           </div>
         ) : (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-2.5">
             {(plans ?? []).map((plan) => {
               const current = sub?.plan_id === plan.id;
               return (
@@ -285,14 +285,14 @@ export default function BillingPage() {
                     current && "border-[var(--color-publiora-black)] shadow-[var(--shadow-card)]"
                   )}
                 >
-                  <CardBody className="space-y-4">
+                  <CardBody className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="font-semibold text-[var(--color-publiora-black)]">
+                        <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
                           {plan.name}
                         </div>
-                        <div className="mt-1 flex items-baseline gap-1">
-                          <span className="text-2xl font-bold">
+                        <div className="mt-0.5 flex items-baseline gap-1">
+                          <span className="text-xl font-bold">
                             {plan.price_monthly === 0
                               ? "Gratis"
                               : formatIdr(plan.price_monthly)}
@@ -307,18 +307,19 @@ export default function BillingPage() {
                       {plan.featured && <Badge variant="gold">Popular</Badge>}
                       {current && <Badge variant="success">Current</Badge>}
                     </div>
-                    <div className="text-sm text-[var(--color-medium-gray)]">
+                    <div className="text-xs text-[var(--color-medium-gray)]">
                       {plan.monthly_credits.toLocaleString()} kredit / bulan
                     </div>
-                    <ul className="space-y-2 text-sm">
+                    <ul className="space-y-1.5 text-sm">
                       {plan.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2">
-                          <Check className="h-4 w-4 text-[var(--color-success)] shrink-0 mt-0.5" />
+                        <li key={f} className="flex items-start gap-1.5">
+                          <Check className="h-3.5 w-3.5 text-[var(--color-success)] shrink-0 mt-0.5" />
                           <span className="text-[var(--color-deep-gray)]">{f}</span>
                         </li>
                       ))}
                     </ul>
                     <Button
+                      size="sm"
                       className="w-full"
                       variant={current ? "outline" : plan.featured ? "primary" : "secondary"}
                       disabled={current || changePlan.isPending || buyPack.isPending}
@@ -340,22 +341,22 @@ export default function BillingPage() {
 
       {/* Top-up packs */}
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-2.5">
           Top-up kredit
         </h2>
-        <div className="grid sm:grid-cols-3 gap-3">
+        <div className="grid sm:grid-cols-3 gap-2.5">
           {(packs ?? []).map((pack) => (
             <Card key={pack.id}>
-              <CardBody className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold text-[var(--color-publiora-black)]">
+              <CardBody className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
                     {pack.name}
                   </div>
                   {pack.badge && <Badge variant="gold">{pack.badge}</Badge>}
                 </div>
-                <div className="text-2xl font-bold text-[var(--color-publiora-black)]">
+                <div className="text-xl font-bold text-[var(--color-publiora-black)]">
                   +{pack.credits}
-                  <span className="text-sm font-medium text-[var(--color-medium-gray)] ml-1">
+                  <span className="text-xs font-medium text-[var(--color-medium-gray)] ml-1">
                     kredit
                   </span>
                 </div>
@@ -408,7 +409,7 @@ export default function BillingPage() {
           </CardHeader>
           <CardBody className="p-0">
             {!txns || txns.length === 0 ? (
-              <div className="px-6 pb-6 text-sm text-[var(--color-medium-gray)]">
+              <div className="px-4 pb-4 text-sm text-[var(--color-medium-gray)]">
                 Belum ada transaksi.
               </div>
             ) : (
@@ -416,7 +417,7 @@ export default function BillingPage() {
                 {txns.map((t) => (
                   <li
                     key={t.id}
-                    className="px-6 py-3 flex items-center justify-between gap-3 text-sm"
+                    className="px-4 py-2.5 flex items-center justify-between gap-3 text-sm"
                   >
                     <div className="min-w-0">
                       <div className="font-medium text-[var(--color-deep-gray)] truncate">

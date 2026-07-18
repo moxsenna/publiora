@@ -29,26 +29,26 @@
   --font-body: var(--font-inter), sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
 
-  /* Border radius */
-  --radius-card: 24px;
-  --radius-button: 16px;
-  --radius-input: 18px;
+  /* Border radius — tighter professional density */
+  --radius-card: 16px;
+  --radius-button: 10px;
+  --radius-input: 10px;
   --radius-pill: 9999px;
 
   /* Box shadows */
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.04);
-  --shadow-card-hover: 0 8px 40px rgba(0, 0, 0, 0.08);
-  --shadow-pop: 0 12px 48px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.05);
+  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.1);
 
-  /* Spacing — 8px grid */
-  --spacing-1: 8px;
-  --spacing-2: 16px;
-  --spacing-3: 24px;
-  --spacing-4: 32px;
-  --spacing-5: 40px;
-  --spacing-6: 48px;
-  --spacing-8: 64px;
-  --spacing-10: 80px;
+  /* Spacing — 4/8px grid */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 24px;
+  --spacing-6: 32px;
+  --spacing-8: 48px;
+  --spacing-10: 64px;
 }
 
 body {

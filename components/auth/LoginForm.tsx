@@ -87,7 +87,7 @@ export function LoginForm() {
       method="post"
       action="/login"
       onSubmit={onFormSubmit}
-      className="space-y-4"
+      className="space-y-3"
       noValidate
     >
       <div>

@@ -15,7 +15,7 @@ export function Tabs({ value, onChange, tabs, className }: TabsProps) {
     <div
       role="tablist"
       className={cn(
-        "inline-flex gap-1 p-1 rounded-[var(--radius-button)] bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)]",
+        "inline-flex gap-0.5 p-0.5 rounded-[var(--radius-button)] bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)]",
         className
       )}
     >
@@ -29,7 +29,7 @@ export function Tabs({ value, onChange, tabs, className }: TabsProps) {
             aria-selected={active}
             onClick={() => onChange(tab.value)}
             className={cn(
-              "px-3.5 sm:px-4 h-9 rounded-[12px] text-sm font-medium transition-colors whitespace-nowrap",
+              "px-2.5 sm:px-3 h-8 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap",
               active
                 ? "bg-white text-[var(--color-publiora-black)] shadow-sm"
                 : "text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
