@@ -209,7 +209,7 @@ export default function WorkspacePage() {
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         title="Hapus project?"
-        description={`"${project?.title ?? "Project"}" akan dihapus permanen dari mock data. Outline, sections, dan chat ikut hilang.`}
+        description={`"${project?.title ?? "Project"}" akan dihapus permanen. Outline, sections, dan chat ikut hilang.`}
         size="sm"
         footer={
           <>
@@ -224,7 +224,7 @@ export default function WorkspacePage() {
         }
       >
         <p className="text-sm text-[var(--color-medium-gray)]">
-          Aksi ini tidak bisa di-undo di mode mock (kecuali refresh full page untuk re-seed).
+          Aksi ini tidak bisa di-undo.
         </p>
       </Modal>
     </div>

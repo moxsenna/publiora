@@ -46,8 +46,8 @@ export default function LibraryPage() {
             title="Library kosong"
             description="Klaim ebook lewat claim link untuk menambahkannya."
             action={
-              <Link href="/claim/MAINLAUNCH2026">
-                <Button size="sm">Coba demo claim</Button>
+              <Link href="/dashboard">
+                <Button size="sm">Ke dashboard</Button>
               </Link>
             }
           />

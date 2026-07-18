@@ -20,10 +20,11 @@ export function RegisterForm() {
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema) });
 
-  const onSubmit = async (data: RegisterInput) => {
+  const doRegister = async (data: RegisterInput) => {
     setSubmitting(true);
     setError(null);
     try {
@@ -43,17 +44,64 @@ export function RegisterForm() {
     }
   };
 
+  const onSubmit = async (data: RegisterInput) => {
+    await doRegister(data);
+  };
+
+  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    void handleSubmit(onSubmit)(e);
+  };
+
+  const onButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const values = getValues();
+    const parsed = registerSchema.safeParse(values);
+    if (!parsed.success) {
+      void handleSubmit(onSubmit)();
+      return;
+    }
+    await doRegister(parsed.data);
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form
+      method="post"
+      action="/register"
+      onSubmit={onFormSubmit}
+      className="space-y-4"
+      noValidate
+    >
       <div>
         <Label htmlFor="name">Nama</Label>
-        <Input id="name" placeholder="Mox Demo" autoComplete="name" {...register("name")} />
-        {errors.name && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.name.message}</p>}
+        <Input
+          id="name"
+          placeholder="Mox Demo"
+          autoComplete="name"
+          {...register("name")}
+        />
+        {errors.name && (
+          <p className="text-xs text-[var(--color-danger)] mt-1">
+            {errors.name.message}
+          </p>
+        )}
       </div>
       <div>
         <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" placeholder="you@example.com" autoComplete="email" {...register("email")} />
-        {errors.email && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.email.message}</p>}
+        <Input
+          id="email"
+          type="email"
+          placeholder="you@example.com"
+          autoComplete="email"
+          {...register("email")}
+        />
+        {errors.email && (
+          <p className="text-xs text-[var(--color-danger)] mt-1">
+            {errors.email.message}
+          </p>
+        )}
       </div>
       <div>
         <Label htmlFor="password">Password</Label>
@@ -64,10 +112,19 @@ export function RegisterForm() {
           autoComplete="new-password"
           {...register("password")}
         />
-        {errors.password && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.password.message}</p>}
+        {errors.password && (
+          <p className="text-xs text-[var(--color-danger)] mt-1">
+            {errors.password.message}
+          </p>
+        )}
       </div>
       {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
-      <Button type="submit" className="w-full" loading={submitting}>
+      <Button
+        type="submit"
+        className="w-full"
+        loading={submitting}
+        onClick={onButtonClick}
+      >
         Create account
       </Button>
     </form>

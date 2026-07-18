@@ -80,6 +80,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
     audience: input.audience,
     tone: input.tone,
     niche: input.niche,
+    ebook_type: input.ebook_type ?? "lead_magnet",
     status: "draft",
     progress: 0,
     sections_generated: 0,

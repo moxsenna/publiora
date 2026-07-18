@@ -55,3 +55,13 @@ build-out.txt
 *.sqlite-*
 
 deploy/.env.production
+
+# local agent / browser noise
+.playwright-mcp/
+.vscode/
+nul
+git-*.txt
+
+# TestSprite generated artifacts (keep plan/report if committed intentionally)
+testsprite_tests/tmp/
+testsprite_tests/**/*.log

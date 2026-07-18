@@ -14,9 +14,8 @@ import { Sparkles } from "lucide-react";
 
 const DEMO_EMAIL = "mox@publiora.demo";
 const DEMO_PASSWORD = "demo1234";
-const showDemoLogin =
-  process.env.NEXT_PUBLIC_DEMO_LOGIN === "true" ||
-  process.env.NEXT_PUBLIC_DEMO_LOGIN === undefined;
+/** Opt-in only — never default on in live. */
+const showDemoLogin = process.env.NEXT_PUBLIC_DEMO_LOGIN === "true";
 
 export function LoginForm() {
   const router = useRouter();
@@ -29,6 +28,7 @@ export function LoginForm() {
     register,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -55,6 +55,27 @@ export function LoginForm() {
     await doLogin(data.email, data.password);
   };
 
+  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    // Always stop native navigation (prevents password leaking into query string).
+    e.preventDefault();
+    e.stopPropagation();
+    void handleSubmit(onSubmit)(e);
+  };
+
+  const onButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Fallback path if form submit handler is not wired yet.
+    const values = getValues();
+    const parsed = loginSchema.safeParse(values);
+    if (!parsed.success) {
+      // Trigger RHF validation UI
+      void handleSubmit(onSubmit)();
+      return;
+    }
+    await doLogin(parsed.data.email, parsed.data.password);
+  };
+
   const fillDemo = async () => {
     setValue("email", DEMO_EMAIL, { shouldValidate: true });
     setValue("password", DEMO_PASSWORD, { shouldValidate: true });
@@ -62,7 +83,13 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form
+      method="post"
+      action="/login"
+      onSubmit={onFormSubmit}
+      className="space-y-4"
+      noValidate
+    >
       <div>
         <Label htmlFor="email">Email</Label>
         <Input
@@ -73,7 +100,9 @@ export function LoginForm() {
           {...register("email")}
         />
         {errors.email && (
-          <p className="text-xs text-[var(--color-danger)] mt-1">{errors.email.message}</p>
+          <p className="text-xs text-[var(--color-danger)] mt-1">
+            {errors.email.message}
+          </p>
         )}
       </div>
       <div>
@@ -96,11 +125,18 @@ export function LoginForm() {
           {...register("password")}
         />
         {errors.password && (
-          <p className="text-xs text-[var(--color-danger)] mt-1">{errors.password.message}</p>
+          <p className="text-xs text-[var(--color-danger)] mt-1">
+            {errors.password.message}
+          </p>
         )}
       </div>
       {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
-      <Button type="submit" className="w-full" loading={submitting}>
+      <Button
+        type="submit"
+        className="w-full"
+        loading={submitting}
+        onClick={onButtonClick}
+      >
         Sign in
       </Button>
       {showDemoLogin && (

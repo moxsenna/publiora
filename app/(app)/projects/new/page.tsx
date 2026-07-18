@@ -12,6 +12,8 @@ import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Card, CardBody } from "@/components/ui/Card";
 import { ArrowLeft, Check } from "lucide-react";
 import Link from "next/link";
+import { EBOOK_TYPES, type EbookType } from "@/types/project";
+import { cn } from "@/lib/utils";
 
 const newProjectSchema = z.object({
   title: z.string().min(3, "Min 3").max(120),
@@ -21,6 +23,7 @@ const newProjectSchema = z.object({
   audience: z.string().min(1, "Wajib"),
   tone: z.string().min(1, "Wajib"),
   niche: z.string().min(1, "Wajib"),
+  ebook_type: z.enum(["lead_magnet", "bonus_product", "sellable_ebook"]),
 });
 
 type NewProjectInput = z.infer<typeof newProjectSchema>;
@@ -30,15 +33,22 @@ export default function NewProjectPage() {
   const create = useCreateProject();
   const { data: templates } = useTemplates();
   const pushToast = useUiStore((s) => s.pushToast);
-  const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(
+    null
+  );
 
   const {
     register,
     handleSubmit,
-    watch,
     setValue,
+    watch,
     formState: { errors },
-  } = useForm<NewProjectInput>({ resolver: zodResolver(newProjectSchema) });
+  } = useForm<NewProjectInput>({
+    resolver: zodResolver(newProjectSchema),
+    defaultValues: { ebook_type: "lead_magnet" },
+  });
+
+  const ebookType = watch("ebook_type");
 
   const applyTemplate = (tplId: string) => {
     const tpl = templates?.find((t) => t.id === tplId);
@@ -59,11 +69,12 @@ export default function NewProjectPage() {
         audience: data.audience,
         tone: data.tone,
         niche: data.niche,
+        ebook_type: data.ebook_type,
         template_id: selectedTemplate ?? undefined,
       });
       pushToast({ title: "Project dibuat", variant: "success" });
       router.push(`/projects/${project.id}`);
-    } catch (e) {
+    } catch {
       pushToast({ title: "Gagal membuat project", variant: "danger" });
     }
   };
@@ -78,9 +89,52 @@ export default function NewProjectPage() {
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">New Project</h1>
-        <p className="text-[var(--color-medium-gray)] mt-1">Pilih template atau mulai dari nol.</p>
+        <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">
+          New Project
+        </h1>
+        <p className="text-[var(--color-medium-gray)] mt-1">
+          Pilih tipe ebook, template, lalu isi brief.
+        </p>
       </div>
+
+      <section>
+        <h2 className="text-sm font-semibold text-[var(--color-publiora-black)] uppercase tracking-wide mb-3">
+          Tipe ebook
+        </h2>
+        <div className="grid md:grid-cols-3 gap-3">
+          {EBOOK_TYPES.map((t) => {
+            const active = ebookType === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() =>
+                  setValue("ebook_type", t.id as EbookType, {
+                    shouldValidate: true,
+                  })
+                }
+                className={cn(
+                  "p-4 rounded-2xl border-2 text-left bg-white transition-all",
+                  active
+                    ? "border-[var(--color-publiora-black)]"
+                    : "border-[var(--color-publiora-border)]"
+                )}
+              >
+                <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
+                  {t.label}
+                </div>
+                <p className="mt-1 text-xs text-[var(--color-medium-gray)]">
+                  {t.description}
+                </p>
+                {active && (
+                  <Check className="h-4 w-4 text-[var(--color-publiora-black)] mt-2" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" {...register("ebook_type")} />
+      </section>
 
       <section>
         <h2 className="text-sm font-semibold text-[var(--color-publiora-black)] uppercase tracking-wide mb-3">
@@ -91,11 +145,21 @@ export default function NewProjectPage() {
             type="button"
             onClick={() => setSelectedTemplate(null)}
             className="p-4 rounded-2xl border-2 text-left transition-all bg-white"
-            style={{ borderColor: !selectedTemplate ? "var(--color-publiora-black)" : "var(--color-publiora-border)" }}
+            style={{
+              borderColor: !selectedTemplate
+                ? "var(--color-publiora-black)"
+                : "var(--color-publiora-border)",
+            }}
           >
-            <div className="text-sm font-semibold text-[var(--color-publiora-black)]">Blank</div>
-            <p className="mt-1 text-xs text-[var(--color-medium-gray)]">Mulai dari nol.</p>
-            {!selectedTemplate && <Check className="h-4 w-4 text-[var(--color-publiora-black)] mt-2" />}
+            <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
+              Blank
+            </div>
+            <p className="mt-1 text-xs text-[var(--color-medium-gray)]">
+              Mulai dari nol.
+            </p>
+            {!selectedTemplate && (
+              <Check className="h-4 w-4 text-[var(--color-publiora-black)] mt-2" />
+            )}
           </button>
           {(templates ?? []).map((t) => (
             <button
@@ -104,13 +168,25 @@ export default function NewProjectPage() {
               onClick={() => applyTemplate(t.id)}
               className="p-4 rounded-2xl border-2 text-left bg-white transition-all"
               style={{
-                borderColor: selectedTemplate === t.id ? "var(--color-publiora-black)" : "var(--color-publiora-border)",
+                borderColor:
+                  selectedTemplate === t.id
+                    ? "var(--color-publiora-black)"
+                    : "var(--color-publiora-border)",
               }}
             >
-              <div className="h-3 w-3 rounded-full mb-2" style={{ background: t.cover_color }} />
-              <div className="text-sm font-semibold text-[var(--color-publiora-black)]">{t.name}</div>
-              <p className="mt-1 text-xs text-[var(--color-medium-gray)] line-clamp-2">{t.description}</p>
-              {selectedTemplate === t.id && <Check className="h-4 w-4 text-[var(--color-publiora-black)] mt-2" />}
+              <div
+                className="h-3 w-3 rounded-full mb-2"
+                style={{ background: t.cover_color }}
+              />
+              <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
+                {t.name}
+              </div>
+              <p className="mt-1 text-xs text-[var(--color-medium-gray)] line-clamp-2">
+                {t.description}
+              </p>
+              {selectedTemplate === t.id && (
+                <Check className="h-4 w-4 text-[var(--color-publiora-black)] mt-2" />
+              )}
             </button>
           ))}
         </div>
@@ -121,45 +197,88 @@ export default function NewProjectPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <Label htmlFor="title">Title</Label>
-              <Input id="title" placeholder="Contoh: The Content Engine Playbook" {...register("title")} />
-              {errors.title && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.title.message}</p>}
+              <Input
+                id="title"
+                placeholder="Contoh: The Content Engine Playbook"
+                {...register("title")}
+              />
+              {errors.title && (
+                <p className="text-xs text-[var(--color-danger)] mt-1">
+                  {errors.title.message}
+                </p>
+              )}
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="author">Author</Label>
                 <Input id="author" defaultValue="Mox Demo" {...register("author")} />
-                {errors.author && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.author.message}</p>}
+                {errors.author && (
+                  <p className="text-xs text-[var(--color-danger)] mt-1">
+                    {errors.author.message}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="subtitle">Subtitle (opsional)</Label>
-                <Input id="subtitle" placeholder="Build a perpetual growth machine" {...register("subtitle")} />
+                <Input
+                  id="subtitle"
+                  placeholder="Build a perpetual growth machine"
+                  {...register("subtitle")}
+                />
               </div>
             </div>
             <div>
               <Label htmlFor="description">Description / Brief</Label>
-              <Textarea id="description" rows={4} placeholder="Jelaskan tujuan ebook dan apa yang harus diketahui AI" {...register("description")} />
-              {errors.description && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.description.message}</p>}
+              <Textarea
+                id="description"
+                rows={4}
+                placeholder="Jelaskan tujuan ebook dan apa yang harus diketahui AI"
+                {...register("description")}
+              />
+              {errors.description && (
+                <p className="text-xs text-[var(--color-danger)] mt-1">
+                  {errors.description.message}
+                </p>
+              )}
             </div>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="audience">Audience</Label>
-                <Input id="audience" placeholder="Founder B2B SaaS" {...register("audience")} />
-                {errors.audience && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.audience.message}</p>}
+                <Input
+                  id="audience"
+                  placeholder="Founder B2B SaaS"
+                  {...register("audience")}
+                />
+                {errors.audience && (
+                  <p className="text-xs text-[var(--color-danger)] mt-1">
+                    {errors.audience.message}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="tone">Tone</Label>
                 <Input id="tone" placeholder="Taktis, padat" {...register("tone")} />
-                {errors.tone && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.tone.message}</p>}
+                {errors.tone && (
+                  <p className="text-xs text-[var(--color-danger)] mt-1">
+                    {errors.tone.message}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="niche">Niche</Label>
                 <Input id="niche" placeholder="Marketing" {...register("niche")} />
-                {errors.niche && <p className="text-xs text-[var(--color-danger)] mt-1">{errors.niche.message}</p>}
+                {errors.niche && (
+                  <p className="text-xs text-[var(--color-danger)] mt-1">
+                    {errors.niche.message}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Link href="/projects">
-                <Button type="button" variant="outline">Batal</Button>
+                <Button type="button" variant="outline">
+                  Batal
+                </Button>
               </Link>
               <Button type="submit" loading={create.isPending}>
                 Create project

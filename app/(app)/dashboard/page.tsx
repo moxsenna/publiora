@@ -78,10 +78,10 @@ export default function DashboardPage() {
           }
         />
         <QuickAction
-          href="/claim/MAINLAUNCH2026"
+          href="/library"
           icon={<Gift className="h-4 w-4" />}
-          title="Demo claim"
-          desc="Coba alur claim link"
+          title="Library"
+          desc="Ebook yang sudah diklaim"
         />
       </div>
 

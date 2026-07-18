@@ -7,16 +7,16 @@ import {
   useGenerateSection,
   useGenerateAllSections,
   useUpdateSection,
+  useEnhanceSection,
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardBody } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
-import { Sparkles, FileText, Play, Save } from "lucide-react";
+import { Sparkles, FileText, Play, Save, Wand2 } from "lucide-react";
 import type { Section } from "@/types/section";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
@@ -25,6 +25,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   const generate = useGenerateSection();
   const generateAll = useGenerateAllSections();
   const updateSection = useUpdateSection();
+  const enhance = useEnhanceSection();
   const pushToast = useUiStore((s) => s.pushToast);
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -93,6 +94,27 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       pushToast({ title: "Section disimpan", variant: "success" });
     } catch {
       pushToast({ title: "Simpan gagal", variant: "danger" });
+    }
+  };
+
+  const onEnhance = async (sectionId: string) => {
+    try {
+      const s = await enhance.mutateAsync({ projectId, sectionId });
+      setActiveId(s.id);
+      pushToast({ title: "Section diperhalus", variant: "success" });
+    } catch (err) {
+      const e = err as { code?: string };
+      pushToast({
+        title:
+          e?.code === "insufficient_credits"
+            ? "Kredit tidak cukup"
+            : "Enhance gagal",
+        description:
+          e?.code === "insufficient_credits"
+            ? "Buka Billing untuk top-up."
+            : undefined,
+        variant: "danger",
+      });
     }
   };
 
@@ -166,7 +188,15 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             />
           </div>
         ) : (
-          <SectionEditor key={current.id} section={current} onSave={onSave} onRegenerate={() => onGenerateOne(current.outline_section_id)} generating={generate.isPending} />
+          <SectionEditor
+            key={current.id}
+            section={current}
+            onSave={onSave}
+            onRegenerate={() => onGenerateOne(current.outline_section_id)}
+            onEnhance={() => onEnhance(current.id)}
+            generating={generate.isPending}
+            enhancing={enhance.isPending}
+          />
         )}
       </div>
     </div>
@@ -177,12 +207,16 @@ function SectionEditor({
   section,
   onSave,
   onRegenerate,
+  onEnhance,
   generating,
+  enhancing,
 }: {
   section: Section;
   onSave: (id: string, html: string, title: string) => void;
   onRegenerate: () => void;
+  onEnhance: () => void;
   generating?: boolean;
+  enhancing?: boolean;
 }) {
   const [title, setTitle] = React.useState(section.title);
   const [html, setHtml] = React.useState(section.content_html);
@@ -201,15 +235,24 @@ function SectionEditor({
 
   return (
     <div className="p-4 space-y-4 max-w-3xl mx-auto">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Input
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
             setDirty(true);
           }}
-          className="text-base font-semibold"
+          className="text-base font-semibold min-w-[12rem] flex-1"
         />
+        <Button
+          variant="outline"
+          size="sm"
+          loading={enhancing}
+          onClick={onEnhance}
+        >
+          <Wand2 className="h-4 w-4" />
+          Enhance
+        </Button>
         <Button
           variant="outline"
           size="sm"

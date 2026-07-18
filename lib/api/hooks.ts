@@ -615,46 +615,61 @@ export function useTemplates() {
 }
 
 // Title / CTA agents
-export function useGenerateTitles(projectId: string) {
-  return useQuery({
-    queryKey: qk.titles(projectId),
-    queryFn: () =>
+export function useGenerateTitles() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: string) =>
       shouldUseMock()
         ? api.generateTitles(projectId)
         : apiFetch<string[]>(`/api/projects/${projectId}/titles`, {
             method: "POST",
           }),
-    enabled: false,
+    onSuccess: (data, projectId) => {
+      qc.setQueryData(qk.titles(projectId), data);
+      qc.invalidateQueries({ queryKey: qk.billing.balance });
+    },
   });
 }
 
-export function useGenerateCtas(projectId: string) {
-  return useQuery({
-    queryKey: qk.ctas(projectId),
-    queryFn: () =>
+export function useGenerateCtas() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: string) =>
       shouldUseMock()
         ? api.generateCtas(projectId)
         : apiFetch<string[]>(`/api/projects/${projectId}/ctas`, {
             method: "POST",
           }),
-    enabled: false,
+    onSuccess: (data, projectId) => {
+      qc.setQueryData(qk.ctas(projectId), data);
+      qc.invalidateQueries({ queryKey: qk.billing.balance });
+    },
   });
 }
 
 export function useEnhanceSection() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       projectId,
       sectionId,
     }: {
       projectId: string;
       sectionId: string;
-    }) =>
-      apiFetch<{ project_id?: string }>(`/api/projects/${projectId}/sections/${sectionId}/enhance`, {
-        method: "POST",
-      }),
-    onSuccess: (data: { project_id?: string }) => {
+    }) => {
+      if (shouldUseMock()) {
+        // Mock: soft polish via update path not available — no-op return current section
+        const sections = await api.listSections(projectId);
+        const section = sections.find((s) => s.id === sectionId);
+        if (!section) throw new Error("Section not found");
+        return section;
+      }
+      return apiFetch<Section>(
+        `/api/projects/${projectId}/sections/${sectionId}/enhance`,
+        { method: "POST" }
+      );
+    },
+    onSuccess: (data) => {
       if (data?.project_id) {
         qc.invalidateQueries({ queryKey: qk.sections(data.project_id) });
       }

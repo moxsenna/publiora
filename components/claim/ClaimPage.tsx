@@ -32,8 +32,8 @@ export function ClaimPage({ token, preview }: ClaimPageProps) {
   const resolve = useResolveClaim();
   const pushToast = useUiStore((s) => s.pushToast);
   const router = useRouter();
-  const [email, setEmail] = React.useState("reader@publiora.demo");
-  const [password, setPassword] = React.useState("demo1234");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [authLoading, setAuthLoading] = React.useState(false);
 
   if (!initialized) {
@@ -153,7 +153,10 @@ export function ClaimPage({ token, preview }: ClaimPageProps) {
                 Login & Add to My Library
               </Button>
               <p className="text-[11px] text-center text-[var(--color-soft-gray)]">
-                Demo: gunakan email apa saja. Default reader: reader@publiora.demo
+                Belum punya akun?{" "}
+                <Link href="/register" className="underline">
+                  Daftar dulu
+                </Link>
               </p>
             </div>
           ) : (

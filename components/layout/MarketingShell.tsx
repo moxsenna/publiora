@@ -12,8 +12,7 @@ const nav = [
   { href: "/#features", label: "Features" },
   { href: "/#how", label: "How it works" },
   { href: "/#pricing", label: "Pricing" },
-  { href: "/read/content-engine-playbook", label: "Demo ebook" },
-  { href: "/claim/MAINLAUNCH2026", label: "Demo claim" },
+  { href: "/projects/new", label: "Buat ebook" },
 ];
 
 export function MarketingShell({ children }: { children: React.ReactNode }) {
@@ -124,16 +123,16 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
             <div className="space-y-2">
               <div className="font-medium text-[var(--color-deep-gray)]">Try</div>
               <Link
-                href="/read/content-engine-playbook"
+                href="/projects/new"
                 className="block hover:text-[var(--color-publiora-black)]"
               >
-                Demo ebook
+                Buat ebook
               </Link>
               <Link
-                href="/claim/MAINLAUNCH2026"
+                href="/register"
                 className="block hover:text-[var(--color-publiora-black)]"
               >
-                Demo claim link
+                Daftar gratis
               </Link>
               <Link href="/login" className="block hover:text-[var(--color-publiora-black)]">
                 Sign in
@@ -142,7 +141,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <div className="border-t border-[var(--color-publiora-border)] px-6 py-4 text-center text-xs text-[var(--color-soft-gray)]">
-          © {new Date().getFullYear()} Publiora · MVP mock frontend
+          © {new Date().getFullYear()} Publiora
         </div>
       </footer>
     </div>

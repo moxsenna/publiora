@@ -10,6 +10,30 @@ export type ProjectStatus =
   | "published" // published as ebook
   | "failed"; // generation failed
 
+export type EbookType = "lead_magnet" | "bonus_product" | "sellable_ebook";
+
+export const EBOOK_TYPES: {
+  id: EbookType;
+  label: string;
+  description: string;
+}[] = [
+  {
+    id: "lead_magnet",
+    label: "Lead Magnet",
+    description: "Gratis untuk capture lead / email list.",
+  },
+  {
+    id: "bonus_product",
+    label: "Bonus Product",
+    description: "Bonus bundling untuk affiliate / launch.",
+  },
+  {
+    id: "sellable_ebook",
+    label: "Sellable Ebook",
+    description: "Produk berbayar siap dijual.",
+  },
+];
+
 export interface Project {
   id: string;
   owner_id: string;
@@ -20,6 +44,8 @@ export interface Project {
   audience: string;
   tone: string;
   niche: string;
+  /** MVP ebook purpose. */
+  ebook_type: EbookType;
   status: ProjectStatus;
   /** Optional system or custom template id. */
   template_id: string | null;
@@ -43,6 +69,7 @@ export interface ProjectInput {
   audience: string;
   tone: string;
   niche: string;
+  ebook_type?: EbookType;
   template_id?: string;
 }
 
@@ -54,5 +81,6 @@ export interface ProjectUpdate {
   audience?: string;
   tone?: string;
   niche?: string;
+  ebook_type?: EbookType;
   cover_color?: string;
 }

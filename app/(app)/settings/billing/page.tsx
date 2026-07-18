@@ -43,7 +43,7 @@ export default function BillingPage() {
       await changePlan.mutateAsync(plan_id);
       pushToast({
         title: "Plan diubah",
-        description: "Kredit bulanan di-reset sesuai plan baru (mock).",
+        description: "Kredit bulanan disesuaikan dengan plan baru.",
         variant: "success",
       });
     } catch {
@@ -290,7 +290,7 @@ export default function BillingPage() {
           ))}
         </div>
         <p className="text-xs text-[var(--color-soft-gray)] mt-2">
-          Mock mode: top-up langsung menambah saldo, tanpa payment gateway.
+          Top-up menambah saldo kredit. Payment gateway Stripe menyusul.
         </p>
       </section>
 

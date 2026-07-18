@@ -63,6 +63,13 @@ export async function POST(req: Request) {
       return jsonError("niche is required", 400, "validation_error");
     }
 
+    const ebookType =
+      body.ebook_type === "bonus_product" ||
+      body.ebook_type === "sellable_ebook" ||
+      body.ebook_type === "lead_magnet"
+        ? body.ebook_type
+        : "lead_magnet";
+
     const insert = {
       owner_id: user.id,
       title: body.title.trim(),
@@ -72,6 +79,7 @@ export async function POST(req: Request) {
       audience: body.audience,
       tone: body.tone,
       niche: body.niche,
+      ebook_type: ebookType,
       template_id: body.template_id ?? null,
       status: "draft" as const,
       progress: 0,

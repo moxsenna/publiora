@@ -1,54 +1,65 @@
 "use client";
 
 import * as React from "react";
-import { useProject } from "@/lib/api/hooks";
+import {
+  useProject,
+  useGenerateTitles,
+  useGenerateCtas,
+} from "@/lib/api/hooks";
+import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Sparkles, Heading, Megaphone } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { qk } from "@/lib/api/keys";
 
 export function ToolsPanel({ projectId }: { projectId: string }) {
   const { data: project } = useProject(projectId);
-  const qc = useQueryClient();
+  const genTitles = useGenerateTitles();
+  const genCtas = useGenerateCtas();
+  const pushToast = useUiStore((s) => s.pushToast);
   const [titles, setTitles] = React.useState<string[]>([]);
   const [ctas, setCtas] = React.useState<string[]>([]);
-  const [loadingTitles, setLoadingTitles] = React.useState(false);
-  const [loadingCtas, setLoadingCtas] = React.useState(false);
 
   const fetchTitles = async () => {
-    setLoadingTitles(true);
-    const cached = qc.getQueryData<string[]>(qk.titles(projectId));
-    if (cached) {
-      setTitles(cached);
-      setLoadingTitles(false);
-      return;
-    }
     try {
-      const res = await fetchTitlesApi(projectId);
+      const res = await genTitles.mutateAsync(projectId);
       setTitles(res);
-      qc.setQueryData(qk.titles(projectId), res);
-    } finally {
-      setLoadingTitles(false);
+      pushToast({ title: "Judul digenerate", variant: "success" });
+    } catch (err) {
+      const e = err as { code?: string; message?: string };
+      pushToast({
+        title:
+          e?.code === "insufficient_credits"
+            ? "Kredit tidak cukup"
+            : "Generate judul gagal",
+        description:
+          e?.code === "insufficient_credits"
+            ? "Buka Billing untuk top-up."
+            : e?.message,
+        variant: "danger",
+      });
     }
   };
 
   const fetchCtas = async () => {
-    setLoadingCtas(true);
-    const cached = qc.getQueryData<string[]>(qk.ctas(projectId));
-    if (cached) {
-      setCtas(cached);
-      setLoadingCtas(false);
-      return;
-    }
     try {
-      const res = await fetchCtasApi(projectId);
+      const res = await genCtas.mutateAsync(projectId);
       setCtas(res);
-      qc.setQueryData(qk.ctas(projectId), res);
-    } finally {
-      setLoadingCtas(false);
+      pushToast({ title: "CTA digenerate", variant: "success" });
+    } catch (err) {
+      const e = err as { code?: string; message?: string };
+      pushToast({
+        title:
+          e?.code === "insufficient_credits"
+            ? "Kredit tidak cukup"
+            : "Generate CTA gagal",
+        description:
+          e?.code === "insufficient_credits"
+            ? "Buka Billing untuk top-up."
+            : e?.message,
+        variant: "danger",
+      });
     }
   };
 
@@ -62,11 +73,15 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
                 <Heading className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-[var(--color-publiora-black)]">Title generator</h2>
-                <p className="text-xs text-[var(--color-medium-gray)]">Variasi judul dari title agent.</p>
+                <h2 className="font-semibold text-[var(--color-publiora-black)]">
+                  Title generator
+                </h2>
+                <p className="text-xs text-[var(--color-medium-gray)]">
+                  Variasi judul dari title agent.
+                </p>
               </div>
             </div>
-            <Button size="sm" onClick={fetchTitles} loading={loadingTitles}>
+            <Button size="sm" onClick={fetchTitles} loading={genTitles.isPending}>
               <Sparkles className="h-4 w-4" />
               Generate
             </Button>
@@ -78,7 +93,9 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
                   key={i}
                   className="flex items-center justify-between gap-2 p-3 rounded-xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)]"
                 >
-                  <span className="text-sm font-medium text-[var(--color-deep-gray)]">{t}</span>
+                  <span className="text-sm font-medium text-[var(--color-deep-gray)]">
+                    {t}
+                  </span>
                   <CopyButton value={t} label="Copy" />
                 </li>
               ))}
@@ -103,11 +120,15 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
                 <Megaphone className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-[var(--color-publiora-black)]">CTA generator</h2>
-                <p className="text-xs text-[var(--color-medium-gray)]">Variasi call-to-action untuk ebook & landing.</p>
+                <h2 className="font-semibold text-[var(--color-publiora-black)]">
+                  CTA generator
+                </h2>
+                <p className="text-xs text-[var(--color-medium-gray)]">
+                  Variasi call-to-action untuk ebook & landing.
+                </p>
               </div>
             </div>
-            <Button size="sm" onClick={fetchCtas} loading={loadingCtas}>
+            <Button size="sm" onClick={fetchCtas} loading={genCtas.isPending}>
               <Sparkles className="h-4 w-4" />
               Generate
             </Button>
@@ -139,10 +160,16 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
       {project && (
         <Card>
           <CardBody>
-            <h3 className="font-semibold text-[var(--color-publiora-black)] mb-3">Project metadata</h3>
+            <h3 className="font-semibold text-[var(--color-publiora-black)] mb-3">
+              Project metadata
+            </h3>
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <dt className="text-[var(--color-soft-gray)]">Author</dt>
               <dd className="text-[var(--color-deep-gray)]">{project.author}</dd>
+              <dt className="text-[var(--color-soft-gray)]">Tipe</dt>
+              <dd className="text-[var(--color-deep-gray)] capitalize">
+                {(project.ebook_type ?? "lead_magnet").replaceAll("_", " ")}
+              </dd>
               <dt className="text-[var(--color-soft-gray)]">Audience</dt>
               <dd className="text-[var(--color-deep-gray)]">{project.audience}</dd>
               <dt className="text-[var(--color-soft-gray)]">Tone</dt>
@@ -155,28 +182,4 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
       )}
     </div>
   );
-}
-
-// Small client-side wrappers around mock api via dynamic import to keep this client-only.
-async function fetchTitlesApi(projectId: string): Promise<string[]> {
-  const useMock = process.env.NEXT_PUBLIC_USE_MOCK_API !== "false";
-  if (useMock) {
-    const api = await import("@/lib/mock/api");
-    return api.generateTitles(projectId);
-  }
-  const res = await fetch(`/api/projects/${projectId}/titles`, { method: "POST" });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body?.error?.message || "Title generate failed");
-  return body as string[];
-}
-async function fetchCtasApi(projectId: string): Promise<string[]> {
-  const useMock = process.env.NEXT_PUBLIC_USE_MOCK_API !== "false";
-  if (useMock) {
-    const api = await import("@/lib/mock/api");
-    return api.generateCtas(projectId);
-  }
-  const res = await fetch(`/api/projects/${projectId}/ctas`, { method: "POST" });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body?.error?.message || "CTA generate failed");
-  return body as string[];
 }
