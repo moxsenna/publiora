@@ -38,6 +38,7 @@
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.8",
     "fast-check": "^4.8.0",
+    "playwright": "^1.52.0",
     "pure-rand": "^8.4.2",
     "tailwindcss": "^4",
     "typescript": "^5",
