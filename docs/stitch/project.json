@@ -1,7 +1,14 @@
 {
   "title": "Publiora UI Polish",
-  "projectId": null,
-  "designSystemId": null,
-  "designSystemResource": null,
-  "screens": {}
+  "projectId": "2847802891368404139",
+  "designSystemAssetId": "c9d7b3741d144200b30a8db2ee0ededa",
+  "designSystemResource": "assets/c9d7b3741d144200b30a8db2ee0ededa",
+  "designMdScreenInstanceId": "16330234547753424208",
+  "designMdSourceScreen": "projects/2847802891368404139/screens/16330234547753424208",
+  "screens": {},
+  "notes": {
+    "designSystemDisplayName": "Editorial Intelligence",
+    "createdVia": "create_design_system_from_design_md",
+    "deviceType": "DESKTOP"
+  }
 }
