@@ -1,17 +1,6 @@
 import { ApiError } from "./errors";
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  if (
-    process.env.NODE_ENV === "production" &&
-    process.env.NEXT_PUBLIC_USE_MOCK_API === "true"
-  ) {
-    throw new ApiError(
-      "Mock API cannot run in production",
-      "mock_forbidden",
-      500
-    );
-  }
-
   const res = await fetch(path, {
     ...init,
     headers: {
