@@ -65,3 +65,6 @@ git-*.txt
 # TestSprite generated artifacts (keep plan/report if committed intentionally)
 testsprite_tests/tmp/
 testsprite_tests/**/*.log
+
+# git worktrees
+.worktrees/
