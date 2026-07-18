@@ -1,10 +1,14 @@
 # Publiora VPS Deploy
 
+> **Agents:** full notes (SSH kit path, AI env, “git ≠ live”, smoke checks) → [`AGENT-DEPLOY.md`](./AGENT-DEPLOY.md).  
+> Shared VPS kit: `D:\Coding\deploy-kit\AGENT-HANDOFF.md`.
+
 ## Target
 - Host: `43.228.213.148`
 - Path: `/opt/publiora`
 - Port: `5300` → Caddy → `publiora.appvibe.biz.id`
 - Network: `wacrm_edge`
+- SSH key: `~/.ssh/id_ed25519` (Windows: `C:\Users\bimap\.ssh\id_ed25519`)
 
 ## Deploy / update
 
