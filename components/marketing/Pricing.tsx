@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 const tiers = [
   {
     name: "free",
-    price: "$0",
+    price: "Gratis",
     tagline: "Untuk mencoba Publiora.",
     features: [
       "50 kredit / bulan",
@@ -17,7 +17,7 @@ const tiers = [
   },
   {
     name: "creator",
-    price: "$19",
+    price: "Rp299rb",
     tagline: "Untuk creator solo.",
     features: [
       "500 kredit / bulan",
@@ -31,7 +31,7 @@ const tiers = [
   },
   {
     name: "pro",
-    price: "$49",
+    price: "Rp749rb",
     tagline: "Untuk tim kecil.",
     features: [
       "2.000 kredit / bulan",

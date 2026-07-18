@@ -10,6 +10,7 @@ import {
   useChangePlan,
   usePurchaseCreditPack,
   useCreditCosts,
+  isPaymentCheckout,
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
@@ -27,6 +28,14 @@ import {
 import type { PlanId } from "@/types";
 import { formatDate, formatRelativeTime, cn } from "@/lib/utils";
 
+function formatIdr(amount: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 export default function BillingPage() {
   const { data: balance, isLoading: lb } = useCreditBalance();
   const { data: sub, isLoading: ls } = useSubscription();
@@ -40,7 +49,16 @@ export default function BillingPage() {
 
   const onChangePlan = async (plan_id: PlanId) => {
     try {
-      await changePlan.mutateAsync(plan_id);
+      const res = await changePlan.mutateAsync(plan_id);
+      if (isPaymentCheckout(res)) {
+        pushToast({
+          title: "Mengarahkan ke pembayaran…",
+          description: "Selesaikan pembayaran di Duitku via PayCore.",
+          variant: "default",
+        });
+        window.location.href = res.checkout_url;
+        return;
+      }
       pushToast({
         title: "Plan diubah",
         description: "Kredit bulanan disesuaikan dengan plan baru.",
@@ -54,6 +72,15 @@ export default function BillingPage() {
   const onBuy = async (pack_id: string) => {
     try {
       const res = await buyPack.mutateAsync(pack_id);
+      if (isPaymentCheckout(res)) {
+        pushToast({
+          title: "Mengarahkan ke pembayaran…",
+          description: "Selesaikan pembayaran di Duitku via PayCore.",
+          variant: "default",
+        });
+        window.location.href = res.checkout_url;
+        return;
+      }
       pushToast({
         title: "Top-up berhasil",
         description: `Saldo sekarang ${res.balance.balance} kredit.`,
@@ -213,11 +240,15 @@ export default function BillingPage() {
                         </div>
                         <div className="mt-1 flex items-baseline gap-1">
                           <span className="text-2xl font-bold">
-                            ${plan.price_monthly}
+                            {plan.price_monthly === 0
+                              ? "Gratis"
+                              : formatIdr(plan.price_monthly)}
                           </span>
-                          <span className="text-xs text-[var(--color-soft-gray)]">
-                            /bln
-                          </span>
+                          {plan.price_monthly > 0 && (
+                            <span className="text-xs text-[var(--color-soft-gray)]">
+                              /bln
+                            </span>
+                          )}
                         </div>
                       </div>
                       {plan.featured && <Badge variant="gold">Popular</Badge>}
@@ -273,7 +304,7 @@ export default function BillingPage() {
                   </span>
                 </div>
                 <div className="text-sm text-[var(--color-medium-gray)]">
-                  ${pack.price}
+                  {formatIdr(pack.price)}
                 </div>
                 <Button
                   size="sm"
@@ -290,7 +321,8 @@ export default function BillingPage() {
           ))}
         </div>
         <p className="text-xs text-[var(--color-soft-gray)] mt-2">
-          Top-up menambah saldo kredit. Payment gateway Stripe menyusul.
+          Pembayaran via PayCore (Duitku). Kredit aktif setelah webhook
+          payment.succeeded — bukan dari halaman return.
         </p>
       </section>
 

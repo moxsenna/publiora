@@ -3,6 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError } from "@/lib/api/errors";
 import { BILLING_PLANS } from "@/lib/billing/plans";
 import { grantCredits, mapCreditBalance } from "@/lib/credits";
+import { useMockBilling } from "@/lib/paycore/config";
+import { resolvePlanProduct } from "@/lib/paycore/catalog";
+import { startCheckout } from "@/lib/paycore/orders";
 import type { CreditBalance, PlanId, Subscription } from "@/types/billing";
 
 function isPlanId(value: unknown): value is PlanId {
@@ -16,6 +19,136 @@ function mapSubscription(row: Record<string, unknown>): Subscription {
     status: row.status as Subscription["status"],
     renews_at: row.renews_at != null ? String(row.renews_at) : null,
     canceled_at: row.canceled_at != null ? String(row.canceled_at) : null,
+  };
+}
+
+/** Apply free plan immediately (no payment). */
+async function applyFreePlan(userId: string) {
+  const plan = BILLING_PLANS.find((p) => p.id === "free")!;
+  const periodStart = new Date();
+  const periodEnd = new Date(periodStart.getTime() + 30 * 86400_000);
+  const periodStartIso = periodStart.toISOString();
+  const periodEndIso = periodEnd.toISOString();
+  const admin = createAdminClient();
+
+  const { data: subRow, error: subError } = await admin
+    .from("subscriptions")
+    .upsert(
+      {
+        user_id: userId,
+        plan_id: plan.id,
+        status: "active",
+        renews_at: periodEndIso,
+        canceled_at: null,
+      },
+      { onConflict: "user_id" }
+    )
+    .select("*")
+    .single();
+  if (subError || !subRow) {
+    throw new Error(subError?.message ?? "Failed to update subscription");
+  }
+
+  const { error: balanceResetError } = await admin
+    .from("credit_balances")
+    .update({
+      plan_id: plan.id,
+      balance: 0,
+      period_grant: plan.monthly_credits,
+      period_start: periodStartIso,
+      period_end: periodEndIso,
+    })
+    .eq("user_id", userId);
+  if (balanceResetError) throw new Error(balanceResetError.message);
+
+  const granted = await grantCredits({
+    userId,
+    amount: plan.monthly_credits,
+    type: "grant",
+    label: `${plan.name} plan — kredit bulanan`,
+    meta: { plan_id: plan.id, period_days: 30 },
+  });
+  if (!granted) throw new Error("Failed to grant credits");
+
+  await admin.from("profiles").update({ plan_id: plan.id }).eq("id", userId);
+
+  const { data: balRow } = await admin
+    .from("credit_balances")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return {
+    subscription: mapSubscription(subRow as Record<string, unknown>),
+    balance: balRow
+      ? mapCreditBalance(balRow as Record<string, unknown>)
+      : granted,
+  };
+}
+
+/** Mock/dev: apply paid plan without PayCore. */
+async function applyPaidPlanMock(userId: string, planId: PlanId) {
+  const plan = BILLING_PLANS.find((p) => p.id === planId);
+  if (!plan) throw new Error("Plan not found");
+  const periodStart = new Date();
+  const periodEnd = new Date(periodStart.getTime() + 30 * 86400_000);
+  const periodStartIso = periodStart.toISOString();
+  const periodEndIso = periodEnd.toISOString();
+  const admin = createAdminClient();
+
+  const { data: subRow, error: subError } = await admin
+    .from("subscriptions")
+    .upsert(
+      {
+        user_id: userId,
+        plan_id: plan.id,
+        status: "active",
+        renews_at: periodEndIso,
+        canceled_at: null,
+      },
+      { onConflict: "user_id" }
+    )
+    .select("*")
+    .single();
+  if (subError || !subRow) {
+    throw new Error(subError?.message ?? "Failed to update subscription");
+  }
+
+  const { error: balanceResetError } = await admin
+    .from("credit_balances")
+    .update({
+      plan_id: plan.id,
+      balance: 0,
+      period_grant: plan.monthly_credits,
+      period_start: periodStartIso,
+      period_end: periodEndIso,
+    })
+    .eq("user_id", userId);
+  if (balanceResetError) throw new Error(balanceResetError.message);
+
+  const granted = await grantCredits({
+    userId,
+    amount: plan.monthly_credits,
+    type: "grant",
+    label: `${plan.name} plan — kredit bulanan`,
+    meta: { plan_id: plan.id, period_days: 30 },
+  });
+  if (!granted) throw new Error("Failed to grant credits");
+
+  await admin.from("profiles").update({ plan_id: plan.id }).eq("id", userId);
+
+  let balance: CreditBalance = granted;
+  const { data: balRow } = await admin
+    .from("credit_balances")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (balRow) balance = mapCreditBalance(balRow as Record<string, unknown>);
+
+  return {
+    subscription: mapSubscription(subRow as Record<string, unknown>),
+    balance,
+    mock: true as const,
   };
 }
 
@@ -41,93 +174,55 @@ export async function POST(req: Request) {
       return jsonError("Plan not found", 404, "not_found");
     }
 
-    const periodStart = new Date();
-    const periodEnd = new Date(periodStart.getTime() + 30 * 86400_000);
-    const periodStartIso = periodStart.toISOString();
-    const periodEndIso = periodEnd.toISOString();
-
-    const admin = createAdminClient();
-
-    // Update subscription (admin bypasses RLS write limits)
-    const { data: subRow, error: subError } = await admin
-      .from("subscriptions")
-      .upsert(
-        {
-          user_id: user.id,
-          plan_id: plan.id,
-          status: "active",
-          renews_at: periodEndIso,
-          canceled_at: null,
-        },
-        { onConflict: "user_id" }
-      )
-      .select("*")
-      .single();
-
-    if (subError || !subRow) {
-      return jsonError(subError?.message ?? "Failed to update subscription", 500, "db_error");
-    }
-
-    // Reset period fields on balance (grant_credits only adds amount)
-    const { error: balanceResetError } = await admin
-      .from("credit_balances")
-      .update({
-        plan_id: plan.id,
-        balance: 0,
-        period_grant: plan.monthly_credits,
-        period_start: periodStartIso,
-        period_end: periodEndIso,
-      })
-      .eq("user_id", user.id);
-
-    if (balanceResetError) {
-      return jsonError(balanceResetError.message, 500, "db_error");
-    }
-
-    // Grant monthly credits as transaction
-    let balance: CreditBalance;
-    try {
-      const granted = await grantCredits({
-        userId: user.id,
-        amount: plan.monthly_credits,
-        type: "grant",
-        label: `${plan.name} plan — kredit bulanan`,
-        meta: { plan_id: plan.id, period_days: 30 },
-      });
-      if (!granted) {
-        return jsonError("Failed to grant credits", 500, "db_error");
+    // Free plan always immediate
+    if (plan.id === "free") {
+      try {
+        const result = await applyFreePlan(user.id);
+        return Response.json(result);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed free plan";
+        return jsonError(message, 500, "db_error");
       }
-      balance = granted;
-    } catch (grantErr) {
-      const message = grantErr instanceof Error ? grantErr.message : "grant failed";
+    }
+
+    // Paid plan via PayCore
+    if (!useMockBilling()) {
+      const product = resolvePlanProduct(plan.id);
+      if (!product) {
+        return jsonError("Plan price not configured", 500, "config_error");
+      }
+      try {
+        const checkout = await startCheckout({
+          userId: user.id,
+          email: user.email ?? `${user.id}@users.publiora.local`,
+          name:
+            (user.user_metadata?.name as string | undefined) ||
+            user.email?.split("@")[0] ||
+            "Publiora User",
+          product,
+        });
+        return Response.json({
+          checkout_url: checkout.checkout_url,
+          order_id: checkout.order_id,
+          external_order_id: checkout.external_order_id,
+          amount: checkout.amount,
+          currency: checkout.currency,
+        });
+      } catch (payErr) {
+        const message =
+          payErr instanceof Error ? payErr.message : "PayCore create order failed";
+        return jsonError(message, 502, "paycore_error");
+      }
+    }
+
+    // Mock paid plan
+    try {
+      const result = await applyPaidPlanMock(user.id, plan.id);
+      return Response.json(result);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed plan change";
       return jsonError(message, 500, "db_error");
     }
-
-    // Keep profiles.plan_id in sync
-    const { error: profileError } = await admin
-      .from("profiles")
-      .update({ plan_id: plan.id })
-      .eq("id", user.id);
-
-    if (profileError) {
-      return jsonError(profileError.message, 500, "db_error");
-    }
-
-    // Re-fetch balance to ensure period fields present
-    const { data: balRow } = await admin
-      .from("credit_balances")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (balRow) {
-      balance = mapCreditBalance(balRow as Record<string, unknown>);
-    }
-
-    return Response.json({
-      subscription: mapSubscription(subRow as Record<string, unknown>),
-      balance,
-    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Server error";
     return jsonError(message, 503, "unavailable");

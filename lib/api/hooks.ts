@@ -23,6 +23,7 @@ import type {
   CreditPack,
   CreditTransaction,
   Entitlement,
+  PaymentCheckout,
   ExportCreateInput,
   ExportJob,
   Template,
@@ -565,21 +566,41 @@ export function useCreditCosts() {
   });
 }
 
+export type ChangePlanResult =
+  | { subscription: Subscription; balance: CreditBalance; mock?: boolean }
+  | PaymentCheckout;
+
+export type PurchasePackResult =
+  | { balance: CreditBalance; txn: CreditTransaction; mock?: boolean }
+  | PaymentCheckout;
+
+export function isPaymentCheckout(
+  v: ChangePlanResult | PurchasePackResult
+): v is PaymentCheckout {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    "checkout_url" in v &&
+    typeof (v as PaymentCheckout).checkout_url === "string"
+  );
+}
+
 export function useChangePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (plan_id: PlanId) =>
-      shouldUseMock()
-        ? api.changePlan(plan_id)
-        : apiFetch<{ subscription: Subscription; balance: CreditBalance }>(
-            "/api/billing/change-plan",
-            {
-              method: "POST",
-              body: JSON.stringify({ plan_id }),
-            }
-          ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["billing"] });
+    mutationFn: async (plan_id: PlanId): Promise<ChangePlanResult> => {
+      if (shouldUseMock()) {
+        return api.changePlan(plan_id) as Promise<ChangePlanResult>;
+      }
+      return apiFetch<ChangePlanResult>("/api/billing/change-plan", {
+        method: "POST",
+        body: JSON.stringify({ plan_id }),
+      });
+    },
+    onSuccess: (data) => {
+      if (!isPaymentCheckout(data)) {
+        qc.invalidateQueries({ queryKey: ["billing"] });
+      }
     },
   });
 }
@@ -587,18 +608,19 @@ export function useChangePlan() {
 export function usePurchaseCreditPack() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (pack_id: string) =>
-      shouldUseMock()
-        ? api.purchaseCreditPack(pack_id)
-        : apiFetch<{ balance: CreditBalance; txn: CreditTransaction }>(
-            "/api/billing/purchase-pack",
-            {
-              method: "POST",
-              body: JSON.stringify({ pack_id }),
-            }
-          ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["billing"] });
+    mutationFn: async (pack_id: string): Promise<PurchasePackResult> => {
+      if (shouldUseMock()) {
+        return api.purchaseCreditPack(pack_id) as Promise<PurchasePackResult>;
+      }
+      return apiFetch<PurchasePackResult>("/api/billing/purchase-pack", {
+        method: "POST",
+        body: JSON.stringify({ pack_id }),
+      });
+    },
+    onSuccess: (data) => {
+      if (!isPaymentCheckout(data)) {
+        qc.invalidateQueries({ queryKey: ["billing"] });
+      }
     },
   });
 }

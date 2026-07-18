@@ -13,7 +13,7 @@ export interface BillingPlan {
   id: PlanId;
   name: string;
   price_monthly: number;
-  currency: "USD";
+  currency: "USD" | "IDR";
   monthly_credits: number;
   max_projects: number | null; // null = unlimited
   max_published: number | null;
@@ -58,8 +58,17 @@ export interface CreditPack {
   name: string;
   credits: number;
   price: number;
-  currency: "USD";
+  currency: "USD" | "IDR";
   badge?: string;
+}
+
+/** Checkout response when PayCore is enabled. */
+export interface PaymentCheckout {
+  checkout_url: string;
+  order_id: string;
+  external_order_id: string;
+  amount: number;
+  currency: "IDR";
 }
 
 export interface Subscription {
