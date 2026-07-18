@@ -192,13 +192,12 @@ export async function POST(req: Request) {
         return jsonError("Plan price not configured", 500, "config_error");
       }
       try {
+        const { resolveCheckoutCustomer } = await import("@/lib/paycore/customer");
+        const customer = await resolveCheckoutCustomer(user);
         const checkout = await startCheckout({
           userId: user.id,
-          email: user.email ?? `${user.id}@users.publiora.local`,
-          name:
-            (user.user_metadata?.name as string | undefined) ||
-            user.email?.split("@")[0] ||
-            "Publiora User",
+          email: customer.email,
+          name: customer.name,
           product,
         });
         return Response.json({
