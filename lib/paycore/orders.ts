@@ -65,8 +65,13 @@ export async function startCheckout(opts: {
       amount: opts.product.amount_idr,
       currency: "IDR",
       customer: {
-        name: opts.name || opts.email.split("@")[0] || "Publiora User",
+        name: (opts.name || opts.email.split("@")[0] || "Publiora User").slice(
+          0,
+          50
+        ),
         email: opts.email,
+        // Duitku V2 demo page NRE if phone missing/empty — always send digits
+        phone: "081234567890",
       },
       fulfillment_data,
       idempotency_key: external_order_id,
