@@ -63,10 +63,17 @@ body {
   border-color: var(--color-publiora-border);
 }
 
+/* Selection — Stitch brand-blue tint on cream canvas */
+::selection {
+  background: color-mix(in srgb, var(--color-publiora-blue) 22%, white);
+  color: var(--color-publiora-black);
+}
+
 /* Focus ring */
 :where(button, a, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid var(--color-publiora-blue);
   outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* Headings */
@@ -194,15 +201,17 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 6px;
 }
 
-/* Scrollbar */
+/* Scrollbar — soft track blend on cream canvas */
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
-  background: var(--color-publiora-border);
+  background: color-mix(in srgb, var(--color-publiora-border) 85%, var(--color-soft-gray));
   border-radius: 9999px;
   border: 2px solid var(--color-publiora-white);
 }
-*::-webkit-scrollbar-thumb:hover { background: var(--color-soft-gray); }
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-soft-gray);
+}
 
 /* Hide scrollbar utility */
 .no-scrollbar::-webkit-scrollbar { display: none; }

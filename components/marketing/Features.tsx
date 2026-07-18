@@ -36,7 +36,7 @@ const features = [
 export function Features() {
   return (
     <section id="features" className="bg-white border-y border-[var(--color-publiora-border)]">
-      <div className="max-w-7xl mx-auto px-6 py-20">
+      <div className="max-w-7xl mx-auto px-6 py-20 md:py-28">
         <div className="max-w-2xl">
           <div className="text-sm font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
             Features

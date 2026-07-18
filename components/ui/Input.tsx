@@ -9,7 +9,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
       ref={ref}
       className={cn(
         "h-11 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-4 text-sm",
-        "placeholder:text-[var(--color-soft-gray)] focus:border-[var(--color-publiora-blue)] outline-none transition-colors",
+        "placeholder:text-[var(--color-soft-gray)] focus:border-[var(--color-publiora-blue)] focus:ring-2 focus:ring-[var(--color-publiora-blue)]/10 outline-none transition-colors",
         className
       )}
       {...props}
@@ -26,7 +26,7 @@ export const Textarea = React.forwardRef<
     ref={ref}
     className={cn(
       "w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white p-4 text-sm",
-      "placeholder:text-[var(--color-soft-gray)] focus:border-[var(--color-publiora-blue)] outline-none transition-colors resize-y",
+      "placeholder:text-[var(--color-soft-gray)] focus:border-[var(--color-publiora-blue)] focus:ring-2 focus:ring-[var(--color-publiora-blue)]/10 outline-none transition-colors resize-y",
       className
     )}
     {...props}

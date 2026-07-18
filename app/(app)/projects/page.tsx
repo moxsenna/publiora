@@ -38,11 +38,11 @@ export default function ProjectsPage() {
   }, [projects, q, status]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">Projects</h1>
-          <p className="text-[var(--color-medium-gray)] mt-1">
+          <p className="text-[var(--color-medium-gray)] mt-1 leading-relaxed">
             Semua project ebook Anda.
             {!isLoading && projects ? ` · ${projects.length} total` : ""}
           </p>

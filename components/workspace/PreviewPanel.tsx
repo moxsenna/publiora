@@ -41,7 +41,7 @@ export function PreviewPanel({ projectId }: { projectId: string }) {
             <p className="mt-2 text-white/80">{outline.description}</p>
           )}
         </div>
-        <div className="reader-prose bg-white rounded-2xl border border-[var(--color-publiora-border)] p-8">
+        <div className="reader-prose bg-white rounded-[var(--radius-card)] border border-[var(--color-publiora-border)]/50 p-8 md:p-10 shadow-[var(--shadow-card)]">
           {sorted.map((s) => (
             <section key={s.id} className="mb-10">
               <h1>{s.title}</h1>

@@ -50,7 +50,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button size="sm" variant="primary">
+                  <Button size="sm" variant="primary" className="rounded-full">
                     Get started
                   </Button>
                 </Link>

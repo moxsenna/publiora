@@ -46,7 +46,7 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="rounded-2xl border border-[#A7E9C5] bg-[#ECFDF3] p-5">
+      <div className="rounded-2xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] p-5">
         <p className="text-sm text-[var(--color-deep-gray)]">
           Jika akun dengan email <strong>{email}</strong> ada, instruksi reset
           sudah dikirim. Cek inbox.

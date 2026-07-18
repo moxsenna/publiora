@@ -114,9 +114,10 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         })}
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Chat messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-5">
         {isLoading ? (
-          <div className="space-y-3 max-w-xl">
+          <div className="space-y-4 max-w-xl">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-20" />
             ))}
