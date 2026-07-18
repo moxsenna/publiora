@@ -148,10 +148,28 @@ async function generateOne(opts: {
   alreadyCharged?: boolean;
 }): Promise<{ section: Section } | { error: Response }> {
   const { supabase, userId, project, outlineSection } = opts;
+  /** True only when this helper charged; outer POST refunds when alreadyCharged. */
+  let chargedHere = false;
+
+  const refundLocalCharge = async (label: string) => {
+    if (!chargedHere) return;
+    await grantCredits({
+      userId,
+      amount: CREDIT_COSTS.section,
+      type: "refund",
+      label,
+      meta: {
+        project_id: project.id,
+        outline_section_id: outlineSection.id,
+      },
+    }).catch(() => null);
+    chargedHere = false;
+  };
 
   if (!opts.alreadyCharged) {
     try {
       await chargeGeneration(userId, "section", project.id);
+      chargedHere = true;
     } catch (err) {
       const e = err as Error & { code?: string };
       if (e.code === "insufficient_credits") {
@@ -161,119 +179,135 @@ async function generateOne(opts: {
     }
   }
 
-  // mark generating
-  await supabase
-    .from("projects")
-    .update({ status: "generating", updated_at: new Date().toISOString() })
-    .eq("id", project.id);
-
-  // update outline section status in jsonb
-  const outlineSections = [...((opts.outlineRow.sections as OutlineSection[]) ?? [])];
-  const idx = outlineSections.findIndex((s) => s.id === outlineSection.id);
-  if (idx >= 0) {
-    outlineSections[idx] = { ...outlineSections[idx], status: "generating" };
+  try {
+    // mark generating
     await supabase
-      .from("outlines")
-      .update({ sections: outlineSections, updated_at: new Date().toISOString() })
-      .eq("project_id", project.id);
-  }
+      .from("projects")
+      .update({ status: "generating", updated_at: new Date().toISOString() })
+      .eq("id", project.id);
 
-  const writtenRaw = await runWriter({
-    project: {
-      title: project.title,
-      audience: project.audience,
-      tone: project.tone,
-      niche: project.niche,
-    },
-    section: {
-      title: outlineSection.title,
-      summary: outlineSection.summary,
-      key_points: outlineSection.key_points,
-    },
-  });
+    // update outline section status in jsonb
+    const outlineSections = [
+      ...((opts.outlineRow.sections as OutlineSection[]) ?? []),
+    ];
+    const idx = outlineSections.findIndex((s) => s.id === outlineSection.id);
+    if (idx >= 0) {
+      outlineSections[idx] = { ...outlineSections[idx], status: "generating" };
+      await supabase
+        .from("outlines")
+        .update({
+          sections: outlineSections,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("project_id", project.id);
+    }
 
-  const written = {
-    ...writtenRaw,
-    content_html: sanitizeHtml(writtenRaw.content_html),
-    word_count:
-      sanitizeHtml(writtenRaw.content_html)
+    const writtenRaw = await runWriter({
+      project: {
+        title: project.title,
+        audience: project.audience,
+        tone: project.tone,
+        niche: project.niche,
+      },
+      section: {
+        title: outlineSection.title,
+        summary: outlineSection.summary,
+        key_points: outlineSection.key_points,
+      },
+    });
+
+    const written = {
+      ...writtenRaw,
+      content_html: sanitizeHtml(writtenRaw.content_html),
+      word_count: sanitizeHtml(writtenRaw.content_html)
         .replace(/<[^>]+>/g, " ")
         .split(/\s+/)
         .filter(Boolean).length,
-  };
+    };
 
-  const now = new Date().toISOString();
-  const { data: existing } = await supabase
-    .from("ebook_sections")
-    .select("id")
-    .eq("project_id", project.id)
-    .eq("outline_section_id", outlineSection.id)
-    .maybeSingle();
-
-  let row: Record<string, unknown> | null = null;
-  if (existing) {
-    const { data, error } = await supabase
+    const now = new Date().toISOString();
+    const { data: existing } = await supabase
       .from("ebook_sections")
-      .update({
-        title: written.title,
-        content_html: written.content_html,
-        word_count: written.word_count,
-        status: "generated",
-        position: outlineSection.position,
-        updated_at: now,
-      })
-      .eq("id", existing.id)
-      .select("*")
-      .single();
-    if (error) return { error: jsonError(error.message, 500, "db_error") };
-    row = data;
-  } else {
-    const { data, error } = await supabase
-      .from("ebook_sections")
-      .insert({
-        project_id: project.id,
-        outline_section_id: outlineSection.id,
-        position: outlineSection.position,
-        title: written.title,
-        content_html: written.content_html,
-        word_count: written.word_count,
-        status: "generated",
-        updated_at: now,
-      })
-      .select("*")
-      .single();
-    if (error) return { error: jsonError(error.message, 500, "db_error") };
-    row = data;
-  }
+      .select("id")
+      .eq("project_id", project.id)
+      .eq("outline_section_id", outlineSection.id)
+      .maybeSingle();
 
-  if (idx >= 0) {
-    outlineSections[idx] = { ...outlineSections[idx], status: "generated" };
+    let row: Record<string, unknown> | null = null;
+    if (existing) {
+      const { data, error } = await supabase
+        .from("ebook_sections")
+        .update({
+          title: written.title,
+          content_html: written.content_html,
+          word_count: written.word_count,
+          status: "generated",
+          position: outlineSection.position,
+          updated_at: now,
+        })
+        .eq("id", existing.id)
+        .select("*")
+        .single();
+      if (error) {
+        await refundLocalCharge("Refund section generate DB failure");
+        return { error: jsonError(error.message, 500, "db_error") };
+      }
+      row = data;
+    } else {
+      const { data, error } = await supabase
+        .from("ebook_sections")
+        .insert({
+          project_id: project.id,
+          outline_section_id: outlineSection.id,
+          position: outlineSection.position,
+          title: written.title,
+          content_html: written.content_html,
+          word_count: written.word_count,
+          status: "generated",
+          updated_at: now,
+        })
+        .select("*")
+        .single();
+      if (error) {
+        await refundLocalCharge("Refund section generate DB failure");
+        return { error: jsonError(error.message, 500, "db_error") };
+      }
+      row = data;
+    }
+
+    if (idx >= 0) {
+      outlineSections[idx] = { ...outlineSections[idx], status: "generated" };
+      await supabase
+        .from("outlines")
+        .update({ sections: outlineSections, updated_at: now })
+        .eq("project_id", project.id);
+    }
+
+    const { count } = await supabase
+      .from("ebook_sections")
+      .select("*", { count: "exact", head: true })
+      .eq("project_id", project.id)
+      .in("status", ["generated", "edited"]);
+
+    const generated = count ?? 0;
+    const total = project.total_sections || outlineSections.length || 1;
+    const progress = Math.round((generated / total) * 100);
+    const status = generated >= total ? "generated" : "generating";
+
     await supabase
-      .from("outlines")
-      .update({ sections: outlineSections, updated_at: now })
-      .eq("project_id", project.id);
+      .from("projects")
+      .update({
+        sections_generated: generated,
+        progress,
+        status,
+        updated_at: now,
+      })
+      .eq("id", project.id);
+
+    return { section: mapSection(row!) };
+  } catch (err) {
+    // generate-all: we charged here → refund. single-section: outer POST refunds.
+    await refundLocalCharge("Refund section generate failure");
+    throw err;
   }
-
-  const { count } = await supabase
-    .from("ebook_sections")
-    .select("*", { count: "exact", head: true })
-    .eq("project_id", project.id)
-    .in("status", ["generated", "edited"]);
-
-  const generated = count ?? 0;
-  const total = project.total_sections || outlineSections.length || 1;
-  const progress = Math.round((generated / total) * 100);
-  const status = generated >= total ? "generated" : "generating";
-
-  await supabase
-    .from("projects")
-    .update({
-      sections_generated: generated,
-      progress,
-      status,
-      updated_at: now,
-    })
-    .eq("id", project.id);
-
-  return { section: mapSection(row!) };
 }
