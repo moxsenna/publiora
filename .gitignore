@@ -68,3 +68,4 @@ testsprite_tests/**/*.log
 
 # git worktrees
 .worktrees/
+deploy/paycore.env.snippet

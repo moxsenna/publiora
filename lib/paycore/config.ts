@@ -42,7 +42,8 @@ export function getPayCoreConfig(): PayCoreConfig {
     appSecret: process.env.PAYCORE_APP_SECRET!,
     webhookSecret: process.env.PAYCORE_WEBHOOK_SECRET!,
     returnUrl: process.env.PAYCORE_RETURN_URL!,
+    // Informational only — create order uses app default merchant (Duitku V2).
     merchantProfileId:
-      process.env.PAYCORE_MERCHANT_PROFILE_ID || "appvibe_default",
+      process.env.PAYCORE_MERCHANT_PROFILE_ID || "appvibe_duitku_v2",
   };
 }

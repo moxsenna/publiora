@@ -31,18 +31,32 @@ Lihat `.env.example` / `deploy/env.production.example`.
 | `PAYCORE_RETURN_URL` | allowlist return browser |
 | `CREDITS_MOCK_TOPUP` | `true` = mock grant; `false` = wajib PayCore |
 
-## Onboarding ke maintainer PayCore
+## Onboarding status (staging)
 
-Kirim:
+Sudah di PayCore staging:
 
-- `app_id`: `publiora`
-- `order_prefix`: usulan `PUB`
-- `webhook_url`: `https://publiora.appvibe.biz.id/api/internal/payment-events`
-- `return_url`: `https://publiora.appvibe.biz.id/billing/return`
-- Product keys:
-  - `publiora_pack_100` / `publiora_pack_500` / `publiora_pack_1500`
-  - `publiora_plan_creator` / `publiora_plan_pro`
-- Amounts IDR (MVP): pack 79k / 299k / 749k · plan 299k / 749k
+| Item | Value |
+|------|--------|
+| `app_id` | `publiora` |
+| `order_prefix` | `PUB` |
+| Merchant | `mp_appvibe_duitku_v2` (`api_variant=v2`) |
+| `webhook_url` | `https://publiora.appvibe.biz.id/api/internal/payment-events` |
+| return allowlist | prod + `http://127.0.0.1:3005/billing/return` |
+| Secrets Worker | `PUBLIORA_APP_KEY_ID` / `APP_SECRET` / `WEBHOOK_SECRET` |
+| Key id staging | `pk_staging_publiora_01` |
+
+Product keys (body order):
+
+- `publiora_pack_100` / `publiora_pack_500` / `publiora_pack_1500`
+- `publiora_plan_creator` / `publiora_plan_pro`
+
+Amounts IDR (MVP): pack 79k / 299k / 749k · plan 299k / 749k
+
+### Duitku V2 vs POP
+
+- App default = **Duitku V2** → create order **wajib** `payment_method` (Publiora default `SQ` QRIS).
+- Smoke 2026-07-18: **HMAC app auth OK**; **POP createInvoice 201** dengan merchant sandbox `DS32***`.
+- **V2 inquiry** masih `create_failed` dengan key sandbox yang sama — biasanya merchant sandbox hanya aktif di POP, atau channel `SQ` belum diaktifkan di dashboard Duitku. Aktifkan API V2 + metode QRIS di Duitku, atau sementara switch app ke `mp_appvibe_default` (POP).
 
 ## Migration
 

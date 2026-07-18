@@ -1,6 +1,19 @@
 import { getPayCoreConfig } from "./config";
 import { signPayCoreRequest } from "./crypto";
 
+/** Duitku V2 methods — required when merchant profile api_variant=v2. */
+export type DuitkuV2PaymentMethod =
+  | "SQ" // QRIS Nusapay
+  | "BR"
+  | "DM"
+  | "BV"
+  | "M2"
+  | "BT"
+  | "I1"
+  | "NC"
+  | "A1"
+  | "FT";
+
 export type CreateOrderInput = {
   external_order_id: string;
   product_key: string;
@@ -10,6 +23,8 @@ export type CreateOrderInput = {
   customer: { name: string; email: string; phone?: string };
   fulfillment_data: Record<string, unknown>;
   idempotency_key: string;
+  /** Required for Duitku V2. Default SQ (QRIS). */
+  payment_method?: DuitkuV2PaymentMethod;
 };
 
 export type CreateOrderResponse = {
@@ -37,9 +52,10 @@ export async function createPayCoreOrder(
 ): Promise<CreateOrderResponse> {
   const cfg = getPayCoreConfig();
   const path = "/v1/orders";
+  // Do NOT send merchant_profile_id unless it equals apps.default_merchant_profile_id.
+  // PayCore uses app default → mp_appvibe_duitku_v2 (api_variant=v2).
   const bodyObj = {
     external_order_id: input.external_order_id,
-    merchant_profile_id: cfg.merchantProfileId,
     product_key: input.product_key,
     description: input.description,
     amount: input.amount,
@@ -47,6 +63,7 @@ export async function createPayCoreOrder(
     customer: input.customer,
     return_url: cfg.returnUrl,
     fulfillment_data: input.fulfillment_data,
+    payment_method: input.payment_method ?? "SQ",
   };
   const rawBody = JSON.stringify(bodyObj);
   const timestamp = new Date().toISOString();
