@@ -19,6 +19,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import {
+  CheckoutPaymentModal,
+  type CheckoutIntent,
+} from "@/components/billing/CheckoutPaymentModal";
+import {
   Coins,
   CreditCard,
   Sparkles,
@@ -27,6 +31,7 @@ import {
 } from "lucide-react";
 import type { PlanId } from "@/types";
 import { formatDate, formatRelativeTime, cn } from "@/lib/utils";
+import type { PaymentMethodCode } from "@/lib/paycore/methods";
 
 function formatIdr(amount: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -46,10 +51,14 @@ export default function BillingPage() {
   const changePlan = useChangePlan();
   const buyPack = usePurchaseCreditPack();
   const pushToast = useUiStore((s) => s.pushToast);
+  const [checkout, setCheckout] = React.useState<CheckoutIntent | null>(null);
 
-  const onChangePlan = async (plan_id: PlanId) => {
+  const onChangePlan = async (
+    plan_id: PlanId,
+    payment_method?: PaymentMethodCode
+  ) => {
     try {
-      const res = await changePlan.mutateAsync(plan_id);
+      const res = await changePlan.mutateAsync({ plan_id, payment_method });
       if (isPaymentCheckout(res)) {
         pushToast({
           title: "Mengarahkan ke pembayaran…",
@@ -59,6 +68,7 @@ export default function BillingPage() {
         window.location.href = res.checkout_url;
         return;
       }
+      setCheckout(null);
       pushToast({
         title: "Plan diubah",
         description: "Kredit bulanan disesuaikan dengan plan baru.",
@@ -69,9 +79,9 @@ export default function BillingPage() {
     }
   };
 
-  const onBuy = async (pack_id: string) => {
+  const onBuy = async (pack_id: string, payment_method?: PaymentMethodCode) => {
     try {
-      const res = await buyPack.mutateAsync(pack_id);
+      const res = await buyPack.mutateAsync({ pack_id, payment_method });
       if (isPaymentCheckout(res)) {
         pushToast({
           title: "Mengarahkan ke pembayaran…",
@@ -81,6 +91,7 @@ export default function BillingPage() {
         window.location.href = res.checkout_url;
         return;
       }
+      setCheckout(null);
       pushToast({
         title: "Top-up berhasil",
         description: `Saldo sekarang ${res.balance.balance} kredit.`,
@@ -88,6 +99,48 @@ export default function BillingPage() {
       });
     } catch {
       pushToast({ title: "Top-up gagal", variant: "danger" });
+    }
+  };
+
+  const openPackCheckout = (pack: {
+    id: string;
+    name: string;
+    price: number;
+    credits: number;
+  }) => {
+    setCheckout({
+      kind: "pack",
+      pack_id: pack.id,
+      title: pack.name,
+      amount: pack.price,
+      detail: `+${pack.credits} kredit`,
+    });
+  };
+
+  const openPlanCheckout = (plan: {
+    id: PlanId;
+    name: string;
+    price_monthly: number;
+  }) => {
+    if (plan.id === "free" || plan.price_monthly === 0) {
+      void onChangePlan(plan.id);
+      return;
+    }
+    setCheckout({
+      kind: "plan",
+      plan_id: plan.id,
+      title: `Plan ${plan.name}`,
+      amount: plan.price_monthly,
+      detail: "Langganan bulanan",
+    });
+  };
+
+  const confirmCheckout = async (method: PaymentMethodCode) => {
+    if (!checkout) return;
+    if (checkout.kind === "pack") {
+      await onBuy(checkout.pack_id, method);
+    } else {
+      await onChangePlan(checkout.plan_id as PlanId, method);
     }
   };
 
@@ -268,9 +321,12 @@ export default function BillingPage() {
                     <Button
                       className="w-full"
                       variant={current ? "outline" : plan.featured ? "primary" : "secondary"}
-                      disabled={current || changePlan.isPending}
-                      loading={changePlan.isPending && changePlan.variables === plan.id}
-                      onClick={() => onChangePlan(plan.id)}
+                      disabled={current || changePlan.isPending || buyPack.isPending}
+                      loading={
+                        changePlan.isPending &&
+                        changePlan.variables?.plan_id === plan.id
+                      }
+                      onClick={() => openPlanCheckout(plan)}
                     >
                       {current ? "Plan aktif" : "Pilih plan"}
                     </Button>
@@ -310,8 +366,11 @@ export default function BillingPage() {
                   size="sm"
                   variant="outline"
                   className="w-full"
-                  loading={buyPack.isPending && buyPack.variables === pack.id}
-                  onClick={() => onBuy(pack.id)}
+                  loading={
+                    buyPack.isPending && buyPack.variables?.pack_id === pack.id
+                  }
+                  disabled={changePlan.isPending}
+                  onClick={() => openPackCheckout(pack)}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   Beli
@@ -321,10 +380,21 @@ export default function BillingPage() {
           ))}
         </div>
         <p className="text-xs text-[var(--color-soft-gray)] mt-2">
-          Pembayaran via PayCore (Duitku). Kredit aktif setelah webhook
-          payment.succeeded — bukan dari halaman return.
+          Pilih metode bayar di modal, lalu lanjut ke Duitku via PayCore. Kredit
+          aktif setelah webhook payment.succeeded — bukan dari halaman return.
         </p>
       </section>
+
+      <CheckoutPaymentModal
+        open={!!checkout}
+        onClose={() => {
+          if (!changePlan.isPending && !buyPack.isPending) setCheckout(null);
+        }}
+        intent={checkout}
+        loading={changePlan.isPending || buyPack.isPending}
+        defaultMethod="BR"
+        onConfirm={confirmCheckout}
+      />
 
       {/* History */}
       <section>

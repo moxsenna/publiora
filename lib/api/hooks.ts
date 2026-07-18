@@ -588,13 +588,19 @@ export function isPaymentCheckout(
 export function useChangePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (plan_id: PlanId): Promise<ChangePlanResult> => {
+    mutationFn: async (input: {
+      plan_id: PlanId;
+      payment_method?: string;
+    }): Promise<ChangePlanResult> => {
       if (shouldUseMock()) {
-        return api.changePlan(plan_id) as Promise<ChangePlanResult>;
+        return api.changePlan(input.plan_id) as Promise<ChangePlanResult>;
       }
       return apiFetch<ChangePlanResult>("/api/billing/change-plan", {
         method: "POST",
-        body: JSON.stringify({ plan_id }),
+        body: JSON.stringify({
+          plan_id: input.plan_id,
+          payment_method: input.payment_method,
+        }),
       });
     },
     onSuccess: (data) => {
@@ -608,13 +614,19 @@ export function useChangePlan() {
 export function usePurchaseCreditPack() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (pack_id: string): Promise<PurchasePackResult> => {
+    mutationFn: async (input: {
+      pack_id: string;
+      payment_method?: string;
+    }): Promise<PurchasePackResult> => {
       if (shouldUseMock()) {
-        return api.purchaseCreditPack(pack_id) as Promise<PurchasePackResult>;
+        return api.purchaseCreditPack(input.pack_id) as Promise<PurchasePackResult>;
       }
       return apiFetch<PurchasePackResult>("/api/billing/purchase-pack", {
         method: "POST",
-        body: JSON.stringify({ pack_id }),
+        body: JSON.stringify({
+          pack_id: input.pack_id,
+          payment_method: input.payment_method,
+        }),
       });
     },
     onSuccess: (data) => {

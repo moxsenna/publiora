@@ -164,10 +164,18 @@ export async function POST(req: Request) {
       return jsonError("Unauthorized", 401, "unauthorized");
     }
 
-    const body = (await req.json().catch(() => null)) as { plan_id?: unknown } | null;
+    const body = (await req.json().catch(() => null)) as {
+      plan_id?: unknown;
+      payment_method?: unknown;
+    } | null;
     if (!body || !isPlanId(body.plan_id)) {
       return jsonError("plan_id must be free|creator|pro", 400, "validation_error");
     }
+
+    const { isPaymentMethodCode } = await import("@/lib/paycore/methods");
+    const paymentMethod = isPaymentMethodCode(body.payment_method)
+      ? body.payment_method
+      : undefined;
 
     const plan = BILLING_PLANS.find((p) => p.id === body.plan_id);
     if (!plan) {
@@ -199,6 +207,7 @@ export async function POST(req: Request) {
           email: customer.email,
           name: customer.name,
           product,
+          paymentMethod,
         });
         return Response.json({
           checkout_url: checkout.checkout_url,

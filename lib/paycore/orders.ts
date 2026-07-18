@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createPayCoreOrder } from "./client";
+import { createPayCoreOrder, type DuitkuV2PaymentMethod } from "./client";
 import type { PayProduct } from "./catalog";
+import { defaultPaymentMethod } from "./methods";
 
 function newExternalOrderId(prefix: string): string {
   const ts = Date.now().toString(36);
@@ -13,6 +14,7 @@ export async function startCheckout(opts: {
   email: string;
   name: string;
   product: PayProduct;
+  paymentMethod?: DuitkuV2PaymentMethod;
 }) {
   const admin = createAdminClient();
   const external_order_id = newExternalOrderId(
@@ -75,6 +77,9 @@ export async function startCheckout(opts: {
       },
       fulfillment_data,
       idempotency_key: external_order_id,
+      payment_method:
+        opts.paymentMethod ??
+        (defaultPaymentMethod() as DuitkuV2PaymentMethod),
     });
 
     const { error: upErr } = await admin

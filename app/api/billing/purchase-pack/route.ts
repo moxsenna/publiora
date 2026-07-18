@@ -37,10 +37,18 @@ export async function POST(req: Request) {
       return jsonError("Unauthorized", 401, "unauthorized");
     }
 
-    const body = (await req.json().catch(() => null)) as { pack_id?: unknown } | null;
+    const body = (await req.json().catch(() => null)) as {
+      pack_id?: unknown;
+      payment_method?: unknown;
+    } | null;
     if (!body || typeof body.pack_id !== "string" || !body.pack_id.trim()) {
       return jsonError("pack_id is required", 400, "validation_error");
     }
+
+    const { isPaymentMethodCode } = await import("@/lib/paycore/methods");
+    const paymentMethod = isPaymentMethodCode(body.payment_method)
+      ? body.payment_method
+      : undefined;
 
     const pack = CREDIT_PACKS.find((p) => p.id === body.pack_id);
     if (!pack) {
@@ -61,6 +69,7 @@ export async function POST(req: Request) {
           email: customer.email,
           name: customer.name,
           product,
+          paymentMethod,
         });
         return Response.json({
           checkout_url: checkout.checkout_url,
