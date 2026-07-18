@@ -61,7 +61,24 @@ Amounts IDR (MVP): pack 79k / 299k / 749k · plan 299k / 749k
   - POP createInvoice **201**
   - V2 + **`BR` / `NQ`** **SUCCESS** + `checkout_url`
   - V2 + **`SQ` (Nusapay)** gagal di sandbox ini — channel tidak available
-- Publiora default method: **`NQ`** (QRIS Nobu). Override: `PAYCORE_DEFAULT_PAYMENT_METHOD=BR`.
+- Publiora default method: **`BR`** (BRI VA). Override: `PAYCORE_DEFAULT_PAYMENT_METHOD=NQ` untuk QRIS Nobu.
+- Customer `phone` selalu dikirim (fallback `081234567890`) agar halaman V2 sandbox tidak NRE.
+
+### Sandbox UI: "Object reference not set to an instance of an object."
+
+Ini sering **bug halaman demo Duitku**, bukan gagal create order di PayCore.
+
+**Order tetap valid jika:**
+- Muncul **Virtual Account Number** (contoh BRI `1308…`)
+- PayCore `payment_status=pending` + ada `checkout_url`
+
+**Cara lanjut di sandbox VA:**
+1. Abaikan banner Object reference kalau nomor VA sudah tampil.
+2. Cari tombol **simulate payment / bayar / success** di area demo (bukan cuma lihat nomor).
+3. Callback harus ke PayCore: staging `…/webhooks/duitku` atau prod `https://pay.appvibe.biz.id/webhooks/duitku`.
+4. Saldo Publiora naik **setelah webhook** — bukan dari halaman return saja.
+
+Kalau **tidak ada nomor VA sama sekali** → cek method (`BR`/`NQ`, bukan `SQ`) dan merchant sandbox.
 
 ## Migration
 
