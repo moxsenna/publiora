@@ -40,13 +40,13 @@ export default function DashboardPage() {
   const generating = (projects ?? []).filter((p) => p.status === "generating").length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">
             {greeting(profile?.name)}
           </h1>
-          <p className="text-[var(--color-medium-gray)] mt-1">
+          <p className="text-[var(--color-medium-gray)] mt-1 leading-relaxed">
             Ringkasan aktivitas Publiora Anda.
             {generating > 0 ? ` · ${generating} project sedang generate.` : ""}
           </p>

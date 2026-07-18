@@ -72,12 +72,12 @@ export default function BillingPage() {
       : 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-[var(--color-publiora-black)]">
-          Billing & Credits
+          Billing &amp; Credits
         </h1>
-        <p className="text-[var(--color-medium-gray)] mt-1">
+        <p className="text-[var(--color-medium-gray)] mt-1 leading-relaxed">
           Langganan + kredit untuk generate outline, section, title, dan CTA.
         </p>
       </div>
