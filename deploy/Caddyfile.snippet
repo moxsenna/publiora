@@ -1,0 +1,7 @@
+# Add to /opt/wacrm/deploy/Caddyfile (shared Caddy)
+# DNS A: publiora.appvibe.biz.id → 43.228.213.148 (DNS only)
+
+publiora.appvibe.biz.id {
+	encode gzip
+	reverse_proxy publiora-web:5300
+}

@@ -1,0 +1,44 @@
+# Publiora on VPS (deploy-kit multi-app)
+# Path: /opt/publiora
+# Port: 5300 (5100=9router, 5200=lakoku, 5000-5002=wacrm)
+# Network: wacrm_edge (shared Caddy)
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_USE_MOCK_API: ${NEXT_PUBLIC_USE_MOCK_API:-false}
+        NEXT_PUBLIC_DEMO_LOGIN: ${NEXT_PUBLIC_DEMO_LOGIN:-false}
+    container_name: publiora-web
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "5300"
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "127.0.0.1:5300:5300"
+    networks:
+      - edge
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5300/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 50s
+
+networks:
+  edge:
+    name: wacrm_edge
+    external: true

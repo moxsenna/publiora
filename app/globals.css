@@ -1,26 +1,209 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Colors — brand */
+  --color-publiora-black: #0A0A0A;
+  --color-publiora-white: #FAFAF8;
+  --color-publiora-border: #E5E5E5;
+  --color-publiora-blue: #2563EB;
+  --color-publiora-emerald: #059669;
+  --color-deep-gray: #171717;
+  --color-medium-gray: #404040;
+  --color-soft-gray: #A3A3A3;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Accents */
+  --color-gold: #C8A24B;
+  --color-gold-soft: #E9D9A8;
+  --color-danger: #DC2626;
+  --color-warning: #D97706;
+  --color-success: #059669;
+  --color-info: #2563EB;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Status surfaces */
+  --color-surface-1: #FFFFFF;
+  --color-surface-2: #F5F5F2;
+  --color-surface-3: #EFEFEC;
+
+  /* Font families — CSS variables injected by next/font/google in layout.tsx */
+  --font-heading: var(--font-plus-jakarta-sans), sans-serif;
+  --font-body: var(--font-inter), sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+
+  /* Border radius */
+  --radius-card: 24px;
+  --radius-button: 16px;
+  --radius-input: 18px;
+  --radius-pill: 9999px;
+
+  /* Box shadows */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 8px 40px rgba(0, 0, 0, 0.08);
+  --shadow-pop: 0 12px 48px rgba(0, 0, 0, 0.12);
+
+  /* Spacing — 8px grid */
+  --spacing-1: 8px;
+  --spacing-2: 16px;
+  --spacing-3: 24px;
+  --spacing-4: 32px;
+  --spacing-5: 40px;
+  --spacing-6: 48px;
+  --spacing-8: 64px;
+  --spacing-10: 80px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-publiora-white);
+  color: var(--color-deep-gray);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+* {
+  border-color: var(--color-publiora-border);
+}
+
+/* Focus ring */
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-publiora-blue);
+  outline-offset: 2px;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-publiora-black);
+  letter-spacing: -0.02em;
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.animate-fade-in { animation: fade-in 200ms ease-out both; }
+.animate-slide-in-right { animation: slide-in-right 240ms ease-out both; }
+.animate-slide-in-left { animation: slide-in-left 220ms ease-out both; }
+.animate-pulse-soft { animation: pulse-soft 1.4s ease-in-out infinite; }
+
+.skeleton {
+  background: linear-gradient(90deg, #EFEFEC 0%, #F8F8F6 50%, #EFEFEC 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Reader typography */
+.reader-prose {
+  font-family: var(--font-serif);
+  color: var(--color-deep-gray);
+  font-size: 1.0625rem;
+  line-height: 1.85;
+}
+.reader-prose h1,
+.reader-prose h2,
+.reader-prose h3 {
+  font-family: var(--font-heading);
+  color: var(--color-publiora-black);
+  margin-top: 1.6em;
+  margin-bottom: 0.6em;
+  line-height: 1.2;
+}
+.reader-prose h1 { font-size: 1.875rem; }
+.reader-prose h2 { font-size: 1.5rem; }
+.reader-prose h3 { font-size: 1.25rem; }
+.reader-prose p { margin-bottom: 1.15em; }
+.reader-prose blockquote {
+  border-left: 3px solid var(--color-gold);
+  padding-left: 1rem;
+  margin: 1.4em 0;
+  color: var(--color-medium-gray);
+  font-style: italic;
+}
+.reader-prose ul,
+.reader-prose ol {
+  margin: 1em 0 1.4em;
+  padding-left: 1.4em;
+}
+.reader-prose ul { list-style: disc; }
+.reader-prose ol { list-style: decimal; }
+.reader-prose li { margin-bottom: 0.4em; }
+.reader-prose a {
+  color: var(--color-publiora-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.reader-prose hr {
+  border: none;
+  border-top: 1px solid var(--color-publiora-border);
+  margin: 2em 0;
+}
+.reader-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--color-surface-2);
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+.reader-prose pre {
+  background: var(--color-publiora-black);
+  color: var(--color-publiora-white);
+  padding: 1em 1.2em;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+.reader-prose pre code { background: transparent; color: inherit; padding: 0; }
+
+/* TipTap editor surface */
+.tiptap-surface {
+  min-height: 60vh;
+  outline: none;
+}
+.tiptap-surface p { margin-bottom: 1em; }
+.tiptap-surface h1 { font-size: 1.875rem; margin: 1.4em 0 0.6em; }
+.tiptap-surface h2 { font-size: 1.5rem; margin: 1.4em 0 0.6em; }
+.tiptap-surface h3 { font-size: 1.25rem; margin: 1.4em 0 0.6em; }
+.tiptap-surface ul { list-style: disc; padding-left: 1.4em; }
+.tiptap-surface ol { list-style: decimal; padding-left: 1.4em; }
+.tiptap-surface blockquote {
+  border-left: 3px solid var(--color-gold);
+  padding-left: 1rem;
+  margin: 1em 0;
+  color: var(--color-medium-gray);
+  font-style: italic;
+}
+.tiptap-surface code {
+  background: var(--color-surface-2);
+  padding: 0.1em 0.3em;
+  border-radius: 6px;
+}
+
+/* Scrollbar */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--color-publiora-border);
+  border-radius: 9999px;
+  border: 2px solid var(--color-publiora-white);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--color-soft-gray); }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

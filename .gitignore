@@ -31,11 +31,37 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env*.local
+!.env.example
 
 # vercel
 .vercel
 
+# cloudflare / opennext
+.open-next
+.dev.vars
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local tooling noise
+.wrangler/
+.zcode/
+.kiro/
+build-out.txt
+*.sqlite
+*.sqlite-*
+
+deploy/.env.production
+
+# local agent / browser noise
+.playwright-mcp/
+.vscode/
+nul
+git-*.txt
+
+# TestSprite generated artifacts (keep plan/report if committed intentionally)
+testsprite_tests/tmp/
+testsprite_tests/**/*.log

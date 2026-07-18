@@ -1,0 +1,1137 @@
+[
+  {
+    "id": "TC001",
+    "title": "Claim a published ebook into the library",
+    "description": "This verifies that a reader can open a claim page, claim the ebook, and see the book added to their personal library.",
+    "category": "Claim link and library",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /claim/{valid token}"
+      },
+      {
+        "type": "action",
+        "description": "Claim the ebook"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the ebook is added to the library"
+      },
+      {
+        "type": "action",
+        "description": "Open the library"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the claimed ebook is available in the library"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Reach the dashboard after signing in",
+    "description": "A signed-in user can log in and arrive at the dashboard with their account overview visible.",
+    "category": "Authentication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the account overview is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Create a new project from a template",
+    "description": "This verifies that a creator can start a new ebook project by choosing an ebook type, selecting a template, adding a brief, and creating the project.",
+    "category": "Project list and create",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /projects/new"
+      },
+      {
+        "type": "action",
+        "description": "Choose an ebook type"
+      },
+      {
+        "type": "action",
+        "description": "Pick a template"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the project brief with a clear ebook idea"
+      },
+      {
+        "type": "action",
+        "description": "Create the project"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new project workspace is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Create a new account and reach the dashboard",
+    "description": "A visitor can register with valid details and be taken into the signed-in dashboard experience.",
+    "category": "Authentication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /register"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the name field with a valid name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with a valid email"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with a valid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the account overview is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Generate and approve an outline in the workspace",
+    "description": "This verifies that a creator can generate an outline, review the proposed structure, make a change if needed, and approve it to continue the ebook workflow.",
+    "category": "AI workspace generation loop",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a project workspace"
+      },
+      {
+        "type": "action",
+        "description": "Generate an outline"
+      },
+      {
+        "type": "action",
+        "description": "Edit the outline with a refinement"
+      },
+      {
+        "type": "action",
+        "description": "Approve the outline"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the outline is approved and visible in the workspace"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Publish an ebook from the workspace",
+    "description": "This verifies that a creator can publish a finished project and see it transition into the published state.",
+    "category": "AI workspace generation loop",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a project workspace"
+      },
+      {
+        "type": "action",
+        "description": "Publish the ebook with a slug"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the project is shown as published"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Restore a signed-in session on page load",
+    "description": "A returning signed-in user can revisit the app and land on the dashboard without manually logging in again.",
+    "category": "Authentication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the account overview is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Generate and enhance a section",
+    "description": "This verifies that a creator can generate ebook content for a section, improve it with the enhancement tool, and keep the updated version in the workspace.",
+    "category": "AI workspace generation loop",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a project workspace"
+      },
+      {
+        "type": "action",
+        "description": "Generate a section"
+      },
+      {
+        "type": "action",
+        "description": "Enhance the generated section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated section content is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Open a claimed ebook in the hosted reader",
+    "description": "This verifies that a signed-in reader can open a claimed book from the library and enter the hosted reader successfully.",
+    "category": "Claim link and library",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the library"
+      },
+      {
+        "type": "action",
+        "description": "Open a claimed ebook"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the hosted reader is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Chat with the strategist to refine the ebook direction",
+    "description": "This verifies that a creator can send a message to the strategist and receive a useful reply that helps clarify the ebook idea.",
+    "category": "AI workspace generation loop",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a project workspace"
+      },
+      {
+        "type": "action",
+        "description": "Send a message to the strategist"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a strategist reply is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Resume reading from saved progress",
+    "description": "This verifies that a reader can return later to a claimed ebook and continue from previously saved reading progress.",
+    "category": "Claim link and library",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the library"
+      },
+      {
+        "type": "action",
+        "description": "Resume reading a claimed ebook"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the reader opens at the saved progress point"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "View creator credits and recent projects on the dashboard",
+    "description": "A signed-in creator can see their credit balance and current project summary from the dashboard.",
+    "category": "Dashboard overview",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the credit balance is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the recent projects summary is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Create a shareable claim link for a published ebook",
+    "description": "This verifies that a creator can manage claim links on a published ebook and generate a new shareable link for readers.",
+    "category": "Claim link and library",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a published ebook detail page"
+      },
+      {
+        "type": "action",
+        "description": "Create a new claim link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a shareable claim link is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Search and open a project from the project list",
+    "description": "This verifies that a creator can find a project using search or filters and open the matching project to continue working.",
+    "category": "Project list and create",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /projects"
+      },
+      {
+        "type": "action",
+        "description": "Search for a matching project"
+      },
+      {
+        "type": "action",
+        "description": "Apply a project status filter"
+      },
+      {
+        "type": "action",
+        "description": "Open the matching project"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the project workspace is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "View billing balance and plan details",
+    "description": "A signed-in creator can open billing settings and see their current balance, plan, and monthly credit grant information.",
+    "category": "Billing and credits",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the billing settings link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the current credit balance is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the current subscription plan and monthly credit grant information are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Sign out of the account menu",
+    "description": "A signed-in user can open the account menu, sign out, and return to the login page.",
+    "category": "Authentication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Open the account menu"
+      },
+      {
+        "type": "action",
+        "description": "Sign out of the account"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the signed-out state is shown"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Change subscription plan from billing settings",
+    "description": "A signed-in creator can change to a different subscription plan and see the updated plan reflected in billing settings.",
+    "category": "Billing and credits",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the billing settings link"
+      },
+      {
+        "type": "action",
+        "description": "Select a different subscription plan"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the plan change"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated subscription plan is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the credit balance is still displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "View balance and buy a credit pack",
+    "description": "This verifies that a signed-in creator can review their billing balance and purchase a credit pack from the billing page.",
+    "category": "Project list and create",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /settings/billing"
+      },
+      {
+        "type": "action",
+        "description": "Review the current credit balance"
+      },
+      {
+        "type": "action",
+        "description": "Buy a credit pack"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the credit balance or transaction history is updated"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC019",
+    "title": "Open billing or start a new project from the dashboard",
+    "description": "A signed-in creator can move from the dashboard into billing settings or project creation.",
+    "category": "Dashboard overview",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to billing settings"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the billing settings page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the plan and credits sections are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC020",
+    "title": "Purchase a credit pack from billing settings",
+    "description": "A signed-in creator can buy a credit pack and see their available credits increase in billing settings.",
+    "category": "Billing and credits",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the billing settings link"
+      },
+      {
+        "type": "action",
+        "description": "Choose a credit pack"
+      },
+      {
+        "type": "action",
+        "description": "Purchase the selected credit pack"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a purchase confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the available credit balance increases"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC021",
+    "title": "Navigate between chapters in the reader",
+    "description": "This verifies that a reader can move through chapters in the hosted reader and see the displayed content update accordingly.",
+    "category": "Claim link and library",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the hosted reader for a claimed ebook"
+      },
+      {
+        "type": "action",
+        "description": "Select a different chapter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected chapter content is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC022",
+    "title": "Browse published ebook stats from the dashboard",
+    "description": "A signed-in creator can review published ebook activity from the dashboard and open a published item.",
+    "category": "Dashboard overview",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Open a published ebook from the overview"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the published ebook details page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify published ebook stats are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC023",
+    "title": "Start a new blank project",
+    "description": "This verifies that a creator can create a project without using a template and still reach the new workspace successfully.",
+    "category": "Project list and create",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /projects/new"
+      },
+      {
+        "type": "action",
+        "description": "Choose an ebook type"
+      },
+      {
+        "type": "action",
+        "description": "Start from a blank project"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the project brief with a clear ebook idea"
+      },
+      {
+        "type": "action",
+        "description": "Create the project"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new project workspace is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC024",
+    "title": "Open the product from the landing page and start creating",
+    "description": "A visitor can learn the product from the landing page and follow the primary call to action toward creating an ebook.",
+    "category": "Marketing landing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll through the product features section"
+      },
+      {
+        "type": "action",
+        "description": "Scroll through the pricing section"
+      },
+      {
+        "type": "action",
+        "description": "Click the primary call to action to start creating an ebook"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the project creation page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the create project form is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "Keep billing changes visible after returning to continue work",
+    "description": "A signed-in creator can view billing updates and then return to the workspace with the updated billing state preserved in the account session.",
+    "category": "Billing and credits",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the billing settings link"
+      },
+      {
+        "type": "action",
+        "description": "View the current balance and plan details"
+      },
+      {
+        "type": "action",
+        "description": "Return to the dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the account credit balance is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Review project statuses in the project list",
+    "description": "This verifies that a creator can scan the project list to understand which projects are drafts or published and select the one they need.",
+    "category": "Project list and create",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /projects"
+      },
+      {
+        "type": "action",
+        "description": "Review the project status list"
+      },
+      {
+        "type": "action",
+        "description": "Open a draft project"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the project workspace is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC027",
+    "title": "Use the landing page to reach sign in or registration",
+    "description": "A visitor can learn the product on the landing page and choose an account access path from the conversion calls to action.",
+    "category": "Marketing landing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll through the how-it-works section"
+      },
+      {
+        "type": "action",
+        "description": "Click the sign in or register call to action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the authentication entry page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the sign in or registration form is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC028",
+    "title": "Generate title and CTA options",
+    "description": "This verifies that a creator can use the workspace tools to generate messaging options for the ebook and review the suggested choices.",
+    "category": "AI workspace generation loop",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a project workspace"
+      },
+      {
+        "type": "action",
+        "description": "Generate title options"
+      },
+      {
+        "type": "action",
+        "description": "Generate CTA options"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify title and CTA options are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC029",
+    "title": "Request a password reset link",
+    "description": "A visitor can request a password reset from the form and see confirmation that the request was sent.",
+    "category": "Authentication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /forgot-password"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with a valid email"
+      },
+      {
+        "type": "action",
+        "description": "Submit the password reset request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a reset request confirmation is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC030",
+    "title": "Review billing transaction history",
+    "description": "A signed-in creator can open billing settings and review prior credit grants, spends, and purchases in transaction history.",
+    "category": "Billing and credits",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the billing settings link"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the transaction history section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the transaction history is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify prior credit activity entries are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC031",
+    "title": "Delete a project after confirming the removal",
+    "description": "This verifies that a creator can remove a project from the workspace after confirming the deletion action.",
+    "category": "AI workspace generation loop",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a project workspace"
+      },
+      {
+        "type": "action",
+        "description": "Delete the project"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the removal"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the project is no longer available"
+      }
+    ],
+    "priority": "Low"
+  }
+]
