@@ -73,10 +73,10 @@ function NavBody({ onNavigate }: { onNavigate?: () => void }) {
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm font-medium transition-colors border-l-[3px]",
                 active
-                  ? "bg-[var(--color-publiora-black)] text-white"
-                  : "text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-deep-gray)]"
+                  ? "bg-[var(--color-surface-2)] text-[var(--color-publiora-black)] border-l-[var(--color-publiora-black)]"
+                  : "text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-deep-gray)] border-l-transparent"
               )}
             >
               <Icon className="h-4 w-4" />

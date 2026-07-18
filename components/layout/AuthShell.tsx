@@ -17,9 +17,9 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-full grid md:grid-cols-2 bg-white">
-      <div className="flex flex-col justify-between p-8">
+      <div className="flex flex-col justify-between p-8 md:p-12">
         <Logo size="md" href="/" />
-        <div className="my-12 max-w-md">
+        <div className="my-12 max-w-[440px] w-full mx-auto"> 
           <h1 className="text-3xl font-bold tracking-tight text-[var(--color-publiora-black)]">{title}</h1>
           {description && (
             <p className="mt-3 text-[var(--color-medium-gray)]">{description}</p>
