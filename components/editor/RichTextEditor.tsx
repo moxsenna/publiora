@@ -65,8 +65,8 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   ];
 
   return (
-    <div className="rounded-2xl border border-[var(--color-publiora-border)] bg-white overflow-hidden">
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] flex-wrap">
+    <div className="rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-white overflow-hidden shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-0.5 px-3 py-2 border-b border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] flex-wrap">
         {tools.map((t, i) => (
           <button
             key={i}

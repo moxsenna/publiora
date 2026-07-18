@@ -151,7 +151,7 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
             </p>
           </div>
 
-          <div className="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-card)] px-6 md:px-12 py-10">
+          <div className="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-card)] px-8 md:px-12 py-10 border border-[var(--color-publiora-border)]/50">
             {ebook.sections.map((s, i) => (
               <section
                 key={s.id}

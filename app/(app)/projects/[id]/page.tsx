@@ -98,7 +98,7 @@ export default function WorkspacePage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 h-[calc(100vh-4rem)]">
       {/* Header */}
-      <div className="border-b border-[var(--color-publiora-border)] bg-white px-3 sm:px-4 py-3 space-y-3">
+      <div className="border-b border-[var(--color-publiora-border)] bg-white px-4 sm:px-6 py-3 space-y-3 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <Link href="/projects">

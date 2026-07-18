@@ -129,7 +129,7 @@ export function OutlinePanel({ projectId }: { projectId: string }) {
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-3xl mx-auto">
+    <div className="p-5 space-y-4 max-w-3xl mx-auto">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">

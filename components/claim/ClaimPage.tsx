@@ -68,7 +68,7 @@ export function ClaimPage({ token, preview }: ClaimPageProps) {
       <ClaimFrame>
         <Card className="max-w-md w-full">
           <CardBody className="text-center py-10">
-            <div className="h-12 w-12 rounded-2xl bg-[#FEF2F2] text-[var(--color-danger)] grid place-items-center mx-auto">
+            <div className="h-12 w-12 rounded-2xl bg-[var(--color-surface-2)] text-[var(--color-danger)] grid place-items-center mx-auto">
               <AlertTriangle className="h-6 w-6" />
             </div>
             <h1 className="mt-4 text-xl font-bold text-[var(--color-publiora-black)]">{c.title}</h1>
