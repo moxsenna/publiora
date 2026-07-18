@@ -7,6 +7,7 @@ import {
   CHECKOUT_PAYMENT_METHODS,
   type PaymentMethodCode,
 } from "@/lib/paycore/methods";
+import { PaymentMethodIcon } from "@/components/billing/PaymentMethodIcons";
 import { cn } from "@/lib/utils";
 import { Building2, QrCode, Store } from "lucide-react";
 
@@ -128,22 +129,24 @@ export function CheckoutPaymentModal({
                           : "border-[var(--color-publiora-border)] hover:border-[var(--color-medium-gray)] bg-white"
                       )}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
+                      <div className="flex items-center gap-3">
+                        <PaymentMethodIcon code={m.code} />
+                        <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
                             {m.label}
                           </div>
-                          <div className="text-xs text-[var(--color-medium-gray)] mt-0.5">
+                          <div className="text-xs text-[var(--color-medium-gray)] mt-0.5 line-clamp-2">
                             {m.description}
                           </div>
                         </div>
                         <span
                           className={cn(
-                            "mt-0.5 h-4 w-4 rounded-full border shrink-0",
+                            "h-4 w-4 rounded-full border shrink-0",
                             active
                               ? "border-[var(--color-publiora-black)] bg-[var(--color-publiora-black)]"
                               : "border-[var(--color-soft-gray)]"
                           )}
+                          aria-hidden
                         />
                       </div>
                     </button>
