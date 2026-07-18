@@ -164,17 +164,17 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
               Project metadata
             </h3>
             <dl className="grid grid-cols-2 gap-3 text-sm">
-              <dt className="text-[var(--color-soft-gray)]">Author</dt>
+              <dt className="text-[var(--color-medium-gray)]">Author</dt>
               <dd className="text-[var(--color-deep-gray)]">{project.author}</dd>
-              <dt className="text-[var(--color-soft-gray)]">Tipe</dt>
+              <dt className="text-[var(--color-medium-gray)]">Tipe</dt>
               <dd className="text-[var(--color-deep-gray)] capitalize">
                 {(project.ebook_type ?? "lead_magnet").replaceAll("_", " ")}
               </dd>
-              <dt className="text-[var(--color-soft-gray)]">Audience</dt>
+              <dt className="text-[var(--color-medium-gray)]">Audience</dt>
               <dd className="text-[var(--color-deep-gray)]">{project.audience}</dd>
-              <dt className="text-[var(--color-soft-gray)]">Tone</dt>
+              <dt className="text-[var(--color-medium-gray)]">Tone</dt>
               <dd className="text-[var(--color-deep-gray)]">{project.tone}</dd>
-              <dt className="text-[var(--color-soft-gray)]">Niche</dt>
+              <dt className="text-[var(--color-medium-gray)]">Niche</dt>
               <dd className="text-[var(--color-deep-gray)]">{project.niche}</dd>
             </dl>
           </CardBody>

@@ -164,7 +164,7 @@ export function OutlinePanel({ projectId }: { projectId: string }) {
                 <div className="flex flex-col items-center gap-1 pt-1">
                   <button
                     onClick={() => move(i, -1)}
-                    className="text-[var(--color-soft-gray)] hover:text-[var(--color-deep-gray)]"
+                    className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
                     aria-label="Move up"
                   >
                     <ChevronUp className="h-4 w-4" />
@@ -172,7 +172,7 @@ export function OutlinePanel({ projectId }: { projectId: string }) {
                   <span className="text-xs font-bold text-[var(--color-publiora-black)]">{i + 1}</span>
                   <button
                     onClick={() => move(i, 1)}
-                    className="text-[var(--color-soft-gray)] hover:text-[var(--color-deep-gray)]"
+                    className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
                     aria-label="Move down"
                   >
                     <ChevronDown className="h-4 w-4" />
@@ -191,7 +191,7 @@ export function OutlinePanel({ projectId }: { projectId: string }) {
                     placeholder="Ringkasan isi section"
                   />
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[var(--color-soft-gray)]">
+                    <span className="text-xs text-[var(--color-medium-gray)]">
                       ~{s.estimated_words} words
                     </span>
                     <SectionStatusBadge status={s.status} />
@@ -199,7 +199,7 @@ export function OutlinePanel({ projectId }: { projectId: string }) {
                 </div>
                 <button
                   onClick={() => remove(s.id)}
-                  className="text-[var(--color-soft-gray)] hover:text-[var(--color-danger)] pt-1"
+                  className="text-[var(--color-medium-gray)] hover:text-[var(--color-danger)] pt-1"
                   aria-label="Remove"
                 >
                   <Trash2 className="h-4 w-4" />

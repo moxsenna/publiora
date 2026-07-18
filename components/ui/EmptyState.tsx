@@ -18,7 +18,7 @@ export function EmptyState({ icon, title, description, action, className }: Empt
       )}
     >
       {icon && (
-        <div className="h-14 w-14 rounded-2xl bg-[var(--color-surface-2)] grid place-items-center text-[var(--color-soft-gray)] border border-[var(--color-publiora-border)]">
+        <div className="h-14 w-14 rounded-2xl bg-[var(--color-surface-2)] grid place-items-center text-[var(--color-medium-gray)] border border-[var(--color-publiora-border)]">
           {icon}
         </div>
       )}

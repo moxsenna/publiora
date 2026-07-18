@@ -13,9 +13,9 @@ export function HowItWorks() {
       <div className="max-w-7xl mx-auto px-6 py-20">
         <div className="max-w-2xl">
           <div className="text-sm font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
-            How it works
+            Cara kerja
           </div>
-          <h2 className="mt-3 text-4xl font-bold tracking-tight text-[var(--color-publiora-black)]">
+          <h2 className="mt-3 text-4xl font-bold tracking-tight text-pretty text-[var(--color-publiora-black)]">
             Dari brief ke audience dalam 6 langkah.
           </h2>
         </div>

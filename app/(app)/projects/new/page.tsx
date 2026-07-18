@@ -80,7 +80,7 @@ export default function NewProjectPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       <Link href="/projects">
         <Button variant="ghost" size="sm">
           <ArrowLeft className="h-4 w-4" />
@@ -114,7 +114,7 @@ export default function NewProjectPage() {
                   })
                 }
                 className={cn(
-                  "p-4 rounded-2xl border-2 text-left bg-white transition-all",
+                  "p-4 rounded-2xl border-2 text-left bg-white transition-colors",
                   active
                     ? "border-[var(--color-publiora-black)]"
                     : "border-[var(--color-publiora-border)]"
@@ -144,7 +144,7 @@ export default function NewProjectPage() {
           <button
             type="button"
             onClick={() => setSelectedTemplate(null)}
-            className="p-4 rounded-2xl border-2 text-left transition-all bg-white"
+            className="p-4 rounded-2xl border-2 text-left transition-colors bg-white"
             style={{
               borderColor: !selectedTemplate
                 ? "var(--color-publiora-black)"
@@ -166,7 +166,7 @@ export default function NewProjectPage() {
               key={t.id}
               type="button"
               onClick={() => applyTemplate(t.id)}
-              className="p-4 rounded-2xl border-2 text-left bg-white transition-all"
+              className="p-4 rounded-2xl border-2 text-left bg-white transition-colors"
               style={{
                 borderColor:
                   selectedTemplate === t.id

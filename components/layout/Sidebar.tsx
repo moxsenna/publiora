@@ -37,7 +37,7 @@ function NavBody({ onNavigate }: { onNavigate?: () => void }) {
         {onNavigate ? (
           <button
             onClick={onNavigate}
-            className="text-[var(--color-soft-gray)] hover:text-[var(--color-deep-gray)] md:hidden"
+            className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] md:hidden"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
@@ -45,7 +45,7 @@ function NavBody({ onNavigate }: { onNavigate?: () => void }) {
         ) : (
           <button
             onClick={() => useUiStore.getState().toggleSidebar()}
-            className="text-[var(--color-soft-gray)] hover:text-[var(--color-deep-gray)] hidden md:inline-flex"
+            className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] hidden md:inline-flex"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -97,7 +97,7 @@ function NavBody({ onNavigate }: { onNavigate?: () => void }) {
             <div className="text-sm font-medium truncate text-[var(--color-deep-gray)]">
               {profile?.name ?? "Guest"}
             </div>
-            <div className="text-xs text-[var(--color-soft-gray)] truncate">
+            <div className="text-xs text-[var(--color-medium-gray)] truncate">
               {profile?.email}
             </div>
           </div>

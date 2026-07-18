@@ -203,7 +203,7 @@ function ClaimLinkRow({
                 </Button>
               </Link>
             </div>
-            <div className="mt-2 text-xs text-[var(--color-soft-gray)] flex flex-wrap gap-3">
+            <div className="mt-2 text-xs text-[var(--color-medium-gray)] flex flex-wrap gap-3">
               <span>{link.used_count} digunakan</span>
               {link.max_uses != null && <span>/{link.max_uses} slot</span>}
               {link.expires_at && <span>Exp: {new Date(link.expires_at).toLocaleDateString()}</span>}
@@ -245,7 +245,7 @@ function ClaimEventsList({ linkId }: { linkId: string }) {
   return (
     <div className="mt-3 rounded-xl border border-[var(--color-publiora-border)] overflow-hidden">
       <table className="w-full text-sm">
-        <thead className="bg-[var(--color-surface-2)] text-[var(--color-soft-gray)] text-xs uppercase tracking-wide">
+        <thead className="bg-[var(--color-surface-2)] text-[var(--color-medium-gray)] text-xs uppercase tracking-wide">
           <tr>
             <th className="text-left p-3">Reader</th>
             <th className="text-left p-3">Status</th>
@@ -261,7 +261,7 @@ function ClaimEventsList({ linkId }: { linkId: string }) {
                   {e.status.replace("_", " ")}
                 </Badge>
               </td>
-              <td className="p-3 text-[var(--color-soft-gray)]">
+              <td className="p-3 text-[var(--color-medium-gray)]">
                 {new Date(e.created_at).toLocaleString()}
               </td>
             </tr>
@@ -379,7 +379,7 @@ function ExportsTab({ ebookId }: { ebookId: string }) {
         <Card>
           <CardBody className="p-0">
             <table className="w-full text-sm">
-              <thead className="bg-[var(--color-surface-2)] text-[var(--color-soft-gray)] text-xs uppercase tracking-wide">
+              <thead className="bg-[var(--color-surface-2)] text-[var(--color-medium-gray)] text-xs uppercase tracking-wide">
                 <tr>
                   <th className="text-left p-3">Format</th>
                   <th className="text-left p-3">Status</th>
@@ -392,7 +392,7 @@ function ExportsTab({ ebookId }: { ebookId: string }) {
                   <tr key={e.id} className="border-t border-[var(--color-publiora-border)]">
                     <td className="p-3 font-medium uppercase text-[var(--color-deep-gray)]">{e.format}</td>
                     <td className="p-3"><ExportStatusPill status={e.status} /></td>
-                    <td className="p-3 text-[var(--color-soft-gray)]">{new Date(e.created_at).toLocaleString()}</td>
+                    <td className="p-3 text-[var(--color-medium-gray)]">{new Date(e.created_at).toLocaleString()}</td>
                     <td className="p-3 text-right">
                       {e.url && e.status === "complete" && (
                         <a href={e.url} className="text-[var(--color-publiora-blue)] hover:underline text-xs inline-flex items-center gap-1">
@@ -439,7 +439,7 @@ function InfoTab({ ebookId }: { ebookId: string }) {
 function InfoRow({ k, v }: { k: string; v: string }) {
   return (
     <tr className="border-t border-[var(--color-publiora-border)]">
-      <td className="p-3 text-[var(--color-soft-gray)] w-1/3">{k}</td>
+      <td className="p-3 text-[var(--color-medium-gray)] w-1/3">{k}</td>
       <td className="p-3 text-[var(--color-deep-gray)]">{v}</td>
     </tr>
   );

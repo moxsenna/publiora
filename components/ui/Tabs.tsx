@@ -29,7 +29,7 @@ export function Tabs({ value, onChange, tabs, className }: TabsProps) {
             aria-selected={active}
             onClick={() => onChange(tab.value)}
             className={cn(
-              "px-3.5 sm:px-4 h-9 rounded-[12px] text-sm font-medium transition-all whitespace-nowrap",
+              "px-3.5 sm:px-4 h-9 rounded-[12px] text-sm font-medium transition-colors whitespace-nowrap",
               active
                 ? "bg-white text-[var(--color-publiora-black)] shadow-sm"
                 : "text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"

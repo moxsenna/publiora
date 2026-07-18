@@ -103,7 +103,7 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
     <ReaderShell backHref={backHref} backLabel={backLabel}>
       <div className="h-0.5 bg-[var(--color-surface-3)] sticky top-14 z-20">
         <div
-          className="h-full bg-[var(--color-publiora-blue)] transition-all"
+          className="h-full bg-[var(--color-publiora-blue)] transition-[width] duration-200"
           style={{ width: `${progressPct}%` }}
         />
       </div>
@@ -112,7 +112,7 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
         {/* Desktop TOC */}
         <aside className="hidden lg:block w-64 shrink-0">
           <div className="sticky top-24 space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-soft-gray)] mb-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-3">
               Daftar isi
             </div>
             {ebook.sections.map((s, i) => (
@@ -127,7 +127,7 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
                     : "text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)]"
                 )}
               >
-                <span className="text-[10px] opacity-70 mr-1.5">{i + 1}.</span>
+                <span className="text-xs opacity-70 mr-1.5">{i + 1}.</span>
                 {s.title}
               </button>
             ))}
@@ -146,7 +146,7 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
               <p className="mt-3 text-base opacity-90 text-[var(--color-gold-soft)]">{ebook.subtitle}</p>
             )}
             <p className="mt-6 text-sm opacity-80">oleh {ebook.author}</p>
-            <p className="mt-3 text-[11px] opacity-50 hidden sm:block">
+            <p className="mt-3 text-xs opacity-70 hidden sm:block">
               Keyboard: J/K atau ←/→ pindah section · T daftar isi · Esc tutup
             </p>
           </div>
@@ -183,22 +183,25 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
       <button
         type="button"
         onClick={() => setTocOpen(true)}
-        className="lg:hidden fixed bottom-6 right-6 h-12 w-12 rounded-full bg-[var(--color-publiora-black)] text-white shadow-[var(--shadow-pop)] grid place-items-center"
+        className="lg:hidden fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))] h-12 w-12 rounded-full bg-[var(--color-publiora-black)] text-white shadow-[var(--shadow-pop)] grid place-items-center"
         aria-label="Buka daftar isi"
       >
         <List className="h-5 w-5" />
       </button>
 
       {tocOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/40" onClick={() => setTocOpen(false)}>
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/40 overscroll-contain" onClick={() => setTocOpen(false)}>
           <div
-            className="absolute bottom-0 inset-x-0 bg-white rounded-t-3xl p-5 max-h-[70vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Daftar isi"
+            className="absolute bottom-0 inset-x-0 bg-white rounded-t-3xl p-5 max-h-[70vh] overflow-y-auto overscroll-contain"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Daftar isi</h3>
               <button type="button" onClick={() => setTocOpen(false)} aria-label="Tutup">
-                <X className="h-5 w-5 text-[var(--color-soft-gray)]" />
+                <X className="h-5 w-5 text-[var(--color-medium-gray)]" />
               </button>
             </div>
             <div className="space-y-1">

@@ -171,7 +171,7 @@ export default function BillingPage() {
                 <Coins className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-[var(--color-soft-gray)]">
+                <div className="text-xs uppercase tracking-wide text-[var(--color-medium-gray)]">
                   Saldo kredit
                 </div>
                 {lb ? (
@@ -195,7 +195,7 @@ export default function BillingPage() {
                   </div>
                   <ProgressBar value={Math.min(100, Math.max(0, usedPct))} />
                 </div>
-                <p className="text-xs text-[var(--color-soft-gray)]">
+                <p className="text-xs text-[var(--color-medium-gray)]">
                   Periode {formatDate(balance.period_start)} –{" "}
                   {formatDate(balance.period_end)} · Lifetime spent{" "}
                   {balance.lifetime_spent}
@@ -212,7 +212,7 @@ export default function BillingPage() {
                 <CreditCard className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-[var(--color-soft-gray)]">
+                <div className="text-xs uppercase tracking-wide text-[var(--color-medium-gray)]">
                   Subscription
                 </div>
                 {ls ? (
@@ -265,7 +265,7 @@ export default function BillingPage() {
 
       {/* Plans */}
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-soft-gray)] mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-3">
           Plans
         </h2>
         {lp ? (
@@ -298,7 +298,7 @@ export default function BillingPage() {
                               : formatIdr(plan.price_monthly)}
                           </span>
                           {plan.price_monthly > 0 && (
-                            <span className="text-xs text-[var(--color-soft-gray)]">
+                            <span className="text-xs text-[var(--color-medium-gray)]">
                               /bln
                             </span>
                           )}
@@ -340,7 +340,7 @@ export default function BillingPage() {
 
       {/* Top-up packs */}
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-soft-gray)] mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-3">
           Top-up kredit
         </h2>
         <div className="grid sm:grid-cols-3 gap-3">
@@ -355,7 +355,7 @@ export default function BillingPage() {
                 </div>
                 <div className="text-2xl font-bold text-[var(--color-publiora-black)]">
                   +{pack.credits}
-                  <span className="text-sm font-medium text-[var(--color-soft-gray)] ml-1">
+                  <span className="text-sm font-medium text-[var(--color-medium-gray)] ml-1">
                     kredit
                   </span>
                 </div>
@@ -379,7 +379,7 @@ export default function BillingPage() {
             </Card>
           ))}
         </div>
-        <p className="text-xs text-[var(--color-soft-gray)] mt-2">
+        <p className="text-xs text-[var(--color-medium-gray)] mt-2">
           Pilih metode bayar di modal, lalu lanjut ke Duitku via PayCore. Kredit
           aktif setelah webhook payment.succeeded — bukan dari halaman return.
         </p>
@@ -408,7 +408,7 @@ export default function BillingPage() {
           </CardHeader>
           <CardBody className="p-0">
             {!txns || txns.length === 0 ? (
-              <div className="px-6 pb-6 text-sm text-[var(--color-soft-gray)]">
+              <div className="px-6 pb-6 text-sm text-[var(--color-medium-gray)]">
                 Belum ada transaksi.
               </div>
             ) : (
@@ -422,7 +422,7 @@ export default function BillingPage() {
                       <div className="font-medium text-[var(--color-deep-gray)] truncate">
                         {t.label}
                       </div>
-                      <div className="text-xs text-[var(--color-soft-gray)]">
+                      <div className="text-xs text-[var(--color-medium-gray)]">
                         {formatRelativeTime(t.created_at)} · {t.type}
                       </div>
                     </div>

@@ -50,23 +50,23 @@ export function Pricing() {
       <div className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center max-w-2xl mx-auto">
           <div className="text-sm font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
-            Pricing
+            Harga
           </div>
-          <h2 className="mt-3 text-4xl font-bold tracking-tight text-[var(--color-publiora-black)]">
+          <h2 className="mt-3 text-4xl font-bold tracking-tight text-pretty text-[var(--color-publiora-black)]">
             Langganan + kredit generate.
           </h2>
           <p className="mt-4 text-[var(--color-medium-gray)] text-lg">
             Plan memberi kuota bulanan. Butuh lebih? Top-up kredit kapan saja.
           </p>
         </div>
-        <div className="mt-12 grid md:grid-cols-3 gap-6 items-start">
+        <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {tiers.map((t) => (
             <div
               key={t.name}
               className={
                 "p-8 rounded-[var(--radius-card)] border bg-white " +
                 (t.featured
-                  ? "border-[var(--color-publiora-black)] shadow-[var(--shadow-pop)] relative"
+                  ? "border-[var(--color-publiora-black)] shadow-[var(--shadow-pop)] relative md:col-span-2 lg:col-span-1"
                   : "border-[var(--color-publiora-border)]")
               }
             >
@@ -75,14 +75,16 @@ export function Pricing() {
                   Paling populer
                 </span>
               )}
-              <div className="text-sm uppercase tracking-wide text-[var(--color-soft-gray)] font-medium">
+              <div className="text-sm uppercase tracking-wide text-[var(--color-medium-gray)] font-medium">
                 {t.name}
               </div>
               <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-[var(--color-publiora-black)]">
                   {t.price}
                 </span>
-                <span className="text-sm text-[var(--color-medium-gray)]">/bln</span>
+                {t.price !== "Gratis" && (
+                  <span className="text-sm text-[var(--color-medium-gray)]">/bln</span>
+                )}
               </div>
               <p className="mt-2 text-sm text-[var(--color-medium-gray)]">{t.tagline}</p>
               <ul className="mt-6 space-y-3 text-sm">
@@ -101,7 +103,7 @@ export function Pricing() {
             </div>
           ))}
         </div>
-        <p className="mt-8 text-center text-sm text-[var(--color-soft-gray)]">
+        <p className="mt-8 text-center text-sm text-[var(--color-medium-gray)]">
           Biaya generate: outline 5 · section 10 · title/CTA 2 kredit. Top-up tersedia di Billing.
         </p>
       </div>

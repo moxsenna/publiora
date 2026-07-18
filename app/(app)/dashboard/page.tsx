@@ -85,7 +85,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatCard
           label="Credits"
           value={balance?.balance ?? 0}
@@ -153,7 +153,7 @@ export default function DashboardPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {recentProjects.map((p) => (
               <Link key={p.id} href={`/projects/${p.id}`}>
-                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all h-full cursor-pointer">
+                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform h-full cursor-pointer">
                   <div
                     className="h-24 rounded-t-[var(--radius-card)] relative overflow-hidden"
                     style={{ background: p.cover_color }}
@@ -173,7 +173,7 @@ export default function DashboardPage() {
                     <h3 className="mt-2 font-semibold text-[var(--color-publiora-black)] line-clamp-1">
                       {p.title}
                     </h3>
-                    <p className="text-xs text-[var(--color-soft-gray)] mt-1">
+                    <p className="text-xs text-[var(--color-medium-gray)] mt-1">
                       Updated {formatRelativeTime(p.updated_at)}
                     </p>
                   </CardBody>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
           <div className="grid md:grid-cols-3 gap-4">
             {recentPublished.map((p) => (
               <Link key={p.id} href={`/published/${p.id}`}>
-                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all cursor-pointer">
+                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer">
                   <CardHeader>
                     <div className="flex items-start gap-3">
                       <div
@@ -251,7 +251,7 @@ function QuickAction({
 }) {
   return (
     <Link href={href}>
-      <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+      <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer h-full">
         <CardBody className="flex items-center gap-3 py-4">
           <div className="h-10 w-10 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] grid place-items-center text-[var(--color-deep-gray)] shrink-0">
             {icon}
@@ -260,9 +260,9 @@ function QuickAction({
             <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
               {title}
             </div>
-            <div className="text-xs text-[var(--color-soft-gray)] truncate">{desc}</div>
+            <div className="text-xs text-[var(--color-medium-gray)] truncate">{desc}</div>
           </div>
-          <ArrowRight className="h-4 w-4 text-[var(--color-soft-gray)] ml-auto shrink-0" />
+          <ArrowRight className="h-4 w-4 text-[var(--color-medium-gray)] ml-auto shrink-0" />
         </CardBody>
       </Card>
     </Link>
@@ -284,7 +284,7 @@ function StatCard({
     <Card>
       <CardBody>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-[var(--color-soft-gray)] uppercase tracking-wide">
+          <span className="text-xs font-medium text-[var(--color-medium-gray)] uppercase tracking-wide">
             {label}
           </span>
           <div className="h-7 w-7 rounded-lg bg-[var(--color-surface-2)] grid place-items-center text-[var(--color-medium-gray)]">

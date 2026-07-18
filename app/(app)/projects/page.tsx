@@ -57,12 +57,12 @@ export default function ProjectsPage() {
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
         <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-soft-gray)]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-medium-gray)]" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cari project…"
-            className="h-10 w-full pl-9 pr-3 rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white text-sm outline-none focus:border-[var(--color-publiora-blue)]"
+            className="h-10 w-full pl-9 pr-3 rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white text-sm text-[var(--color-deep-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)]"
           />
         </div>
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
@@ -118,7 +118,7 @@ export default function ProjectsPage() {
                 : p.progress;
             return (
               <Link key={p.id} href={`/projects/${p.id}`}>
-                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer h-full">
                   <div
                     className="h-28 rounded-t-[var(--radius-card)] flex items-end p-4 relative overflow-hidden"
                     style={{ background: p.cover_color }}
@@ -130,7 +130,7 @@ export default function ProjectsPage() {
                   <CardBody>
                     <div className="flex items-center justify-between gap-2">
                       <ProjectStatusPill status={p.status} />
-                      <span className="text-xs text-[var(--color-soft-gray)] truncate">
+                      <span className="text-xs text-[var(--color-medium-gray)] truncate">
                         {p.niche}
                       </span>
                     </div>
@@ -138,7 +138,7 @@ export default function ProjectsPage() {
                       {p.description}
                     </p>
                     <div className="mt-3 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs text-[var(--color-soft-gray)]">
+                      <div className="flex items-center justify-between text-xs text-[var(--color-medium-gray)]">
                         <span>
                           {p.sections_generated}/{p.total_sections || "—"} sections
                         </span>

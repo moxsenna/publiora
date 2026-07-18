@@ -98,7 +98,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               type="button"
               onClick={() => setAgent(a.slug as AgentName)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-all",
+                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-colors",
                 active
                   ? "bg-[var(--color-publiora-black)] text-white border-[var(--color-publiora-black)]"
                   : "bg-white text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)] border-[var(--color-publiora-border)]"
@@ -173,7 +173,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               >
                 {m.content}
                 {m.role === "assistant" && m.agent && (
-                  <div className="mt-2 text-[10px] uppercase tracking-wide text-[var(--color-soft-gray)]">
+                  <div className="mt-2 text-xs uppercase tracking-wide text-[var(--color-medium-gray)]">
                     {AGENT_LABELS[m.agent]}
                   </div>
                 )}
@@ -195,7 +195,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               key={s}
               type="button"
               onClick={() => setText(s)}
-              className="px-2.5 py-1 rounded-full border border-[var(--color-publiora-border)] bg-white text-[11px] text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] hover:bg-[var(--color-surface-2)]"
+              className="px-2.5 py-1.5 rounded-full border border-[var(--color-publiora-border)] bg-white text-xs text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] hover:bg-[var(--color-surface-2)]"
             >
               {s}
             </button>
@@ -216,15 +216,15 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               }
             }}
             rows={1}
-            placeholder={`Pesan ke ${AGENT_LABELS[agent]}… (⌘/Ctrl+Enter)`}
-            className="flex-1 max-h-32 resize-none rounded-2xl border border-[var(--color-publiora-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-publiora-blue)] bg-white"
+            placeholder={`Pesan ke ${AGENT_LABELS[agent]}…`}
+            className="flex-1 max-h-32 resize-none rounded-2xl border border-[var(--color-publiora-border)] px-4 py-3 text-sm text-[var(--color-deep-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] bg-white"
           />
           <Button
             onClick={() => onSend()}
             loading={send.isPending}
             size="icon"
             disabled={!text.trim()}
-            aria-label="Send"
+            aria-label="Kirim pesan"
           >
             <Send className="h-4 w-4" />
           </Button>

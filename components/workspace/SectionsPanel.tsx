@@ -16,8 +16,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
-import { Sparkles, FileText, Play, Save, Wand2 } from "lucide-react";
+import { Sparkles, FileText, Play, Save, Wand2, ChevronDown } from "lucide-react";
 import type { Section } from "@/types/section";
+import { cn } from "@/lib/utils";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
   const { data: outline } = useOutline(projectId);
@@ -29,6 +30,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   const pushToast = useUiStore((s) => s.pushToast);
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = React.useState(false);
 
   const sectionsByOutline = React.useMemo(() => {
     const map = new Map<string, Section>();
@@ -60,6 +62,11 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   const current = activeId
     ? sections?.find((s) => s.id === activeId) ?? null
     : sections?.[0] ?? null;
+
+  const currentOutline =
+    outline.sections.find((os) => os.id === current?.outline_section_id) ??
+    outline.sections[0];
+  const currentLabel = current?.title ?? currentOutline?.title ?? "Pilih section";
 
   const onGenerateAll = async () => {
     try {
@@ -118,73 +125,138 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     }
   };
 
+  const selectSection = (osId: string, sectionId?: string) => {
+    if (sectionId) setActiveId(sectionId);
+    setPickerOpen(false);
+  };
+
+  const sectionList = (
+    <ul className="p-2 space-y-1">
+      {outline.sections.map((os) => {
+        const s = sectionsByOutline.get(os.id);
+        const active = current?.id === s?.id || (!current && os.id === currentOutline?.id);
+        return (
+          <li key={os.id}>
+            <button
+              type="button"
+              onClick={() => selectSection(os.id, s?.id)}
+              className={cn(
+                "w-full text-left p-3 rounded-xl transition-colors",
+                active ? "bg-[var(--color-surface-2)]" : "hover:bg-[var(--color-surface-2)]"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[var(--color-medium-gray)]">
+                  {os.position}
+                </span>
+                <span className="text-sm font-medium text-[var(--color-deep-gray)] line-clamp-1 flex-1">
+                  {s?.title ?? os.title}
+                </span>
+                {s ? (
+                  <Badge variant={s.status === "edited" ? "info" : "success"}>
+                    {s.word_count}w
+                  </Badge>
+                ) : (
+                  <Badge variant="default">pending</Badge>
+                )}
+              </div>
+              {!s && (
+                <div className="mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    loading={generate.isPending}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onGenerateOne(os.id);
+                    }}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Generate
+                  </Button>
+                </div>
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
-    <div className="grid md:grid-cols-[320px_1fr] h-full">
-      <aside className="border-r border-[var(--color-publiora-border)] bg-white overflow-y-auto">
+    <div className="grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] h-full">
+      {/* Desktop / tablet sidebar */}
+      <aside className="hidden md:flex flex-col border-r border-[var(--color-publiora-border)] bg-white overflow-y-auto min-h-0">
         <div className="p-4 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 border-b border-[var(--color-publiora-border)]">
-          <span className="text-sm font-semibold text-[var(--color-publiora-black)]">Sections</span>
-          <Button size="sm" variant="outline" onClick={onGenerateAll} loading={generateAll.isPending}>
+          <span className="text-sm font-semibold text-[var(--color-publiora-black)]">
+            Sections
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onGenerateAll}
+            loading={generateAll.isPending}
+          >
             <Play className="h-3.5 w-3.5" />
             Generate all
           </Button>
         </div>
-        <ul className="p-2 space-y-1">
-          {outline.sections.map((os) => {
-            const s = sectionsByOutline.get(os.id);
-            const active = current?.id === s?.id;
-            return (
-              <li key={os.id}>
-                <button
-                  onClick={() => s && setActiveId(s.id)}
-                  className={
-                    "w-full text-left p-3 rounded-xl transition-colors " +
-                    (active ? "bg-[var(--color-surface-2)]" : "hover:bg-[var(--color-surface-2)]")
-                  }
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[var(--color-soft-gray)]">{os.position}</span>
-                    <span className="text-sm font-medium text-[var(--color-deep-gray)] line-clamp-1 flex-1">
-                      {s?.title ?? os.title}
-                    </span>
-                    {s ? (
-                      <Badge variant={s.status === "edited" ? "info" : "success"}>
-                        {s.word_count}w
-                      </Badge>
-                    ) : (
-                      <Badge variant="default">pending</Badge>
-                    )}
-                  </div>
-                  {!s && (
-                    <div className="mt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full"
-                        loading={generate.isPending}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onGenerateOne(os.id);
-                        }}
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Generate
-                      </Button>
-                    </div>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        {sectionList}
       </aside>
 
-      <div className="overflow-y-auto bg-[var(--color-surface-2)]">
+      <div className="overflow-y-auto bg-[var(--color-surface-2)] min-h-0 flex flex-col">
+        {/* Mobile section picker */}
+        <div className="md:hidden sticky top-0 z-20 border-b border-[var(--color-publiora-border)] bg-white">
+          <div className="p-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPickerOpen((v) => !v)}
+              className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-left"
+              aria-expanded={pickerOpen}
+              aria-haspopup="listbox"
+            >
+              <span className="min-w-0">
+                <span className="block text-xs text-[var(--color-medium-gray)]">
+                  Section aktif
+                </span>
+                <span className="block text-sm font-medium text-[var(--color-publiora-black)] truncate">
+                  {currentLabel}
+                </span>
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 shrink-0 text-[var(--color-medium-gray)] transition-transform",
+                  pickerOpen && "rotate-180"
+                )}
+              />
+            </button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onGenerateAll}
+              loading={generateAll.isPending}
+              aria-label="Generate semua section"
+            >
+              <Play className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          {pickerOpen && (
+            <div
+              role="listbox"
+              className="max-h-[50vh] overflow-y-auto border-t border-[var(--color-publiora-border)] bg-white overscroll-contain"
+            >
+              {sectionList}
+            </div>
+          )}
+        </div>
+
         {!current ? (
           <div className="p-6">
             <EmptyState
               icon={<FileText className="h-6 w-6" />}
               title="Belum ada section ter-generate"
-              description="Klik tombol Generate di kiri untuk membuat tulisan section."
+              description="Pilih section di atas, lalu generate untuk mulai menulis."
             />
           </div>
         ) : (

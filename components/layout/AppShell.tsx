@@ -27,7 +27,7 @@ export function AppShell({ title, children }: AppShellProps) {
       <div className="flex-1 grid place-items-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 rounded-full border-2 border-[var(--color-publiora-blue)] border-t-transparent animate-spin" />
-          <div className="text-[var(--color-soft-gray)] text-sm">Memuat…</div>
+          <div className="text-[var(--color-medium-gray)] text-sm">Memuat…</div>
         </div>
       </div>
     );

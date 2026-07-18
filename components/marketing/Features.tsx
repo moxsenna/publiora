@@ -39,9 +39,9 @@ export function Features() {
       <div className="max-w-7xl mx-auto px-6 py-20">
         <div className="max-w-2xl">
           <div className="text-sm font-semibold text-[var(--color-publiora-blue)] uppercase tracking-wide">
-            Features
+            Fitur
           </div>
-          <h2 className="mt-3 text-4xl font-bold tracking-tight text-[var(--color-publiora-black)]">
+          <h2 className="mt-3 text-4xl font-bold tracking-tight text-pretty text-[var(--color-publiora-black)]">
             Semua yang dibutuhkan untuk publikasi ebook marketing.
           </h2>
           <p className="mt-4 text-[var(--color-medium-gray)] text-lg">
@@ -54,7 +54,7 @@ export function Features() {
             return (
               <div
                 key={f.title}
-                className="p-6 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] hover:bg-white hover:shadow-[var(--shadow-card-hover)] transition-all"
+                className="p-6 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] hover:bg-white hover:shadow-[var(--shadow-card-hover)] transition-colors transition-shadow"
               >
                 <div className="h-12 w-12 rounded-2xl bg-[var(--color-publiora-black)] grid place-items-center text-white">
                   <Icon className="h-5 w-5" />

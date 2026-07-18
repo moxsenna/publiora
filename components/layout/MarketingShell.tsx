@@ -9,9 +9,9 @@ import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { href: "/#features", label: "Features" },
-  { href: "/#how", label: "How it works" },
-  { href: "/#pricing", label: "Pricing" },
+  { href: "/#features", label: "Fitur" },
+  { href: "/#how", label: "Cara kerja" },
+  { href: "/#pricing", label: "Harga" },
   { href: "/projects/new", label: "Buat ebook" },
 ];
 
@@ -46,12 +46,12 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               <>
                 <Link href="/login" className="hidden sm:block">
                   <Button size="sm" variant="ghost">
-                    Sign in
+                    Masuk
                   </Button>
                 </Link>
                 <Link href="/register">
                   <Button size="sm" variant="primary">
-                    Get started
+                    Mulai gratis
                   </Button>
                 </Link>
               </>
@@ -69,7 +69,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
 
         <div
           className={cn(
-            "md:hidden border-t border-[var(--color-publiora-border)] bg-white overflow-hidden transition-all",
+            "md:hidden border-t border-[var(--color-publiora-border)] bg-white overflow-hidden transition-[max-height,border-color] duration-200",
             open ? "max-h-96" : "max-h-0 border-t-0"
           )}
         >
@@ -90,7 +90,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
                 onClick={() => setOpen(false)}
                 className="block px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--color-publiora-black)]"
               >
-                Sign in
+                Masuk
               </Link>
             )}
           </nav>
@@ -100,28 +100,28 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-[var(--color-publiora-border)] bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row gap-8 justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-col md:flex-row gap-8 justify-between">
           <div>
             <Logo size="sm" href="/" showText />
             <p className="text-sm text-[var(--color-medium-gray)] mt-2 max-w-xs">
-              Create, publish, and distribute marketing ebooks with AI.
+              Buat, publish, dan distribusi ebook marketing dengan AI.
             </p>
           </div>
           <div className="flex gap-12 text-sm text-[var(--color-medium-gray)]">
             <div className="space-y-2">
-              <div className="font-medium text-[var(--color-deep-gray)]">Product</div>
+              <div className="font-medium text-[var(--color-deep-gray)]">Produk</div>
               <Link href="/#features" className="block hover:text-[var(--color-publiora-black)]">
-                Features
+                Fitur
               </Link>
               <Link href="/#pricing" className="block hover:text-[var(--color-publiora-black)]">
-                Pricing
+                Harga
               </Link>
               <Link href="/dashboard" className="block hover:text-[var(--color-publiora-black)]">
                 Dashboard
               </Link>
             </div>
             <div className="space-y-2">
-              <div className="font-medium text-[var(--color-deep-gray)]">Try</div>
+              <div className="font-medium text-[var(--color-deep-gray)]">Coba</div>
               <Link
                 href="/projects/new"
                 className="block hover:text-[var(--color-publiora-black)]"
@@ -135,12 +135,12 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
                 Daftar gratis
               </Link>
               <Link href="/login" className="block hover:text-[var(--color-publiora-black)]">
-                Sign in
+                Masuk
               </Link>
             </div>
           </div>
         </div>
-        <div className="border-t border-[var(--color-publiora-border)] px-6 py-4 text-center text-xs text-[var(--color-soft-gray)]">
+        <div className="border-t border-[var(--color-publiora-border)] px-4 sm:px-6 py-4 text-center text-xs text-[var(--color-medium-gray)]">
           © {new Date().getFullYear()} Publiora
         </div>
       </footer>

@@ -9,7 +9,7 @@ export function FinalCTA() {
         <div className="absolute -top-12 right-10 h-72 w-72 rounded-full bg-[var(--color-gold)]/20 blur-3xl" />
         <div className="absolute -bottom-12 left-10 h-72 w-72 rounded-full bg-[var(--color-publiora-blue)]/20 blur-3xl" />
         <div className="relative">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-pretty">
             Mulai publikasi ebook marketing pertama Anda.
           </h2>
           <p className="mt-4 text-white/70 max-w-xl mx-auto text-lg">

@@ -26,7 +26,7 @@ export function AuthShell({
           )}
           <div className="mt-8">{children}</div>
         </div>
-        <div className="text-xs text-[var(--color-soft-gray)]">
+        <div className="text-xs text-[var(--color-medium-gray)]">
           © 2026 Publiora. Crafted for creators.
         </div>
       </div>
@@ -46,7 +46,7 @@ export function AuthShell({
         <div className="absolute -right-24 top-12 h-80 w-80 rounded-full bg-[var(--color-gold)]/20 blur-3xl" />
         <div className="absolute -left-24 bottom-12 h-80 w-80 rounded-full bg-[var(--color-publiora-blue)]/30 blur-3xl" />
       </div>
-      {footer && <div className="col-span-2 px-8 py-4 text-sm text-[var(--color-soft-gray)]">{footer}</div>}
+      {footer && <div className="col-span-2 px-8 py-4 text-sm text-[var(--color-medium-gray)]">{footer}</div>}
     </div>
   );
 }

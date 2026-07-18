@@ -29,7 +29,7 @@ const sizeClasses: Record<Size, string> = {
   sm: "h-9 px-3 text-sm",
   md: "h-11 px-4 text-sm",
   lg: "h-12 px-6 text-base",
-  icon: "h-10 w-10 p-0",
+  icon: "h-11 w-11 p-0",
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

@@ -38,8 +38,8 @@ export function ClaimPage({ token, preview }: ClaimPageProps) {
 
   if (!initialized) {
     return (
-      <div className="min-h-full grid place-items-center text-sm text-[var(--color-soft-gray)]">
-        Loading…
+      <div className="min-h-full grid place-items-center text-sm text-[var(--color-medium-gray)]">
+        Memuat…
       </div>
     );
   }
@@ -138,21 +138,28 @@ export function ClaimPage({ token, preview }: ClaimPageProps) {
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div>
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
               <Button className="w-full" onClick={onAuthAndClaim} loading={authLoading || resolve.isPending}>
-                Login & Add to My Library
+                Masuk & tambah ke library
               </Button>
-              <p className="text-[11px] text-center text-[var(--color-soft-gray)]">
+              <p className="text-xs text-center text-[var(--color-medium-gray)]">
                 Belum punya akun?{" "}
                 <Link href="/register" className="underline">
                   Daftar dulu

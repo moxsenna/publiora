@@ -108,7 +108,7 @@ export default function BillingReturnPage() {
                   webhook PayCore. Refresh Billing dalam beberapa menit.
                 </p>
                 {orderId && (
-                  <p className="text-xs text-[var(--color-soft-gray)] font-mono break-all">
+                  <p className="text-xs text-[var(--color-medium-gray)] font-mono break-all">
                     Order: {orderId}
                   </p>
                 )}

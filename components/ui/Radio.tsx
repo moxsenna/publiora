@@ -13,7 +13,7 @@ export function Radio({ checked, onChange, label, description, className }: Radi
   return (
     <label
       className={cn(
-        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors",
         checked
           ? "border-[var(--color-publiora-black)] bg-[var(--color-surface-2)]"
           : "border-[var(--color-publiora-border)] hover:bg-[var(--color-surface-2)]",
@@ -25,7 +25,7 @@ export function Radio({ checked, onChange, label, description, className }: Radi
         onClick={onChange}
         className={cn(
           "mt-0.5 h-4 w-4 rounded-full border-2 grid place-items-center shrink-0",
-          checked ? "border-[var(--color-publiora-black)]" : "border-[var(--color-soft-gray)]"
+          checked ? "border-[var(--color-publiora-black)]" : "border-[var(--color-medium-gray)]"
         )}
         aria-checked={checked}
         role="radio"

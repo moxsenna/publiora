@@ -109,7 +109,7 @@ export function CheckoutPaymentModal({
         {groups.map(({ key, label, Icon, items }) =>
           items.length === 0 ? null : (
             <section key={key}>
-              <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-soft-gray)]">
+              <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)]">
                 <Icon className="h-3.5 w-3.5" />
                 {label}
               </div>
@@ -157,7 +157,7 @@ export function CheckoutPaymentModal({
           )
         )}
 
-        <p className="text-xs text-[var(--color-soft-gray)] leading-relaxed">
+        <p className="text-xs text-[var(--color-medium-gray)] leading-relaxed">
           Pembayaran diproses PayCore (Duitku). Kredit / plan aktif setelah
           pembayaran dikonfirmasi — bukan hanya dari halaman return.
         </p>

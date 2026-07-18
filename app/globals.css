@@ -109,6 +109,25 @@ h1, h2, h3, h4, h5, h6 {
   animation: shimmer 1.4s linear infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-pulse-soft,
+  .skeleton {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Reader typography */
 .reader-prose {
   font-family: var(--font-serif);

@@ -26,7 +26,7 @@ export function TopBar({ title }: { title?: string }) {
       {/* Mobile menu */}
       <button
         onClick={toggleMobileNav}
-        className="md:hidden text-[var(--color-soft-gray)] hover:text-[var(--color-deep-gray)] p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"
+        className="md:hidden text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
@@ -35,7 +35,7 @@ export function TopBar({ title }: { title?: string }) {
       {/* Desktop collapse */}
       <button
         onClick={toggleSidebar}
-        className="hidden md:inline-flex text-[var(--color-soft-gray)] hover:text-[var(--color-deep-gray)] p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"
+        className="hidden md:inline-flex text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"
         aria-label="Toggle sidebar"
       >
         <PanelLeft className="h-5 w-5" />
@@ -55,6 +55,7 @@ export function TopBar({ title }: { title?: string }) {
           </Button>
         </Link>
         <Dropdown
+          aria-label="Menu akun"
           trigger={
             <div className="inline-flex items-center gap-2 px-1.5 py-1 rounded-full hover:bg-[var(--color-surface-2)] transition-colors">
               <Avatar

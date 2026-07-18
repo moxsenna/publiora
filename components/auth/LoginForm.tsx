@@ -152,7 +152,7 @@ export function LoginForm() {
         </Button>
       )}
       {showDemoLogin && (
-        <p className="text-xs text-[var(--color-soft-gray)] text-center leading-relaxed">
+        <p className="text-xs text-[var(--color-medium-gray)] text-center leading-relaxed">
           Demo credentials (butuh user di Supabase):{" "}
           <code className="text-[var(--color-medium-gray)]">{DEMO_EMAIL}</code>
         </p>

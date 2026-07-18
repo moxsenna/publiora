@@ -116,7 +116,7 @@ export default function WorkspacePage() {
               )}
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 {project && <ProjectStatusPill status={project.status} />}
-                <span className="text-xs text-[var(--color-soft-gray)]">
+                <span className="text-xs text-[var(--color-medium-gray)]">
                   {project?.sections_generated ?? 0}/{project?.total_sections ?? 0}{" "}
                   sections
                   {project && project.total_sections > 0

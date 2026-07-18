@@ -58,7 +58,7 @@ export default function LibraryPage() {
             const p = progressMap.get(e.ebook_id);
             return (
               <Link key={e.id} href={`/read/${e.ebook_slug}`}>
-                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer h-full">
                   <div
                     className="h-32 rounded-t-[var(--radius-card)] flex items-end p-4"
                     style={{ background: e.cover_color }}
@@ -68,7 +68,7 @@ export default function LibraryPage() {
                     </h3>
                   </div>
                   <CardBody>
-                    <div className="text-xs text-[var(--color-soft-gray)]">
+                    <div className="text-xs text-[var(--color-medium-gray)]">
                       by {e.author}
                     </div>
                     {p ? (
@@ -92,12 +92,12 @@ export default function LibraryPage() {
                               : "bg-[var(--color-publiora-blue)]"
                           }
                         />
-                        <div className="mt-2 text-[10px] text-[var(--color-soft-gray)]">
+                        <div className="mt-2 text-xs text-[var(--color-medium-gray)]">
                           Dibaca {formatRelativeTime(p.last_read_at)}
                         </div>
                       </div>
                     ) : (
-                      <div className="mt-3 text-xs text-[var(--color-soft-gray)]">
+                      <div className="mt-3 text-xs text-[var(--color-medium-gray)]">
                         Belum dibaca
                       </div>
                     )}
