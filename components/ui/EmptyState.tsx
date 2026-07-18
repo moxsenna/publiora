@@ -13,7 +13,7 @@ export function EmptyState({ icon, title, description, action, className }: Empt
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center text-center gap-3 py-12 px-6",
+        "flex flex-col items-center justify-center text-center gap-4 py-16 px-6",
         className
       )}
     >
@@ -26,7 +26,7 @@ export function EmptyState({ icon, title, description, action, className }: Empt
       {description && (
         <p className="text-sm text-[var(--color-medium-gray)] max-w-sm">{description}</p>
       )}
-      {action && <div className="mt-1">{action}</div>}
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
