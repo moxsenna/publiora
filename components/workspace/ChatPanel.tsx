@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useMessages, useSendMessage } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
-import { AGENT_LABELS, AGENT_COLORS } from "@/lib/mock/ai";
+import { AGENT_LABELS, AGENT_COLORS } from "@/lib/ai/agents/meta";
 import type { AgentName } from "@/types/message";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
