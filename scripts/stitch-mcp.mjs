@@ -8,7 +8,6 @@
  *   STITCH_API_KEY=... node scripts/stitch-mcp.mjs tools/call create_project '{"title":"Publiora UI Polish"}'
  */
 import { readFileSync, existsSync } from "node:fs";
-import { createHash } from "node:crypto";
 
 // ── API key ──────────────────────────────────────────────────────────────────
 
@@ -38,6 +37,30 @@ if (!mode) {
 // ── Session state ────────────────────────────────────────────────────────────
 
 let sessionId = null;
+
+function assertOk(result, label) {
+  if (!result) throw new Error(`${label}: empty response`);
+  if (result.error) {
+    const msg =
+      typeof result.error === "string"
+        ? result.error
+        : result.error.message || JSON.stringify(result.error);
+    throw new Error(`${label}: ${msg}`);
+  }
+  return result;
+}
+
+async function ensureSession() {
+  console.error("Initializing MCP session...");
+  const initResult = await rpc("initialize", {
+    protocolVersion: "2025-03-26",
+    capabilities: {},
+    clientInfo: { name: "stitch-mcp-cli", version: "1.0.0" },
+  });
+  assertOk(initResult, "initialize");
+  await rpc("notifications/initialized", {});
+  return initResult;
+}
 
 // ── SSE / text parser ────────────────────────────────────────────────────────
 
@@ -154,35 +177,23 @@ async function rpc(method, params) {
 
 try {
   if (mode === "tools/list") {
-    // MCP requires initialize first
-    console.error("Initializing MCP session...");
-    const initResult = await rpc("initialize", {
-      protocolVersion: "2025-03-26",
-      capabilities: {},
-      clientInfo: { name: "stitch-mcp-cli", version: "1.0.0" },
-    });
-    console.error("Initialize result:", JSON.stringify(initResult).slice(0, 200));
-
-    // Some servers need notifications/initialized acknowledged
-    await rpc("notifications/initialized", {});
-
-    const result = await rpc("tools/list", {});
+    await ensureSession();
+    const result = assertOk(await rpc("tools/list", {}), "tools/list");
     console.log(JSON.stringify(result, null, 2));
   } else if (mode === "tools/call") {
-    const parsedArgs = argsJson ? JSON.parse(argsJson) : {};
-
-    // Initialize session
-    console.error("Initializing MCP session...");
-    const initResult = await rpc("initialize", {
-      protocolVersion: "2025-03-26",
-      capabilities: {},
-      clientInfo: { name: "stitch-mcp-cli", version: "1.0.0" },
-    });
-    console.error("Initialize: OK");
-
-    await rpc("notifications/initialized", {});
-
-    const result = await rpc("tools/call", { name, arguments: parsedArgs });
+    let parsedArgs = {};
+    if (argsJson) {
+      try {
+        parsedArgs = JSON.parse(argsJson);
+      } catch {
+        throw new Error("Invalid JSON for tools/call arguments");
+      }
+    }
+    await ensureSession();
+    const result = assertOk(
+      await rpc("tools/call", { name, arguments: parsedArgs }),
+      `tools/call ${name}`
+    );
     console.log(JSON.stringify(result, null, 2));
   } else {
     console.error("Unknown mode:", mode);
