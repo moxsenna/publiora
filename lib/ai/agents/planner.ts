@@ -73,6 +73,44 @@ function clampWords(n: number): number {
   return Math.max(300, Math.min(1200, Math.round(n)));
 }
 
+/**
+ * Clean key_points to 2–5 non-empty strings.
+ * Pads from title/summary when AI returns 0–1 valid points.
+ */
+function normalizeKeyPoints(
+  raw: unknown,
+  title: string,
+  summary: string,
+): string[] {
+  const points = Array.isArray(raw)
+    ? raw
+        .filter((k): k is string => typeof k === "string" && k.trim().length > 0)
+        .map((k) => k.trim())
+        .slice(0, 5)
+    : [];
+
+  if (points.length < 2) {
+    const cover = `Cover: ${title}`;
+    if (!points.includes(cover)) points.push(cover);
+  }
+
+  if (points.length < 2) {
+    const fromSummary = summary
+      .split(/[.!?]/)
+      .map((s) => s.trim())
+      .find((s) => s.length > 0 && !points.includes(s));
+    const fallback = fromSummary ?? `Expand: ${title}`;
+    if (!points.includes(fallback)) points.push(fallback);
+  }
+
+  // Guarantee length >= 2 even if title/summary empty or duplicates
+  while (points.length < 2) {
+    points.push(`Key point ${points.length + 1}`);
+  }
+
+  return points.slice(0, 5);
+}
+
 // ---------------------------------------------------------------------------
 // normalizePlannerResult
 // ---------------------------------------------------------------------------
@@ -81,12 +119,12 @@ function clampWords(n: number): number {
  * Validate raw AI JSON and normalize into a clean `PlannerResult`.
  *
  * Normalization rules:
- * - Max 10 sections
+ * - Require 5–10 sections (throw if fewer than 5 after cap; cap at 10)
  * - Every section gets a stable id (preserve AI id or generate one)
  * - `position` is reassigned sequentially from 1
  * - `title` must be non-empty; falls back to "Section {N}"
  * - `summary` defaults to ""
- * - `key_points` limited to 2-5 items
+ * - `key_points` enforced to 2–5 items (pad from title/summary if needed)
  * - `estimated_words` clamped to [300, 1200]; defaults to 700
  * - `status` is always "pending"
  *
@@ -106,17 +144,25 @@ export function normalizePlannerResult(
 
   const sections: OutlineSection[] = rawSections
     .slice(0, 10)
-    .map((s, i) => ({
-      id: s.id || `sec_${i + 1}_${rid()}`,
-      position: i + 1,
-      title: s.title?.trim() || `Section ${i + 1}`,
-      summary: s.summary?.trim() || "",
-      key_points: Array.isArray(s.key_points)
-        ? s.key_points.filter((k) => typeof k === "string" && k.trim().length > 0).slice(0, 5)
-        : [],
-      estimated_words: clampWords(s.estimated_words ?? 700),
-      status: "pending" as const,
-    }));
+    .map((s, i) => {
+      const title = s.title?.trim() || `Section ${i + 1}`;
+      const summary = s.summary?.trim() || "";
+      return {
+        id: s.id || `sec_${i + 1}_${rid()}`,
+        position: i + 1,
+        title,
+        summary,
+        key_points: normalizeKeyPoints(s.key_points, title, summary),
+        estimated_words: clampWords(s.estimated_words ?? 700),
+        status: "pending" as const,
+      };
+    });
+
+  if (sections.length < 5) {
+    throw new Error(
+      `Planner returned ${sections.length} sections; need 5-10`,
+    );
+  }
 
   return {
     title: parsed.title || projectTitle,

@@ -7,6 +7,7 @@ import {
   isStrategyReady,
   getStrategyBlockers,
 } from "@/lib/workflow/project-workflow";
+import { canRegenerateOutline } from "@/lib/workflow/outline-regeneration";
 import {
   normalizeProjectState,
   createEmptyProjectState,
@@ -116,15 +117,21 @@ export async function POST(
         .limit(1);
 
       const hasWrittenContent =
-        writtenSections && writtenSections.length > 0;
+        Boolean(writtenSections && writtenSections.length > 0);
 
-      if (hasWrittenContent && !confirmReset) {
+      const regen = canRegenerateOutline({
+        hasOutline: true,
+        hasWrittenContent,
+        confirmReset,
+      });
+
+      if (!regen.allowed) {
         return jsonError(
           "This outline already has written section content. " +
             "To regenerate the outline and discard all written content, " +
             "set confirm_reset_written_sections: true.",
           409,
-          "outline_regenerate_blocked",
+          regen.code,
           {
             has_written_sections: true,
             section_count_warning:
@@ -134,7 +141,7 @@ export async function POST(
       }
 
       // Safe regeneration path: delete written sections if confirmed
-      if (hasWrittenContent && confirmReset) {
+      if (regen.mode === "confirmed_reset") {
         await supabase
           .from("ebook_sections")
           .delete()

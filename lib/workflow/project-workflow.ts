@@ -665,7 +665,7 @@ export function isStrategyReady(
  * generation. Returns an empty array when strategy IS ready.
  *
  * Blockers list:
- * 1. readability_below_threshold when readiness < 70
+ * 1. readiness_below_threshold when readiness < 70
  * 2. One missing_field entry for each required field that is empty/null
  */
 export function getStrategyBlockers(
