@@ -1,25 +1,21 @@
 // Workspace + UI stores.
+// URL ?step= is the source of truth for workflow navigation (not zustand).
 
 import { create } from "zustand";
 
-export type ProjectView = "chat" | "outline" | "sections" | "preview" | "tools";
-
 interface ProjectState {
   activeProjectId: string | null;
-  view: ProjectView;
-  activeSection: number;
+  /** Track the currently selected section ID within SectionsPanel. */
+  selectedSectionId: string | null;
   setActiveProject: (id: string | null) => void;
-  setView: (v: ProjectView) => void;
-  setActiveSection: (n: number) => void;
+  setSelectedSectionId: (id: string | null) => void;
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
   activeProjectId: null,
-  view: "chat",
-  activeSection: 1,
+  selectedSectionId: null,
   setActiveProject: (id) => set({ activeProjectId: id }),
-  setView: (v) => set({ view: v }),
-  setActiveSection: (n) => set({ activeSection: n }),
+  setSelectedSectionId: (id) => set({ selectedSectionId: id }),
 }));
 
 interface ToastItem {

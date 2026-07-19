@@ -2,52 +2,115 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useDeleteProject, useProject } from "@/lib/api/hooks";
-import { useProjectStore, useUiStore } from "@/store/projectStore";
-import { Tabs } from "@/components/ui/Tabs";
+import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
+import {
+  useProject,
+  useStrategy,
+  useOutline,
+  useSections,
+  useDeleteProject,
+} from "@/lib/api/hooks";
+import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
-import { ProjectStatusPill } from "@/components/ui/StatusPill";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Modal } from "@/components/ui/Modal";
-import { ProgressBar } from "@/components/ui/ProgressBar";
+import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
+import { WorkspaceStepNav } from "@/components/workspace/WorkspaceStepNav";
+import { WorkspaceStageFooter } from "@/components/workspace/WorkspaceStageFooter";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { OutlinePanel } from "@/components/workspace/OutlinePanel";
 import { SectionsPanel } from "@/components/workspace/SectionsPanel";
 import { PreviewPanel } from "@/components/workspace/PreviewPanel";
-import { ToolsPanel } from "@/components/workspace/ToolsPanel";
 import { PublishDialog } from "@/components/workspace/PublishDialog";
-import { ArrowLeft, Rocket, Trash2 } from "lucide-react";
-import type { ProjectView } from "@/store/projectStore";
+import { deriveProjectWorkflow, parseWorkflowStep } from "@/lib/workflow/project-workflow";
+import {
+  ArrowLeft,
+  Trash2,
+  AlertTriangle,
+  Lock,
+  Rocket,
+} from "lucide-react";
+import type {
+  ProjectWorkflowStep,
+  WorkflowStepStatus,
+  ProjectWorkflowState,
+} from "@/types/workflow";
 
-const TABS: { value: ProjectView; label: string }[] = [
-  { value: "chat", label: "Chat" },
-  { value: "outline", label: "Outline" },
-  { value: "sections", label: "Sections" },
-  { value: "preview", label: "Preview" },
-  { value: "tools", label: "Tools" },
+const STEP_ORDER: ProjectWorkflowStep[] = [
+  "strategy",
+  "outline",
+  "write",
+  "review",
+  "publish",
 ];
+
+const DEFAULT_STEPS: Record<ProjectWorkflowStep, WorkflowStepStatus> = {
+  strategy: "current",
+  outline: "blocked",
+  write: "blocked",
+  review: "blocked",
+  publish: "blocked",
+};
 
 export default function WorkspacePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
-  const { data: project, isLoading, isError } = useProject(id);
-  const setView = useProjectStore((s) => s.setView);
-  const view = useProjectStore((s) => s.view);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // ---- Data hooks ----
+  const { data: project, isLoading: projectLoading, isError } = useProject(id);
+  const { data: strategy, isLoading: strategyLoading } = useStrategy(id);
+  const { data: outline } = useOutline(id);
+  const { data: sections } = useSections(id);
+
   const pushToast = useUiStore((s) => s.pushToast);
   const del = useDeleteProject();
+
+  // ---- Dialog state ----
   const [publishOpen, setPublishOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!project) return;
-    if (project.status === "draft") setView("chat");
-    else if (project.status === "outline_draft") setView("outline");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project?.status]);
+  // ---- Derive workflow state ----
+  const workflow = React.useMemo(() => {
+    if (!project || !strategy) return null;
+    return deriveProjectWorkflow({
+      project,
+      strategyState: strategy.state,
+      readinessScore: strategy.readiness_score,
+      outline: outline ?? null,
+      sections: sections ?? [],
+    });
+  }, [project, strategy, outline, sections]);
 
-  // 1–5 switch tabs when not typing
+  // ---- URL-driven step ----
+  const paramStep = searchParams.get("step");
+  const recommendedStep = workflow?.recommendedStep ?? "strategy";
+  const currentStep = React.useMemo(
+    () => parseWorkflowStep(paramStep, recommendedStep),
+    [paramStep, recommendedStep],
+  );
+
+  // Navigate to a step by updating the URL search param
+  const navigateToStep = React.useCallback(
+    (step: ProjectWorkflowStep) => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("step", step);
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
+
+  // If ?step= was invalid, redirect to the fallback (recommended step)
+  React.useEffect(() => {
+    if (!workflow) return;
+    if (paramStep && paramStep !== currentStep) {
+      navigateToStep(currentStep);
+    }
+  }, [paramStep, currentStep, workflow, navigateToStep]);
+
+  // ---- Keyboard shortcuts 1-5 -> workflow steps ----
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
@@ -55,15 +118,16 @@ export default function WorkspacePage() {
       if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const n = Number(e.key);
-      if (n >= 1 && n <= TABS.length) {
+      if (n >= 1 && n <= 5) {
         e.preventDefault();
-        setView(TABS[n - 1].value);
+        navigateToStep(STEP_ORDER[n - 1]);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [setView]);
+  }, [navigateToStep]);
 
+  // ---- Actions ----
   const onDelete = async () => {
     try {
       await del.mutateAsync(id);
@@ -74,6 +138,11 @@ export default function WorkspacePage() {
     }
   };
 
+  const onPreview = () => {
+    navigateToStep("review");
+  };
+
+  // ---- Error state ----
   if (isError) {
     return (
       <div className="flex-1 grid place-items-center p-8">
@@ -95,108 +164,71 @@ export default function WorkspacePage() {
     );
   }
 
+  // ---- Loading skeleton ----
+  if (projectLoading || strategyLoading) {
+    return (
+      <div className="flex flex-col flex-1 min-h-0 h-[calc(100vh-3rem)]">
+        <div className="border-b border-[var(--color-publiora-border)] bg-white px-2.5 sm:px-3 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="h-8 w-8 rounded-md" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <Skeleton className="h-8 w-20 rounded-md" />
+        </div>
+        <div className="flex-1 p-6 space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-16" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Determine if current step is blocked ----
+  const stepBlockers =
+    workflow?.blockers.filter((b) => b.targetStep === currentStep) ?? [];
+  const canAct = stepBlockers.length === 0;
+
   return (
     <div className="flex flex-col flex-1 min-h-0 h-[calc(100vh-3rem)]">
       {/* Header */}
-      <div className="border-b border-[var(--color-publiora-border)] bg-white px-2.5 sm:px-3 py-2 space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Link href="/projects">
-              <Button variant="ghost" size="icon" aria-label="Back">
-                <ArrowLeft className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
-            <div className="min-w-0">
-              {isLoading ? (
-                <Skeleton className="h-4 w-40" />
-              ) : (
-                <h1 className="text-sm font-semibold truncate text-[var(--color-publiora-black)]">
-                  {project?.title}
-                </h1>
-              )}
-              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                {project && <ProjectStatusPill status={project.status} />}
-                <span className="text-xs text-[var(--color-medium-gray)]">
-                  {project?.sections_generated ?? 0}/{project?.total_sections ?? 0}{" "}
-                  sections
-                  {project && project.total_sections > 0
-                    ? ` · ${Math.round(
-                        (project.sections_generated / project.total_sections) * 100
-                      )}%`
-                    : ""}
-                </span>
-              </div>
-              {project && project.total_sections > 0 && (
-                <div className="mt-1.5 max-w-xs hidden sm:block">
-                  <ProgressBar
-                    value={Math.round(
-                      (project.sections_generated / project.total_sections) * 100
-                    )}
-                    barClassName={
-                      project.status === "published"
-                        ? "bg-[var(--color-success)]"
-                        : "bg-[var(--color-publiora-blue)]"
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+      <WorkspaceHeader
+        project={project}
+        isLoading={projectLoading}
+        onPreview={onPreview}
+        onDelete={() => setDeleteOpen(true)}
+      />
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="hidden sm:inline-flex text-[var(--color-danger)]"
-              onClick={() => setDeleteOpen(true)}
-              aria-label="Delete project"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              size="sm"
-              variant="gold"
-              onClick={() => setPublishOpen(true)}
-              disabled={!project || project.sections_generated === 0}
-            >
-              <Rocket className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Publish</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Tabs — horizontal scroll on mobile */}
-        <div className="overflow-x-auto no-scrollbar -mx-1 px-1">
-          <Tabs
-            value={view}
-            onChange={(v) => setView(v as ProjectView)}
-            tabs={TABS}
-            className="w-max min-w-full sm:min-w-0"
-          />
-        </div>
+      {/* Step Navigation */}
+      <div className="border-b border-[var(--color-publiora-border)] bg-white px-2.5 sm:px-3">
+        <WorkspaceStepNav
+          current={currentStep}
+          steps={workflow?.steps ?? DEFAULT_STEPS}
+          onNavigate={navigateToStep}
+        />
       </div>
 
-      {/* Panels */}
+      {/* Stage Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {view === "chat" && <ChatPanel projectId={id} />}
-        {view === "outline" && (
-          <div className="h-full overflow-y-auto">
-            <OutlinePanel projectId={id} />
-          </div>
-        )}
-        {view === "sections" && <SectionsPanel projectId={id} />}
-        {view === "preview" && (
-          <div className="h-full overflow-y-auto">
-            <PreviewPanel projectId={id} />
-          </div>
-        )}
-        {view === "tools" && (
-          <div className="h-full overflow-y-auto">
-            <ToolsPanel projectId={id} />
-          </div>
-        )}
+        <StageContent
+          step={currentStep}
+          projectId={id}
+          workflow={workflow}
+        />
       </div>
 
+      {/* Footer */}
+      {workflow && (
+        <WorkspaceStageFooter
+          current={currentStep}
+          workflow={workflow}
+          canAct={canAct}
+          onNavigate={navigateToStep}
+          onPublish={() => setPublishOpen(true)}
+        />
+      )}
+
+      {/* Dialogs */}
       {project && (
         <PublishDialog
           open={publishOpen}
@@ -227,6 +259,179 @@ export default function WorkspacePage() {
           Aksi ini tidak bisa di-undo.
         </p>
       </Modal>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stage content mapping
+// ---------------------------------------------------------------------------
+
+function StageContent({
+  step,
+  projectId,
+  workflow,
+}: {
+  step: ProjectWorkflowStep;
+  projectId: string;
+  workflow: ProjectWorkflowState | null;
+}) {
+  // Blockers for this specific stage
+  const blockers = workflow?.blockers.filter((b) => b.targetStep === step) ?? [];
+  const stepStatus = workflow?.steps[step];
+  // Show blocker overlay when the step isn't the current/active one and has blockers
+  const showBlocked =
+    blockers.length > 0 &&
+    stepStatus !== "current" &&
+    stepStatus !== "complete";
+
+  return (
+    <div className="relative h-full">
+      {/* Blocked overlay */}
+      {showBlocked && (
+        <div className="absolute inset-0 z-10 bg-white/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+          <div className="max-w-md space-y-3">
+            <Lock className="h-8 w-8 mx-auto text-[var(--color-medium-gray)]" />
+            <h3 className="text-base font-semibold text-[var(--color-publiora-black)]">
+              This stage is not available yet
+            </h3>
+            <ul className="space-y-1.5">
+              {blockers.map((b) => (
+                <li
+                  key={b.code}
+                  className="flex items-start gap-2 text-sm text-[var(--color-deep-gray)]"
+                >
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-gold)]" />
+                  <span>{b.message}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-[var(--color-medium-gray)]">
+              Complete the previous stages to unlock this one.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Actual panel content */}
+      {step === "strategy" && <ChatPanel projectId={projectId} />}
+      {step === "outline" && (
+        <div className="h-full overflow-y-auto">
+          <OutlinePanel projectId={projectId} />
+        </div>
+      )}
+      {step === "write" && <SectionsPanel projectId={projectId} />}
+      {step === "review" && (
+        <div className="h-full overflow-y-auto">
+          <ReviewStage projectId={projectId} workflow={workflow} />
+        </div>
+      )}
+      {step === "publish" && (
+        <div className="h-full overflow-y-auto">
+          <PublishStage workflow={workflow} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Review stage: PreviewPanel + blocker checklist
+// ---------------------------------------------------------------------------
+
+function ReviewStage({
+  projectId,
+  workflow,
+}: {
+  projectId: string;
+  workflow: ProjectWorkflowState | null;
+}) {
+  const checks = workflow?.checks.filter((c) => c.targetStep === "review") ?? [];
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Preview */}
+      <div className="flex-1 min-h-0">
+        <PreviewPanel projectId={projectId} />
+      </div>
+
+      {/* Review checklist */}
+      {checks.length > 0 && (
+        <div className="border-t border-[var(--color-publiora-border)] bg-white px-4 py-3 max-h-40 overflow-y-auto">
+          <h4 className="text-xs font-semibold text-[var(--color-publiora-black)] mb-2 uppercase tracking-wide">
+            Review Checklist
+          </h4>
+          <ul className="space-y-1">
+            {checks.map((c) => (
+              <li key={c.id} className="flex items-center gap-2 text-xs">
+                <span
+                  className={
+                    c.severity === "blocker"
+                      ? "text-[var(--color-danger)]"
+                      : "text-[var(--color-gold)]"
+                  }
+                >
+                  {c.severity === "blocker" ? "\u26A0" : "\u2139"}
+                </span>
+                <span className="text-[var(--color-deep-gray)]">{c.label}</span>
+                {c.message && (
+                  <span className="text-[var(--color-medium-gray)] ml-auto">
+                    {c.message}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Publish stage: simple panel showing canPublish / blockers + Publish button
+// ---------------------------------------------------------------------------
+
+function PublishStage({
+  workflow,
+}: {
+  workflow: ProjectWorkflowState | null;
+}) {
+  const blockers = workflow?.blockers ?? [];
+  const canPublish = workflow?.canPublish ?? false;
+
+  return (
+    <div className="max-w-lg mx-auto py-10 px-4">
+      <div className="text-center space-y-4">
+        <Rocket className="h-10 w-10 mx-auto text-[var(--color-gold)]" />
+        <h2 className="text-lg font-semibold text-[var(--color-publiora-black)]">
+          {canPublish ? "Ready to publish" : "Not ready to publish yet"}
+        </h2>
+        <p className="text-sm text-[var(--color-medium-gray)]">
+          {canPublish
+            ? "Your ebook passes all checks and is ready to be published."
+            : "Resolve the issues below before publishing your ebook."}
+        </p>
+
+        {blockers.length > 0 && (
+          <div className="bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] rounded-xl p-4 text-left space-y-2">
+            <h4 className="text-xs font-semibold text-[var(--color-publiora-black)] uppercase tracking-wide">
+              Blockers
+            </h4>
+            <ul className="space-y-1.5">
+              {blockers.map((b) => (
+                <li
+                  key={b.code}
+                  className="flex items-start gap-2 text-sm text-[var(--color-deep-gray)]"
+                >
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-gold)]" />
+                  <span>{b.message}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -700,6 +700,34 @@ export function getStrategyBlockers(
   return blockers;
 }
 
+// ---------------------------------------------------------------------------
+// parseWorkflowStep — validate a step query param, fall back to recommended
+// ---------------------------------------------------------------------------
+
+const ALL_STEPS: ProjectWorkflowStep[] = [
+  "strategy",
+  "outline",
+  "write",
+  "review",
+  "publish",
+];
+
+function isValidWorkflowStep(v: string): v is ProjectWorkflowStep {
+  return ALL_STEPS.includes(v as ProjectWorkflowStep);
+}
+
+/**
+ * Parse a `?step=` query parameter value into a valid ProjectWorkflowStep.
+ * Returns `recommended` when the parameter is missing or invalid.
+ */
+export function parseWorkflowStep(
+  param: string | null | undefined,
+  recommended: ProjectWorkflowStep,
+): ProjectWorkflowStep {
+  if (param && isValidWorkflowStep(param)) return param;
+  return recommended;
+}
+
 export {
   checkStrategyComplete,
   checkOutlineComplete,
