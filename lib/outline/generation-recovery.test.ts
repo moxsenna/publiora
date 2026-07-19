@@ -16,7 +16,7 @@ describe("planGenerationRestore", () => {
     expect(plan.sectionStatus).toBeNull();
   });
 
-  it("restores section to failed and project when writer fails after both marks", () => {
+  it("restores previous section status and project when writer fails", () => {
     const plan = planGenerationRestore({
       projectMarkedGenerating: true,
       sectionMarkedGenerating: true,
