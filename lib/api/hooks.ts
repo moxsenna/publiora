@@ -583,11 +583,11 @@ export function useGenerateTitles() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (projectId: string) =>
-      apiFetch<string[]>(`/api/projects/${projectId}/titles`, {
+      apiFetch<{ suggestions: import("@/types").TitleSuggestion[] }>(`/api/projects/${projectId}/titles`, {
         method: "POST",
       }),
     onSuccess: (data, projectId) => {
-      qc.setQueryData(qk.titles(projectId), data);
+      qc.setQueryData(qk.titles(projectId), data.suggestions);
       qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });

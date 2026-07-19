@@ -5,26 +5,31 @@ import {
   useProject,
   useGenerateTitles,
   useGenerateCtas,
+  useUpdateProject,
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Sparkles, Heading, Megaphone } from "lucide-react";
+import { Sparkles, Heading, Megaphone, Check } from "lucide-react";
+import { TITLE_STYLES } from "@/types/agent";
+import type { TitleSuggestion } from "@/types/ai-suggestions";
 
 export function ToolsPanel({ projectId }: { projectId: string }) {
   const { data: project } = useProject(projectId);
   const genTitles = useGenerateTitles();
   const genCtas = useGenerateCtas();
+  const updateProject = useUpdateProject();
   const pushToast = useUiStore((s) => s.pushToast);
-  const [titles, setTitles] = React.useState<string[]>([]);
+  const [titles, setTitles] = React.useState<TitleSuggestion[]>([]);
   const [ctas, setCtas] = React.useState<string[]>([]);
 
   const fetchTitles = async () => {
     try {
       const res = await genTitles.mutateAsync(projectId);
-      setTitles(res);
+      setTitles(res.suggestions);
       pushToast({ title: "Judul digenerate", variant: "success" });
     } catch (err) {
       const e = err as { code?: string; message?: string };
@@ -40,6 +45,19 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
         variant: "danger",
       });
     }
+  };
+
+  const applyTitle = async (title: string) => {
+    try {
+      await updateProject.mutateAsync({ id: projectId, patch: { title } });
+      pushToast({ title: "Judul diterapkan", variant: "success" });
+    } catch {
+      pushToast({ title: "Gagal menyimpan judul", variant: "danger" });
+    }
+  };
+
+  const getStyleLabel = (style: string) => {
+    return TITLE_STYLES.find((s) => s.id === style)?.label ?? style;
   };
 
   const fetchCtas = async () => {
@@ -91,12 +109,28 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
               {titles.map((t, i) => (
                 <li
                   key={i}
-                  className="flex items-center justify-between gap-2 p-3 rounded-xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)]"
+                  className="flex flex-col gap-2 p-3 rounded-xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)]"
                 >
-                  <span className="text-sm font-medium text-[var(--color-deep-gray)]">
-                    {t}
-                  </span>
-                  <CopyButton value={t} label="Copy" />
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-sm font-medium text-[var(--color-deep-gray)]">
+                      {t.title}
+                    </span>
+                    <Badge variant="default">{getStyleLabel(t.style)}</Badge>
+                  </div>
+                  <p className="text-xs text-[var(--color-medium-gray)]">
+                    {t.rationale}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyTitle(t.title)}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Use this title
+                    </Button>
+                    <CopyButton value={t.title} label="Copy" />
+                  </div>
                 </li>
               ))}
             </ul>

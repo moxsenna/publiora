@@ -343,7 +343,10 @@ function StageContent({
       {step === "strategy" && <StrategyPanel projectId={projectId} />}
       {step === "outline" && (
         <div className="h-full overflow-y-auto">
-          <OutlinePanel projectId={projectId} />
+          <OutlinePanel
+            projectId={projectId}
+            onContinueToWrite={() => onNavigate("write")}
+          />
         </div>
       )}
       {step === "write" && <SectionsPanel projectId={projectId} />}
