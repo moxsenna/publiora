@@ -107,13 +107,18 @@ Each stage is gated: incomplete strategy blocks outline, missing sections block 
 
 ## E2E / Playwright
 
-- **Playwright config:** Not present (no `playwright.config.*` file).
-- **E2E script in package.json:** None.
-- **Note:** E2E testing is deferred. No Playwright suite exists and none was created.
+- **Playwright config:** `playwright.config.ts` present (`@playwright/test` ^1.52.0 aligned with `playwright` ^1.52.0).
+- **E2E scripts:**
+  - `npm run test:e2e` -- runs full Playwright suite (smoke + gated auth tests).
+  - `npm run test:e2e:smoke` -- runs `@smoke`-tagged public-page tests only.
+- **Projects:** Chromium (Desktop Chrome) + Mobile (Pixel 5).
+- **Smoke tests (always-run):** `e2e/smoke-public.spec.ts` (7 tests) -- home page loads, login form, mobile overflow, navigation, no agent-first UI.
+- **Auth-gated tests (skip without env):** `e2e/workflow-happy-path.spec.ts` and `e2e/workspace-shell.spec.ts` -- require `E2E_EMAIL` + `E2E_PASSWORD`; optional `E2E_PROJECT_ID`.
+- **CI:** Smoke passes without secrets. Full e2e needs `E2E_EMAIL` / `E2E_PASSWORD` / `E2E_PROJECT_ID`.
 
 ## Known Limitations
 
-1. **E2E Testing:** Deferred -- no Playwright configuration exists. All coverage is via unit tests (266 tests).
+1. **Auth-gated E2E:** Workflow happy-path and workspace shell tests require real Supabase credentials (`E2E_EMAIL`, `E2E_PASSWORD`, `E2E_PROJECT_ID`). Smoke tests (public pages) run without secrets.
 2. **Windows Build Flake:** Intermittent Turbopack worker crash on `npm run build` during page data collection (exit code 3221226505). Consistently recovers on retry.
 3. **Mobile Responsiveness:** WorkspaceStepNav uses mobile dropdown selector at <640px. Section picker in SectionsPanel has similar pattern. No additional breakpoint optimization at 320px beyond existing responsive patterns.
 4. **Focus Trap in EnhancementReviewDialog:** Relies on Modal component's built-in Tab cycling (not a dedicated focus-trap library). Adequate for current use.
