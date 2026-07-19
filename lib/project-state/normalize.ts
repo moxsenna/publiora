@@ -270,6 +270,46 @@ export function computeMissingFields(
   return missing;
 }
 
+/**
+ * Deterministic readiness from field completeness (0–100).
+ * Used after manual strategy PATCH so outline gates do not depend on stale AI scores.
+ * Required fields contribute up to 80; optional fields contribute up to 20.
+ */
+export function computeDeterministicReadinessScore(
+  strategy: EbookStrategy,
+): number {
+  const required = REQUIRED_STRATEGY_FIELDS;
+  let requiredFilled = 0;
+  for (const key of required) {
+    const v = strategy[key];
+    if (typeof v === "string" && v.trim().length > 0) requiredFilled += 1;
+  }
+  const requiredScore = (requiredFilled / required.length) * 80;
+
+  const extras: (keyof EbookStrategy)[] = [
+    "audience_sophistication",
+    "tone",
+    "product_or_offer",
+    "funnel_goal",
+    "cta_goal",
+  ];
+  let optionalFilled = 0;
+  for (const key of extras) {
+    const v = strategy[key];
+    if (typeof v === "string" && v.trim().length > 0) optionalFilled += 1;
+  }
+  if (Array.isArray(strategy.pain_points) && strategy.pain_points.length > 0) {
+    optionalFilled += 1;
+  }
+  if (Array.isArray(strategy.content_pillars) && strategy.content_pillars.length > 0) {
+    optionalFilled += 1;
+  }
+  const optionalMax = extras.length + 2;
+  const optionalScore = (optionalFilled / optionalMax) * 20;
+
+  return clampReadinessScore(Math.round(requiredScore + optionalScore));
+}
+
 /** Pick a sensible next action when the AI result doesn't supply one. */
 function normalizeNextAction(
   raw: string | null,

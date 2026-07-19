@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Publiora
 
-## Getting Started
+AI-assisted marketing ebook creation: **Strategy → Outline → Write → Review → Publish**.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 (App Router) + React 19
+- Supabase Auth / Postgres
+- Vitest + Playwright
+- Docker production deploy (`/opt/publiora` on VPS)
+
+## Setup
 
 ```bash
+cp .env.example .env.local
+# fill NEXT_PUBLIC_SUPABASE_URL, ANON/SERVICE keys, AI_* provider vars
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Database
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Apply Supabase migrations under `supabase/migrations/` (including CTA fields migration `20260719000001_workflow_review_cta.sql`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Scripts
 
-## Learn More
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Local Next dev server |
+| `npm test` | Unit tests (Vitest) |
+| `npm run build` | Production build |
+| `npm run test:e2e:smoke` | Playwright public smoke |
+| `npm run test:e2e` | Full Playwright (needs `E2E_EMAIL` / `E2E_PASSWORD`) |
+| `node scripts/seed-e2e-workflow-project.mjs` | Seed multi-stage e2e project |
 
-To learn more about Next.js, take a look at the following resources:
+### E2E auth
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Playwright injects Supabase session cookies (`@supabase/ssr` format). See `e2e/helpers/auth.ts` and `docs/e2e-evidence/README.md`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Docs
 
-## Deploy on Vercel
+- `docs/prd.md` / `docs/mvp-scope.md` — product scope
+- `docs/user-flows.md` — workflow-first UX
+- `docs/ai-prompts.md` — agent contracts
+- `deploy/AGENT-DEPLOY.md` — VPS rebuild (git push ≠ live)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private.

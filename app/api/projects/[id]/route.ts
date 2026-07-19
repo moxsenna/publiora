@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { jsonError } from "@/lib/api/errors";
 import type { ProjectUpdate } from "@/types/project";
-import type { CtaGoal } from "@/types/ai-suggestions";
+import {
+  CTA_URL_REQUIRED_GOALS,
+  isValidCtaUrl,
+  type CtaGoal,
+} from "@/types/ai-suggestions";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
@@ -99,6 +103,29 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
           "validation_error",
         );
       }
+    }
+
+    // When setting a URL-required goal, require a valid cta_url in the same patch
+    if (
+      patch.cta_goal &&
+      (CTA_URL_REQUIRED_GOALS as readonly string[]).includes(patch.cta_goal)
+    ) {
+      const url = patch.cta_url ?? null;
+      if (url == null || !isValidCtaUrl(url)) {
+        return jsonError(
+          "cta_url must be a valid http(s) URL for this cta_goal",
+          400,
+          "validation_error",
+        );
+      }
+    }
+    // Reject invalid explicit cta_url values
+    if ("cta_url" in patch && patch.cta_url != null && !isValidCtaUrl(patch.cta_url)) {
+      return jsonError(
+        "cta_url must be a valid http(s) URL",
+        400,
+        "validation_error",
+      );
     }
 
     const { data, error } = await supabase

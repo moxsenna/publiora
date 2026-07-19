@@ -7,13 +7,10 @@ import {
   createEmptyProjectState,
   clampReadinessScore,
 } from "@/lib/project-state/normalize";
+import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 import type { Project } from "@/types/project";
 import type { Section } from "@/types/section";
 import type { Outline } from "@/types/outline";
-
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
 
 function slugify(s: string): string {
   return s
@@ -53,12 +50,12 @@ function mapOutline(row: Record<string, unknown>): Outline {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Escape CTA text for safe rendering
-// ---------------------------------------------------------------------------
-
 function escapeCtaText(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function isValidCtaUrl(url: string): boolean {
@@ -70,77 +67,109 @@ function isValidCtaUrl(url: string): boolean {
   }
 }
 
-// ---------------------------------------------------------------------------
-// POST /api/projects/[id]/publish
-// ---------------------------------------------------------------------------
+async function restoreProjectStatus(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  id: string,
+  status: string,
+  now: string,
+  publishedAt?: string | null,
+): Promise<void> {
+  const patch: Record<string, unknown> = {
+    status,
+    updated_at: now,
+  };
+  if (publishedAt !== undefined) {
+    patch.published_at = publishedAt;
+  }
+  const { error } = await supabase.from("projects").update(patch).eq("id", id);
+  if (error) {
+    console.error(
+      "[publish] failed to restore project status",
+      id,
+      getSupabaseErrorMessage(error),
+    );
+  }
+}
 
 export async function POST(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
+  let previousStatus: string | null = null;
+  let previousPublishedAt: string | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let supabase: any = null;
+  let statusSetToPublishing = false;
 
   try {
-    // 1. Load project
     const access = await requireOwnedProject(id);
     if ("error" in access && access.error) return access.error;
 
-    const { supabase, user, project } = access;
+    supabase = access.supabase;
+    const { user, project } = access;
+    previousStatus = project.status;
+    previousPublishedAt = project.published_at ?? null;
 
     const body = (await req.json().catch(() => ({}))) as {
       is_public?: boolean;
     };
 
-    // 2. Load strategy state + readiness from project_states
-    let strategyState;
-    let readinessScore = 0;
-    try {
-      const { data: stateRow } = await supabase
-        .from("project_states")
-        .select("state_json, readiness_score")
-        .eq("project_id", id)
-        .maybeSingle();
-
-      if (stateRow?.state_json) {
-        strategyState = normalizeProjectState(stateRow.state_json);
-      } else {
-        strategyState = createEmptyProjectState();
-      }
-      readinessScore = clampReadinessScore(stateRow?.readiness_score);
-    } catch (err) {
-      return jsonError("Failed to load project state", 500, "db_error");
+    // Load strategy — check PostgREST error explicitly
+    const {
+      data: stateRow,
+      error: stateErr,
+    } = await supabase
+      .from("project_states")
+      .select("state_json, readiness_score")
+      .eq("project_id", id)
+      .maybeSingle();
+    if (stateErr) {
+      return jsonError(
+        getSupabaseErrorMessage(stateErr, "Failed to load project state"),
+        500,
+        "db_error",
+      );
     }
 
-    // 3. Load outline
-    let outline: Outline | null = null;
-    try {
-      const { data: outlineRow } = await supabase
-        .from("outlines")
-        .select("*")
-        .eq("project_id", id)
-        .maybeSingle();
-      if (outlineRow) {
-        outline = mapOutline(outlineRow);
-      }
-    } catch {
-      return jsonError("Failed to load outline", 500, "db_error");
-    }
+    const strategyState = stateRow?.state_json
+      ? normalizeProjectState(stateRow.state_json)
+      : createEmptyProjectState();
+    const readinessScore = clampReadinessScore(stateRow?.readiness_score);
 
-    // 4. Load ALL sections (not only generated/edited — deriveProjectWorkflow
-    //    checks all persisted sections against outline)
-    let sections: Section[] = [];
-    try {
-      const { data: sectionRows } = await supabase
-        .from("ebook_sections")
-        .select("*")
-        .eq("project_id", id)
-        .order("position", { ascending: true });
-      sections = (sectionRows ?? []).map((r) => mapSection(r));
-    } catch {
-      return jsonError("Failed to load sections", 500, "db_error");
+    const { data: outlineRow, error: outlineErr } = await supabase
+      .from("outlines")
+      .select("*")
+      .eq("project_id", id)
+      .maybeSingle();
+    if (outlineErr) {
+      return jsonError(
+        getSupabaseErrorMessage(outlineErr, "Failed to load outline"),
+        500,
+        "db_error",
+      );
     }
+    const outline: Outline | null = outlineRow
+      ? mapOutline(outlineRow)
+      : null;
 
-    // 5. deriveProjectWorkflow
+    const { data: sectionRows, error: sectionsErr } = await supabase
+      .from("ebook_sections")
+      .select("*")
+      .eq("project_id", id)
+      .order("position", { ascending: true });
+    if (sectionsErr) {
+      return jsonError(
+        getSupabaseErrorMessage(sectionsErr, "Failed to load sections"),
+        500,
+        "db_error",
+      );
+    }
+    const sections: Section[] = (sectionRows ?? []).map((r: Record<string, unknown>) =>
+      mapSection(r),
+    );
+
     const workflow = deriveProjectWorkflow({
       project: project as Project,
       strategyState,
@@ -149,15 +178,8 @@ export async function POST(
       sections,
     });
 
-    // 6. Blockers from workflow checks
-    const blockers = workflow.checks.filter(
-      (c) => c.severity === "blocker",
-    );
-
-    const hasBlockers = blockers.length > 0;
-
-    // 7. If !canPublish or blockers exist: 409 WITHOUT setting publishing status
-    if (!workflow.canPublish || hasBlockers) {
+    const blockers = workflow.checks.filter((c) => c.severity === "blocker");
+    if (!workflow.canPublish || blockers.length > 0) {
       return jsonError(
         "Publish blocked — resolve issues before publishing.",
         409,
@@ -180,38 +202,40 @@ export async function POST(
       );
     }
 
-    // 8. Save previous status for rollback
-    const previousStatus = project.status;
-
-    // 9. Set publishing status
     const now = new Date().toISOString();
-    try {
-      await supabase
-        .from("projects")
-        .update({ status: "publishing", updated_at: now })
-        .eq("id", id);
-    } catch {
-      return jsonError("Failed to update project status", 500, "db_error");
+
+    const { error: publishingErr } = await supabase
+      .from("projects")
+      .update({ status: "publishing", updated_at: now })
+      .eq("id", id);
+    if (publishingErr) {
+      return jsonError(
+        getSupabaseErrorMessage(publishingErr, "Failed to update project status"),
+        500,
+        "db_error",
+      );
+    }
+    statusSetToPublishing = true;
+
+    const { error: deleteErr } = await supabase
+      .from("published_ebooks")
+      .delete()
+      .eq("project_id", id);
+    if (deleteErr) {
+      await restoreProjectStatus(
+        supabase,
+        id,
+        previousStatus ?? "generated",
+        now,
+        previousPublishedAt,
+      );
+      return jsonError(
+        getSupabaseErrorMessage(deleteErr, "Failed to remove previous publication"),
+        500,
+        "db_error",
+      );
     }
 
-    // 10. Delete previous publications for this project
-    try {
-      await supabase.from("published_ebooks").delete().eq("project_id", id);
-    } catch {
-      await supabase
-        .from("projects")
-        .update({ status: previousStatus, updated_at: now })
-        .eq("id", id);
-      return jsonError("Failed to remove previous publication", 500, "db_error");
-    }
-
-    // 11. Build sanitized snapshot
-    const slug =
-      slugify(project.title) +
-      "-" +
-      Math.random().toString(36).slice(2, 6);
-
-    // Get only generated/edited sections for the published snapshot
     const publishableSections = sections
       .filter((s) => s.status === "generated" || s.status === "edited")
       .map((s) => ({
@@ -222,25 +246,28 @@ export async function POST(
       }));
 
     if (publishableSections.length === 0) {
-      const restoredStatus = previousStatus === "published" ? "generated" : previousStatus;
-      await supabase
-        .from("projects")
-        .update({ status: restoredStatus, updated_at: now })
-        .eq("id", id);
+      await restoreProjectStatus(
+        supabase,
+        id,
+        previousStatus === "published" ? "generated" : (previousStatus ?? "generated"),
+        now,
+        previousPublishedAt,
+      );
       return jsonError("No sections to publish", 400, "empty");
     }
 
-    // 12. Sanitize CTA fields
     const finalCta = project.final_cta
       ? escapeCtaText(String(project.final_cta).trim())
       : null;
     const ctaUrl = project.cta_url
-      ? (isValidCtaUrl(String(project.cta_url).trim())
-          ? String(project.cta_url).trim()
-          : null)
+      ? isValidCtaUrl(String(project.cta_url).trim())
+        ? String(project.cta_url).trim()
+        : null
       : null;
 
-    // 13. Insert publication snapshot with CTA
+    const slug =
+      slugify(project.title) + "-" + Math.random().toString(36).slice(2, 6);
+
     const { data: insertedPub, error: pubErr } = await supabase
       .from("published_ebooks")
       .insert({
@@ -264,33 +291,49 @@ export async function POST(
       .single();
 
     if (pubErr || !insertedPub) {
-      // On insert fail: restore previous status
-      const restoredStatus = previousStatus === "published" ? "generated" : previousStatus;
-      await supabase
-        .from("projects")
-        .update({ status: restoredStatus, updated_at: now })
-        .eq("id", id);
-      return jsonError("Publish failed", 500, "db_error");
+      await restoreProjectStatus(
+        supabase,
+        id,
+        previousStatus === "published" ? "generated" : (previousStatus ?? "generated"),
+        now,
+        previousPublishedAt,
+      );
+      return jsonError(
+        getSupabaseErrorMessage(pubErr, "Publish failed"),
+        500,
+        "db_error",
+      );
+    }
+
+    const { error: publishedErr } = await supabase
+      .from("projects")
+      .update({
+        status: "published",
+        published_at: now,
+        updated_at: now,
+      })
+      .eq("id", id);
+    if (publishedErr) {
+      // Snapshot exists but project row not updated — fail closed with explicit error
+      // and attempt to restore non-published status so UI does not claim success.
+      await restoreProjectStatus(
+        supabase,
+        id,
+        previousStatus === "published" ? "generated" : (previousStatus ?? "generated"),
+        now,
+        previousPublishedAt,
+      );
+      return jsonError(
+        getSupabaseErrorMessage(
+          publishedErr,
+          "Publication snapshot saved but project status update failed",
+        ),
+        500,
+        "db_error",
+      );
     }
 
     const pub = insertedPub;
-
-    // 14. Set published status on project
-    try {
-      await supabase
-        .from("projects")
-        .update({
-          status: "published",
-          published_at: now,
-          updated_at: now,
-        })
-        .eq("id", id);
-    } catch {
-      // Project status update failed but publication record exists — log and continue
-      console.error("Failed to update project status to published for project", id);
-    }
-
-    // 15. Return success
     return Response.json({
       id: pub.id,
       project_id: pub.project_id,
@@ -309,6 +352,15 @@ export async function POST(
       cta_url: pub.cta_url ?? null,
     });
   } catch (err) {
+    if (statusSetToPublishing && supabase && previousStatus) {
+      await restoreProjectStatus(
+        supabase,
+        id,
+        previousStatus === "published" ? "generated" : previousStatus,
+        new Date().toISOString(),
+        previousPublishedAt,
+      );
+    }
     const message = err instanceof Error ? err.message : "Server error";
     return jsonError(message, 503, "unavailable");
   }

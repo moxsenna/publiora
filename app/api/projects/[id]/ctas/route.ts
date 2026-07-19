@@ -5,8 +5,13 @@ import { runCtaGenerator } from "@/lib/ai/agents/cta";
 import { chargeGeneration, grantCredits } from "@/lib/credits";
 import { normalizeProjectState } from "@/lib/project-state/normalize";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
-import type { CtaGenerateRequest } from "@/types/ai-suggestions";
+import {
+  CTA_URL_REQUIRED_GOALS,
+  isValidCtaUrl,
+  type CtaGenerateRequest,
+} from "@/types/ai-suggestions";
 import type { EbookStrategy } from "@/types/strategy";
+import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 
 // ---------------------------------------------------------------------------
 // Request body schema
@@ -71,21 +76,35 @@ export async function POST(
 
     const request: CtaGenerateRequest = parsed.data;
 
+    // Validate URL-required goals before charging credits
+    if (
+      (CTA_URL_REQUIRED_GOALS as readonly string[]).includes(request.goal) &&
+      (request.destination_url == null ||
+        !isValidCtaUrl(request.destination_url))
+    ) {
+      return jsonError(
+        "A valid http(s) destination_url is required for this CTA goal",
+        400,
+        "validation_error",
+      );
+    }
+
     // ---- Load strategy state for richer CTA context ----
     let strategy: EbookStrategy | null = null;
-    try {
-      const { data: stateRow } = await supabase
-        .from("project_states")
-        .select("state_json")
-        .eq("project_id", id)
-        .maybeSingle();
-
-      if (stateRow?.state_json) {
-        const normalized = normalizeProjectState(stateRow.state_json);
-        strategy = normalized.strategy;
-      }
-    } catch {
-      // Strategy load is optional — proceed without it
+    const { data: stateRow, error: stateErr } = await supabase
+      .from("project_states")
+      .select("state_json")
+      .eq("project_id", id)
+      .maybeSingle();
+    if (stateErr) {
+      return jsonError(
+        getSupabaseErrorMessage(stateErr, "Failed to load strategy state"),
+        500,
+        "db_error",
+      );
+    }
+    if (stateRow?.state_json) {
+      strategy = normalizeProjectState(stateRow.state_json).strategy;
     }
 
     // ---- Charge credits ----

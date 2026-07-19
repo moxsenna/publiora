@@ -5,8 +5,10 @@ import {
   mergeProjectState,
   createEmptyProjectState,
   clampReadinessScore,
+  computeDeterministicReadinessScore,
 } from "@/lib/project-state/normalize";
 import { strategyPatchSchema } from "@/lib/validations/strategy";
+import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 import type { ProjectStateV2, EbookStrategy } from "@/types/strategy";
 
 // Re-export for unit tests / shared consumers
@@ -37,25 +39,24 @@ export async function GET(
 
   const { supabase } = access;
 
-  let state: ProjectStateV2;
-  let readinessScore = 0;
+  const { data: stateRow, error: stateErr } = await supabase
+    .from("project_states")
+    .select("state_json, readiness_score")
+    .eq("project_id", id)
+    .maybeSingle();
 
-  try {
-    const { data: stateRow } = await supabase
-      .from("project_states")
-      .select("state_json, readiness_score")
-      .eq("project_id", id)
-      .maybeSingle();
-
-    if (stateRow?.state_json) {
-      state = normalizeProjectState(stateRow.state_json);
-    } else {
-      state = createEmptyProjectState();
-    }
-    readinessScore = clampReadinessScore(stateRow?.readiness_score);
-  } catch {
-    return jsonError("Failed to load project state", 500, "db_error");
+  if (stateErr) {
+    return jsonError(
+      getSupabaseErrorMessage(stateErr, "Failed to load project state"),
+      500,
+      "db_error",
+    );
   }
+
+  const state = stateRow?.state_json
+    ? normalizeProjectState(stateRow.state_json)
+    : createEmptyProjectState();
+  const readinessScore = clampReadinessScore(stateRow?.readiness_score);
 
   return strategyResponse(state, readinessScore);
 }
@@ -93,51 +94,51 @@ export async function PATCH(
 
   const { strategy_patch } = validation.data;
 
-  // Load current state
-  let currentState: ProjectStateV2;
-  let readinessScore = 0;
-  try {
-    const { data: stateRow } = await supabase
-      .from("project_states")
-      .select("state_json, readiness_score")
-      .eq("project_id", id)
-      .maybeSingle();
+  const { data: stateRow, error: stateErr } = await supabase
+    .from("project_states")
+    .select("state_json, readiness_score")
+    .eq("project_id", id)
+    .maybeSingle();
 
-    if (stateRow?.state_json) {
-      currentState = normalizeProjectState(stateRow.state_json);
-    } else {
-      currentState = createEmptyProjectState();
-    }
-    readinessScore = clampReadinessScore(stateRow?.readiness_score);
-  } catch {
-    return jsonError("Failed to load project state", 500, "db_error");
+  if (stateErr) {
+    return jsonError(
+      getSupabaseErrorMessage(stateErr, "Failed to load project state"),
+      500,
+      "db_error",
+    );
   }
+
+  const currentState = stateRow?.state_json
+    ? normalizeProjectState(stateRow.state_json)
+    : createEmptyProjectState();
 
   // Merge safely: treat patch as a StrategistResult with only state_patch
   const merged = mergeProjectState(currentState, {
     assistant_message: "", // not used
     state_patch: strategy_patch as Partial<EbookStrategy>,
-    readiness_score: readinessScore,
-    missing_fields: [], // recomputed by mergeProjectState anyway
+    readiness_score: 0, // recalculated deterministically below
+    missing_fields: [], // recomputed by mergeProjectState
     next_action: currentState.next_action,
   });
 
-  // Persist merged state (keep existing readiness_score — no AI, no score change)
-  try {
-    const { error: upsertErr } = await supabase.from("project_states").upsert(
-      {
-        project_id: id,
-        state_json: merged,
-        readiness_score: readinessScore,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "project_id" },
+  // Manual edits must not leave readiness stuck below the outline gate.
+  const readinessScore = computeDeterministicReadinessScore(merged.strategy);
+
+  const { error: upsertErr } = await supabase.from("project_states").upsert(
+    {
+      project_id: id,
+      state_json: merged,
+      readiness_score: readinessScore,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "project_id" },
+  );
+  if (upsertErr) {
+    return jsonError(
+      getSupabaseErrorMessage(upsertErr, "Failed to persist state"),
+      500,
+      "db_error",
     );
-    if (upsertErr) {
-      return jsonError(upsertErr.message, 500, "db_error");
-    }
-  } catch {
-    return jsonError("Failed to persist state", 500, "db_error");
   }
 
   return strategyResponse(merged, readinessScore);
