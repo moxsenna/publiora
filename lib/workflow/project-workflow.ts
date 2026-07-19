@@ -639,6 +639,67 @@ function countValidOutlineSections(outline: Outline): number {
 // Re-export for testing convenience
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Strategy readiness helpers (shared across outline generation and workflow)
+// ---------------------------------------------------------------------------
+
+export interface StrategyBlocker {
+  code: string;
+  message: string;
+  targetStep: ProjectWorkflowStep;
+}
+
+/**
+ * Pure readiness check: used by both the outline-generate route and the
+ * workflow derivation so there is one canonical definition.
+ */
+export function isStrategyReady(
+  strategy: EbookStrategy,
+  readinessScore: number,
+): boolean {
+  return checkStrategyComplete(strategy, readinessScore);
+}
+
+/**
+ * Build a structured list of blockers when strategy is not ready for outline
+ * generation. Returns an empty array when strategy IS ready.
+ *
+ * Blockers list:
+ * 1. readability_below_threshold when readiness < 70
+ * 2. One missing_field entry for each required field that is empty/null
+ */
+export function getStrategyBlockers(
+  strategy: EbookStrategy,
+  readinessScore: number,
+): StrategyBlocker[] {
+  const blockers: StrategyBlocker[] = [];
+
+  if (readinessScore < 70) {
+    blockers.push({
+      code: "readiness_below_threshold",
+      message: `Strategy readiness is ${readinessScore}/100 (minimum 70 required).`,
+      targetStep: "strategy",
+    });
+  }
+
+  for (const key of REQUIRED_STRATEGY_FIELDS) {
+    const v = strategy[key];
+    if (
+      v === null ||
+      v === undefined ||
+      (typeof v === "string" && v.trim().length === 0)
+    ) {
+      blockers.push({
+        code: "missing_field",
+        message: `${key} is required`,
+        targetStep: "strategy",
+      });
+    }
+  }
+
+  return blockers;
+}
+
 export {
   checkStrategyComplete,
   checkOutlineComplete,

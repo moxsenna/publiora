@@ -6,6 +6,8 @@ import {
   stripHtml,
   isValidUrl,
   countValidOutlineSections,
+  isStrategyReady,
+  getStrategyBlockers,
 } from "@/lib/workflow/project-workflow";
 import type { Project } from "@/types/project";
 import type { Section } from "@/types/section";
@@ -885,5 +887,78 @@ describe("deriveProjectWorkflow - edge cases", () => {
     expect(state.blockers.some((b) => b.code === "outline_insufficient_sections")).toBe(true);
     // Should not be complete because only 1 valid title
     expect(state.steps.outline).not.toBe("complete");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isStrategyReady (public wrapper)
+// ---------------------------------------------------------------------------
+
+describe("isStrategyReady", () => {
+  it("returns true when readiness >= 70 and all required fields present", () => {
+    expect(isStrategyReady(makeFullStrategy(), 80)).toBe(true);
+    expect(isStrategyReady(makeFullStrategy(), 70)).toBe(true);
+  });
+
+  it("returns false when readiness < 70", () => {
+    expect(isStrategyReady(makeFullStrategy(), 69)).toBe(false);
+  });
+
+  it("returns false when a required field is null", () => {
+    const s = makeFullStrategy();
+    s.desired_outcome = null;
+    expect(isStrategyReady(s, 80)).toBe(false);
+  });
+
+  it("returns false when a required field is empty string", () => {
+    const s = makeFullStrategy();
+    s.core_promise = "   ";
+    expect(isStrategyReady(s, 80)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getStrategyBlockers
+// ---------------------------------------------------------------------------
+
+describe("getStrategyBlockers", () => {
+  it("returns empty array when strategy is ready", () => {
+    const blockers = getStrategyBlockers(makeFullStrategy(), 85);
+    expect(blockers.length).toBe(0);
+  });
+
+  it("returns readiness blocker when score < 70", () => {
+    const blockers = getStrategyBlockers(makeFullStrategy(), 40);
+    expect(blockers.some((b) => b.code === "readiness_below_threshold")).toBe(true);
+  });
+
+  it("returns missing_field blockers for each missing required field", () => {
+    const s = makeFullStrategy();
+    s.topic = null;
+    s.audience = "  ";
+    const blockers = getStrategyBlockers(s, 80);
+    expect(blockers.filter((b) => b.code === "missing_field").length).toBe(2);
+    const topics = blockers.filter(
+      (b) => b.code === "missing_field" && b.message.includes("topic"),
+    );
+    expect(topics.length).toBe(1);
+  });
+
+  it("returns both readiness and missing_field blockers when both conditions", () => {
+    const s = makeFullStrategy();
+    s.topic = null;
+    s.unique_angle = "";
+    const blockers = getStrategyBlockers(s, 50);
+    expect(blockers.some((b) => b.code === "readiness_below_threshold")).toBe(true);
+    expect(blockers.filter((b) => b.code === "missing_field").length).toBe(2);
+  });
+
+  it("all blockers target the strategy step", () => {
+    const s = makeFullStrategy();
+    s.topic = null;
+    const blockers = getStrategyBlockers(s, 50);
+    for (const b of blockers) {
+      expect(b.targetStep).toBe("strategy");
+    }
   });
 });

@@ -28,8 +28,23 @@ export interface Outline {
 }
 
 export interface OutlineGenerateInput {
-  /** Optional alternative angle to nudge the strategist agent. */
+  /**
+   * Optional user instruction to guide the planner AI.
+   * `angle` is a deprecated alias — prefer `user_instruction`.
+   */
+  user_instruction?: string;
+  /**
+   * @deprecated Use `user_instruction` instead.
+   */
   angle?: string;
+  /**
+   * When regenerating an outline that has written ebook_sections, the client
+   * must explicitly confirm destructive reset.  Defaults to false.
+   *
+   * When false and written sections exist, the route returns 409 with code
+   * `outline_regenerate_blocked`.
+   */
+  confirm_reset_written_sections?: boolean;
 }
 
 export interface OutlineUpdateInput {
