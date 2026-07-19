@@ -79,7 +79,7 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
             Title Suggestions
           </h3>
         </div>
-        <Button size="sm" variant="outline" onClick={onGenerate} loading={generate.isPending}>
+        <Button size="sm" variant="outline" onClick={onGenerate} loading={generate.isPending} disabled={generate.isPending}>
           <Sparkles className="h-3.5 w-3.5" />
           Generate
         </Button>

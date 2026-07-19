@@ -151,6 +151,7 @@ export function OutlinePanel({
               <Button
                 onClick={() => onGenerate(false)}
                 loading={generate.isPending}
+                disabled={generate.isPending}
                 className="w-full"
               >
                 <Sparkles className="h-4 w-4" />
@@ -273,6 +274,7 @@ export function OutlinePanel({
             size="sm"
             onClick={() => onGenerate(false)}
             loading={generate.isPending}
+            disabled={generate.isPending}
             className="shrink-0"
           >
             <Sparkles className="h-4 w-4" />

@@ -233,7 +233,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
               onClick={() => onSend()}
               loading={send.isPending}
               size="icon"
-              disabled={!text.trim()}
+              disabled={!text.trim() || send.isPending}
               aria-label="Send message"
             >
               <Send className="h-3.5 w-3.5" />

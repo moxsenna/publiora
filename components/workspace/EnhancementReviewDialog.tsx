@@ -146,7 +146,7 @@ export function EnhancementReviewDialog({
               size="sm"
               onClick={onSessionUndo}
               loading={undoing}
-              disabled={accepting || rejecting || regenerating}
+              disabled={accepting || rejecting || regenerating || undoing}
             >
               <Undo2 className="h-3.5 w-3.5" />
               Session Undo
@@ -161,7 +161,7 @@ export function EnhancementReviewDialog({
               onReject();
               onClose();
             }}
-            disabled={accepting || regenerating || undoing}
+            disabled={accepting || regenerating || undoing || rejecting}
             loading={rejecting}
           >
             <X className="h-3.5 w-3.5" />
@@ -172,7 +172,7 @@ export function EnhancementReviewDialog({
             size="sm"
             onClick={onRegenerate}
             loading={regenerating}
-            disabled={accepting || rejecting || undoing}
+            disabled={accepting || rejecting || undoing || regenerating}
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Regenerate
@@ -182,7 +182,7 @@ export function EnhancementReviewDialog({
             size="sm"
             onClick={() => onAccept(suggestion.suggested_html)}
             loading={accepting}
-            disabled={regenerating || rejecting || undoing}
+            disabled={regenerating || rejecting || undoing || accepting}
           >
             <Check className="h-3.5 w-3.5" />
             Accept

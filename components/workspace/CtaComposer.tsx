@@ -267,6 +267,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
           variant="outline"
           onClick={onGenerate}
           loading={generateCtas.isPending}
+          disabled={generateCtas.isPending}
         >
           <Sparkles className="h-3.5 w-3.5" />
           Generate Suggestions

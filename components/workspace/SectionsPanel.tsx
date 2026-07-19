@@ -101,7 +101,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     if (generateAll.isPending) return; // prevent duplicate jobs
     try {
       await generateAll.mutateAsync(projectId);
-      pushToast({ title: "Semua section ter-generate", variant: "success" });
+      pushToast({ title: "All sections generated", variant: "success" });
     } catch (err) {
       const e = err as { code?: string; message?: string };
       pushToast({
@@ -115,6 +115,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   };
 
   const onGenerateOne = async (outlineSectionId: string) => {
+    if (generate.isPending) return; // prevent double submission
     try {
       const s = await generate.mutateAsync({ projectId, outlineSectionId });
       setActiveId(s.id);
@@ -144,6 +145,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
 
   // Enhancement flow
   const onEnhance = async (sectionId: string, action: EnhancementAction, currentHtml: string) => {
+    if (enhance.isPending) return; // prevent double submission
     try {
       setReviewError(null);
       setReviewSectionId(sectionId);
@@ -302,6 +304,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                     variant="outline"
                     className="w-full"
                     loading={generate.isPending}
+                    disabled={generate.isPending}
                     onClick={(e) => {
                       e.stopPropagation();
                       onGenerateOne(os.id);
@@ -351,6 +354,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-lg border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-2.5 py-2 text-left"
               aria-expanded={pickerOpen}
               aria-haspopup="listbox"
+              aria-label="Select section"
             >
               <span className="min-w-0">
                 <span className="block text-xs text-[var(--color-medium-gray)]">
