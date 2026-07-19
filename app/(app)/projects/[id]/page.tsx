@@ -92,8 +92,18 @@ export default function WorkspacePage() {
     [paramStep, recommendedStep],
   );
 
-  // Navigate to a step by updating the URL search param
-  const navigateToStep = React.useCallback(
+  // User navigation: push so browser back/forward works
+  const pushStep = React.useCallback(
+    (step: ProjectWorkflowStep) => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("step", step);
+      router.push(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
+
+  // Silent correction only: invalid ?step= → recommended (no history pollution)
+  const replaceStep = React.useCallback(
     (step: ProjectWorkflowStep) => {
       const nextParams = new URLSearchParams(searchParams.toString());
       nextParams.set("step", step);
@@ -106,9 +116,9 @@ export default function WorkspacePage() {
   React.useEffect(() => {
     if (!workflow) return;
     if (paramStep && paramStep !== currentStep) {
-      navigateToStep(currentStep);
+      replaceStep(currentStep);
     }
-  }, [paramStep, currentStep, workflow, navigateToStep]);
+  }, [paramStep, currentStep, workflow, replaceStep]);
 
   // ---- Keyboard shortcuts 1-5 -> workflow steps ----
   React.useEffect(() => {
@@ -120,12 +130,12 @@ export default function WorkspacePage() {
       const n = Number(e.key);
       if (n >= 1 && n <= 5) {
         e.preventDefault();
-        navigateToStep(STEP_ORDER[n - 1]);
+        pushStep(STEP_ORDER[n - 1]);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigateToStep]);
+  }, [pushStep]);
 
   // ---- Actions ----
   const onDelete = async () => {
@@ -139,7 +149,7 @@ export default function WorkspacePage() {
   };
 
   const onPreview = () => {
-    navigateToStep("review");
+    pushStep("review");
   };
 
   // ---- Error state ----
@@ -184,10 +194,9 @@ export default function WorkspacePage() {
     );
   }
 
-  // ---- Determine if current step is blocked ----
-  const stepBlockers =
-    workflow?.blockers.filter((b) => b.targetStep === currentStep) ?? [];
-  const canAct = stepBlockers.length === 0;
+  // Footer next CTA: only advance when current stage complete
+  // (viewing later stages still allowed via nav; push still works)
+  const canAct = workflow ? workflow.steps[currentStep] === "complete" : false;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 h-[calc(100vh-3rem)]">
@@ -204,7 +213,7 @@ export default function WorkspacePage() {
         <WorkspaceStepNav
           current={currentStep}
           steps={workflow?.steps ?? DEFAULT_STEPS}
-          onNavigate={navigateToStep}
+          onNavigate={pushStep}
         />
       </div>
 
@@ -214,6 +223,7 @@ export default function WorkspacePage() {
           step={currentStep}
           projectId={id}
           workflow={workflow}
+          onNavigate={pushStep}
         />
       </div>
 
@@ -223,7 +233,7 @@ export default function WorkspacePage() {
           current={currentStep}
           workflow={workflow}
           canAct={canAct}
-          onNavigate={navigateToStep}
+          onNavigate={pushStep}
           onPublish={() => setPublishOpen(true)}
         />
       )}
@@ -271,19 +281,24 @@ function StageContent({
   step,
   projectId,
   workflow,
+  onNavigate,
 }: {
   step: ProjectWorkflowStep;
   projectId: string;
   workflow: ProjectWorkflowState | null;
+  onNavigate: (step: ProjectWorkflowStep) => void;
 }) {
-  // Blockers for this specific stage
-  const blockers = workflow?.blockers.filter((b) => b.targetStep === step) ?? [];
   const stepStatus = workflow?.steps[step];
-  // Show blocker overlay when the step isn't the current/active one and has blockers
-  const showBlocked =
-    blockers.length > 0 &&
-    stepStatus !== "current" &&
-    stepStatus !== "complete";
+  const allBlockers = workflow?.blockers ?? [];
+
+  // When stage blocked, show all blockers (earlier incomplete stages cause later blocks).
+  // Otherwise show blockers that target this step. Never render empty overlay.
+  const displayBlockers =
+    stepStatus === "blocked"
+      ? allBlockers
+      : allBlockers.filter((b) => b.targetStep === step);
+
+  const showBlocked = stepStatus === "blocked" && displayBlockers.length > 0;
 
   return (
     <div className="relative h-full">
@@ -295,14 +310,25 @@ function StageContent({
             <h3 className="text-base font-semibold text-[var(--color-publiora-black)]">
               This stage is not available yet
             </h3>
-            <ul className="space-y-1.5">
-              {blockers.map((b) => (
+            <ul className="space-y-2 text-left">
+              {displayBlockers.map((b) => (
                 <li
                   key={b.code}
                   className="flex items-start gap-2 text-sm text-[var(--color-deep-gray)]"
                 >
                   <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-gold)]" />
-                  <span>{b.message}</span>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <span>{b.message}</span>
+                    {b.targetStep !== step && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigate(b.targetStep)}
+                        className="block text-xs font-medium text-[var(--color-publiora-blue)] hover:underline"
+                      >
+                        Go to {b.targetStep}
+                      </button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -328,7 +354,7 @@ function StageContent({
       )}
       {step === "publish" && (
         <div className="h-full overflow-y-auto">
-          <PublishStage workflow={workflow} />
+          <PublishStage workflow={workflow} onNavigate={onNavigate} />
         </div>
       )}
     </div>
@@ -394,8 +420,10 @@ function ReviewStage({
 
 function PublishStage({
   workflow,
+  onNavigate,
 }: {
   workflow: ProjectWorkflowState | null;
+  onNavigate: (step: ProjectWorkflowStep) => void;
 }) {
   const blockers = workflow?.blockers ?? [];
   const canPublish = workflow?.canPublish ?? false;
@@ -425,7 +453,16 @@ function PublishStage({
                   className="flex items-start gap-2 text-sm text-[var(--color-deep-gray)]"
                 >
                   <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-gold)]" />
-                  <span>{b.message}</span>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <span>{b.message}</span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate(b.targetStep)}
+                      className="block text-xs font-medium text-[var(--color-publiora-blue)] hover:underline"
+                    >
+                      Go to {b.targetStep}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

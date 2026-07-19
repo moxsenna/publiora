@@ -41,8 +41,7 @@ export function WorkspaceStepNav({
       {STEP_ORDER.map((step, i) => {
         const status = steps[step] ?? "available";
         const isActive = step === current;
-        const isClickable =
-          status !== "blocked" || isActive; // allow navigating to active blocked step for visibility
+        // All steps clickable — blocked still navigable; page shows blocker overlay
 
         return (
           <button
@@ -50,16 +49,13 @@ export function WorkspaceStepNav({
             type="button"
             role="tab"
             aria-selected={isActive}
-            disabled={!isClickable}
             onClick={() => onNavigate(step)}
             className={cn(
               "flex items-center gap-1.5 px-2.5 h-8 rounded-md text-xs font-medium transition-colors whitespace-nowrap",
               isActive
                 ? "bg-white text-[var(--color-publiora-black)] shadow-sm"
-                : "text-[var(--color-medium-gray)]",
-              isClickable
-                ? "hover:text-[var(--color-deep-gray)]"
-                : "opacity-50 cursor-not-allowed"
+                : "text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]",
+              status === "blocked" && !isActive && "opacity-70"
             )}
           >
             <StepIcon status={status} />
@@ -115,7 +111,6 @@ export function WorkspaceStepNav({
           {STEP_ORDER.map((step) => {
             const status = steps[step] ?? "available";
             const isActive = step === current;
-            const isClickable = status !== "blocked" || isActive;
 
             return (
               <li key={step}>
@@ -123,19 +118,16 @@ export function WorkspaceStepNav({
                   type="button"
                   role="option"
                   aria-selected={isActive}
-                  disabled={!isClickable}
                   onClick={() => {
                     onNavigate(step);
                     setOpen(false);
                   }}
                   className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors",
+                    "w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--color-surface-2)]",
                     isActive
                       ? "bg-[var(--color-surface-2)] font-semibold text-[var(--color-publiora-black)]"
                       : "text-[var(--color-deep-gray)]",
-                    isClickable
-                      ? "hover:bg-[var(--color-surface-2)]"
-                      : "opacity-50 cursor-not-allowed"
+                    status === "blocked" && !isActive && "opacity-70"
                   )}
                 >
                   <StepIcon status={status} />

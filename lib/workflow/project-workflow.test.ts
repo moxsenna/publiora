@@ -8,6 +8,7 @@ import {
   countValidOutlineSections,
   isStrategyReady,
   getStrategyBlockers,
+  parseWorkflowStep,
 } from "@/lib/workflow/project-workflow";
 import type { Project } from "@/types/project";
 import type { Section } from "@/types/section";
@@ -960,5 +961,38 @@ describe("getStrategyBlockers", () => {
     for (const b of blockers) {
       expect(b.targetStep).toBe("strategy");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseWorkflowStep
+// ---------------------------------------------------------------------------
+
+describe("parseWorkflowStep", () => {
+  it("returns valid step as-is", () => {
+    expect(parseWorkflowStep("strategy", "outline")).toBe("strategy");
+    expect(parseWorkflowStep("outline", "strategy")).toBe("outline");
+    expect(parseWorkflowStep("write", "strategy")).toBe("write");
+    expect(parseWorkflowStep("review", "strategy")).toBe("review");
+    expect(parseWorkflowStep("publish", "strategy")).toBe("publish");
+  });
+
+  it("falls back to recommended when null/undefined/empty", () => {
+    expect(parseWorkflowStep(null, "outline")).toBe("outline");
+    expect(parseWorkflowStep(undefined, "write")).toBe("write");
+    expect(parseWorkflowStep("", "review")).toBe("review");
+  });
+
+  it("falls back to recommended when invalid", () => {
+    expect(parseWorkflowStep("nope", "strategy")).toBe("strategy");
+    expect(parseWorkflowStep("foo", "publish")).toBe("publish");
+    expect(parseWorkflowStep("6", "outline")).toBe("outline");
+  });
+
+  it("is case-sensitive: uppercase does not match", () => {
+    // Implementation uses exact ALL_STEPS membership (lowercase only)
+    expect(parseWorkflowStep("Strategy", "outline")).toBe("outline");
+    expect(parseWorkflowStep("WRITE", "strategy")).toBe("strategy");
+    expect(parseWorkflowStep("Review", "publish")).toBe("publish");
   });
 });
