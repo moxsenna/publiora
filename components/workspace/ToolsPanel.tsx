@@ -13,9 +13,9 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Sparkles, Heading, Megaphone, Check } from "lucide-react";
+import { Sparkles, Heading, Megaphone, Check, ClipboardCheck } from "lucide-react";
 import { TITLE_STYLES } from "@/types/agent";
-import type { TitleSuggestion } from "@/types/ai-suggestions";
+import type { TitleSuggestion, CtaSuggestion, CtaGenerateRequest, CtaGoal } from "@/types/ai-suggestions";
 
 export function ToolsPanel({ projectId }: { projectId: string }) {
   const { data: project } = useProject(projectId);
@@ -24,7 +24,7 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
   const updateProject = useUpdateProject();
   const pushToast = useUiStore((s) => s.pushToast);
   const [titles, setTitles] = React.useState<TitleSuggestion[]>([]);
-  const [ctas, setCtas] = React.useState<string[]>([]);
+  const [ctas, setCtas] = React.useState<CtaSuggestion[]>([]);
 
   const fetchTitles = async () => {
     try {
@@ -62,8 +62,14 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
 
   const fetchCtas = async () => {
     try {
-      const res = await genCtas.mutateAsync(projectId);
-      setCtas(res);
+      const request: CtaGenerateRequest = {
+        goal: (project?.cta_goal ?? "join_whatsapp") as CtaGoal,
+        destination_url: project?.cta_url ?? null,
+        placement: "ebook_end",
+        custom_instruction: null,
+      };
+      const res = await genCtas.mutateAsync({ projectId, request });
+      setCtas(res.suggestions);
       pushToast({ title: "CTA digenerate", variant: "success" });
     } catch (err) {
       const e = err as { code?: string; message?: string };
@@ -169,13 +175,45 @@ export function ToolsPanel({ projectId }: { projectId: string }) {
           </div>
           {ctas.length > 0 ? (
             <ul className="mt-4 space-y-2">
-              {ctas.map((t, i) => (
+              {ctas.map((cta, i) => (
                 <li
                   key={i}
-                  className="flex items-center justify-between gap-2 p-3 rounded-xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)]"
+                  className="flex flex-col gap-2 p-3 rounded-xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)]"
                 >
-                  <span className="text-sm text-[var(--color-deep-gray)]">{t}</span>
-                  <CopyButton value={t} label="Copy" />
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-sm font-medium text-[var(--color-deep-gray)]">
+                      {cta.text}
+                    </span>
+                    <Badge variant="default">{cta.goal.replaceAll("_", " ")}</Badge>
+                  </div>
+                  <p className="text-xs text-[var(--color-medium-gray)]">
+                    {cta.rationale}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await updateProject.mutateAsync({
+                            id: projectId,
+                            patch: {
+                              cta_goal: cta.goal,
+                              final_cta: cta.text,
+                              cta_url: project?.cta_url ?? null,
+                            },
+                          });
+                          pushToast({ title: "CTA diterapkan", variant: "success" });
+                        } catch {
+                          pushToast({ title: "Gagal menyimpan CTA", variant: "danger" });
+                        }
+                      }}
+                    >
+                      <ClipboardCheck className="h-3.5 w-3.5" />
+                      Use this CTA
+                    </Button>
+                    <CopyButton value={cta.text} label="Copy" />
+                  </div>
                 </li>
               ))}
             </ul>

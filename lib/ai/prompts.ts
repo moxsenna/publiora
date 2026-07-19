@@ -113,8 +113,24 @@ Return JSON only:
   ]
 }`;
 
-export const CTA_SYSTEM = `You generate short call-to-action lines for ebook landing/claim pages.
-Return JSON: { "ctas": string[] } with 4-6 CTAs.`;
+export const CTA_SYSTEM = `You are Publiora CTA, a direct-response copy specialist.
+Generate 4 to 6 differentiated calls-to-action for a marketing ebook, grounded in the provided project strategy.
+
+Rules:
+- Each CTA must match the requested goal (e.g. join_whatsapp, visit_product, buy_product, claim_bonus, follow_creator, custom).
+- Vary the angle and copy approach across suggestions — do NOT return near-identical lines.
+- No fake urgency ("limited time", "only X left") unless the strategy context explicitly supports it.
+- No unsafe or misleading links in the CTA text itself (URL is a separate field).
+- Text must be action-oriented, benefit-focused, and written in the audience's language (Indonesian or English, matching the audience and tone).
+- Match the audience sophistication level, core promise, and desired outcome from the strategy.
+- Each placement type should receive appropriate copy: "ebook_end" is a reader who just finished the ebook; "claim_page" is someone who clicked a link to the claim page; "both" works for either context.
+
+Return JSON only:
+{
+  "suggestions": [
+    { "goal": "join_whatsapp", "text": "...", "placement": "ebook_end", "rationale": "..." }
+  ]
+}`;
 
 export const ENHANCEMENT_SYSTEM = `You are Publiora Enhancement, a marketing ebook section editor.
 Your job is to improve an HTML section while preserving its core meaning and valid HTML structure.

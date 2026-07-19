@@ -41,7 +41,7 @@ import type {
 } from "@/types";
 import type { SendMessageInput, ChatResponse } from "@/types/message";
 import type { ProjectStateV2 } from "@/types/strategy";
-import type { EnhancementSuggestion, EnhancementAction } from "@/types/ai-suggestions";
+import type { EnhancementSuggestion, EnhancementAction, CtaGenerateRequest, CtaGenerateResponse } from "@/types/ai-suggestions";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 
 const READER_ID = "reader@publiora.demo";
@@ -596,12 +596,19 @@ export function useGenerateTitles() {
 export function useGenerateCtas() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (projectId: string) =>
-      apiFetch<string[]>(`/api/projects/${projectId}/ctas`, {
+    mutationFn: ({
+      projectId,
+      request,
+    }: {
+      projectId: string;
+      request: CtaGenerateRequest;
+    }) =>
+      apiFetch<CtaGenerateResponse>(`/api/projects/${projectId}/ctas`, {
         method: "POST",
+        body: JSON.stringify(request),
       }),
-    onSuccess: (data, projectId) => {
-      qc.setQueryData(qk.ctas(projectId), data);
+    onSuccess: (data, variables) => {
+      qc.setQueryData(qk.ctas(variables.projectId), data.suggestions);
       qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });
