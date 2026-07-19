@@ -17,7 +17,7 @@ import { Modal } from "@/components/ui/Modal";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { WorkspaceStepNav } from "@/components/workspace/WorkspaceStepNav";
 import { WorkspaceStageFooter } from "@/components/workspace/WorkspaceStageFooter";
-import { ChatPanel } from "@/components/workspace/ChatPanel";
+import { StrategyPanel } from "@/components/workspace/StrategyPanel";
 import { OutlinePanel } from "@/components/workspace/OutlinePanel";
 import { SectionsPanel } from "@/components/workspace/SectionsPanel";
 import { PreviewPanel } from "@/components/workspace/PreviewPanel";
@@ -340,7 +340,7 @@ function StageContent({
       )}
 
       {/* Actual panel content */}
-      {step === "strategy" && <ChatPanel projectId={projectId} />}
+      {step === "strategy" && <StrategyPanel projectId={projectId} />}
       {step === "outline" && (
         <div className="h-full overflow-y-auto">
           <OutlinePanel projectId={projectId} />
