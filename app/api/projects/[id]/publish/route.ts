@@ -317,10 +317,19 @@ export async function POST(
       // Snapshot exists but project row not updated — fail closed:
       // delete orphan snapshot (cannot restore previous publication without RPC),
       // restore non-published project status so UI does not claim success.
-      await supabase
-        .from("published_ebooks")
-        .delete()
-        .eq("id", insertedPub.id);
+      {
+        const { error: cleanupErr } = await supabase
+          .from("published_ebooks")
+          .delete()
+          .eq("id", insertedPub.id);
+        if (cleanupErr) {
+          console.error(
+            "[publish] orphan snapshot cleanup failed",
+            insertedPub.id,
+            getSupabaseErrorMessage(cleanupErr),
+          );
+        }
+      }
       await restoreProjectStatus(
         supabase,
         id,

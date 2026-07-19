@@ -13,6 +13,7 @@ import {
 import type { EbookStrategy } from "@/types/strategy";
 import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 import { setOutlineSectionStatus } from "@/lib/outline/section-status";
+import { planGenerationRestore } from "@/lib/outline/generation-recovery";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -221,7 +222,10 @@ async function generateOne(opts: {
   let outlineSections = [...opts.outlineSections];
   let chargedHere = false;
   const previousSectionStatus = outlineSection.status ?? "pending";
-  let markedGenerating = false;
+  /** Project row flipped to generating — restore even if outline mark fails. */
+  let projectMarkedGenerating = false;
+  /** Outline section flipped to generating. */
+  let sectionMarkedGenerating = false;
 
   const markSectionStatus = async (
     status: OutlineSection["status"],
@@ -244,19 +248,7 @@ async function generateOne(opts: {
       : null;
   };
 
-  const restoreAfterFailure = async () => {
-    if (!markedGenerating) return;
-    // Prefer explicit failed so UI can offer Retry instead of stuck generating
-    const restoreStatus =
-      previousSectionStatus === "generating" ? "failed" : previousSectionStatus;
-    const target: OutlineSection["status"] =
-      restoreStatus === "generated" ||
-      restoreStatus === "failed" ||
-      restoreStatus === "pending"
-        ? restoreStatus
-        : "failed";
-    await markSectionStatus(target);
-    // Recompute project generation status from ebook_sections
+  const restoreProjectProgress = async () => {
     const { count } = await supabase
       .from("ebook_sections")
       .select("*", { count: "exact", head: true })
@@ -266,7 +258,7 @@ async function generateOne(opts: {
     const total = project.total_sections || outlineSections.length || 1;
     const progress = Math.round((generated / total) * 100);
     const status = generated >= total ? "generated" : "approved";
-    await supabase
+    const { error } = await supabase
       .from("projects")
       .update({
         sections_generated: generated,
@@ -275,6 +267,26 @@ async function generateOne(opts: {
         updated_at: new Date().toISOString(),
       })
       .eq("id", project.id);
+    if (error) {
+      console.error(
+        "[sections/generate] restoreProjectProgress failed",
+        getSupabaseErrorMessage(error),
+      );
+    }
+  };
+
+  const restoreAfterFailure = async () => {
+    const plan = planGenerationRestore({
+      projectMarkedGenerating,
+      sectionMarkedGenerating,
+      previousSectionStatus,
+    });
+    if (plan.shouldRestoreSection && plan.sectionStatus) {
+      await markSectionStatus(plan.sectionStatus);
+    }
+    if (plan.shouldRestoreProject) {
+      await restoreProjectProgress();
+    }
   };
 
   const refundLocalCharge = async (label: string) => {
@@ -320,15 +332,18 @@ async function generateOne(opts: {
         ),
       };
     }
+    projectMarkedGenerating = true;
 
     // Mark current section generating on mutable copy, then persist
     {
       const errMsg = await markSectionStatus("generating");
       if (errMsg) {
+        // Project already generating — must restore even though section mark failed
+        await restoreAfterFailure();
         await refundLocalCharge("Refund section generate DB failure");
         return { error: jsonError(errMsg, 500, "db_error") };
       }
-      markedGenerating = true;
+      sectionMarkedGenerating = true;
     }
 
     const prevOs =
