@@ -314,8 +314,13 @@ export async function POST(
       })
       .eq("id", id);
     if (publishedErr) {
-      // Snapshot exists but project row not updated — fail closed with explicit error
-      // and attempt to restore non-published status so UI does not claim success.
+      // Snapshot exists but project row not updated — fail closed:
+      // delete orphan snapshot (cannot restore previous publication without RPC),
+      // restore non-published project status so UI does not claim success.
+      await supabase
+        .from("published_ebooks")
+        .delete()
+        .eq("id", insertedPub.id);
       await restoreProjectStatus(
         supabase,
         id,

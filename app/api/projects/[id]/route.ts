@@ -2,10 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { jsonError } from "@/lib/api/errors";
 import type { ProjectUpdate } from "@/types/project";
 import {
-  CTA_URL_REQUIRED_GOALS,
-  isValidCtaUrl,
   type CtaGoal,
 } from "@/types/ai-suggestions";
+import { validateEffectiveCta } from "@/lib/projects/cta-effective";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
@@ -105,27 +104,34 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
       }
     }
 
-    // When setting a URL-required goal, require a valid cta_url in the same patch
-    if (
-      patch.cta_goal &&
-      (CTA_URL_REQUIRED_GOALS as readonly string[]).includes(patch.cta_goal)
-    ) {
-      const url = patch.cta_url ?? null;
-      if (url == null || !isValidCtaUrl(url)) {
-        return jsonError(
-          "cta_url must be a valid http(s) URL for this cta_goal",
-          400,
-          "validation_error",
-        );
-      }
+    // Load existing project for effective CTA goal/URL validation
+    const { data: existing, error: existingErr } = await supabase
+      .from("projects")
+      .select("cta_goal, cta_url, final_cta")
+      .eq("id", id)
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    if (existingErr) {
+      return jsonError(existingErr.message, 500, "db_error");
     }
-    // Reject invalid explicit cta_url values
-    if ("cta_url" in patch && patch.cta_url != null && !isValidCtaUrl(patch.cta_url)) {
-      return jsonError(
-        "cta_url must be a valid http(s) URL",
-        400,
-        "validation_error",
-      );
+    if (!existing) {
+      return jsonError("Project not found", 404, "not_found");
+    }
+
+    const ctaError = validateEffectiveCta(
+      {
+        cta_goal: existing.cta_goal,
+        cta_url: existing.cta_url,
+        final_cta: existing.final_cta,
+      },
+      {
+        ...("cta_goal" in patch ? { cta_goal: patch.cta_goal ?? null } : {}),
+        ...("cta_url" in patch ? { cta_url: patch.cta_url ?? null } : {}),
+        ...("final_cta" in patch ? { final_cta: patch.final_cta ?? null } : {}),
+      },
+    );
+    if (ctaError) {
+      return jsonError(ctaError, 400, "validation_error");
     }
 
     const { data, error } = await supabase

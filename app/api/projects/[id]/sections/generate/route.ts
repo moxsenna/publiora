@@ -12,6 +12,7 @@ import {
 } from "@/lib/project-state/normalize";
 import type { EbookStrategy } from "@/types/strategy";
 import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
+import { setOutlineSectionStatus } from "@/lib/outline/section-status";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -219,6 +220,62 @@ async function generateOne(opts: {
     opts;
   let outlineSections = [...opts.outlineSections];
   let chargedHere = false;
+  const previousSectionStatus = outlineSection.status ?? "pending";
+  let markedGenerating = false;
+
+  const markSectionStatus = async (
+    status: OutlineSection["status"],
+  ): Promise<string | null> => {
+    if (sectionIndex < 0) return null;
+    outlineSections = setOutlineSectionStatus(
+      outlineSections,
+      outlineSection.id,
+      status,
+    );
+    const { error } = await supabase
+      .from("outlines")
+      .update({
+        sections: outlineSections,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("project_id", project.id);
+    return error
+      ? getSupabaseErrorMessage(error, "Failed to update outline status")
+      : null;
+  };
+
+  const restoreAfterFailure = async () => {
+    if (!markedGenerating) return;
+    // Prefer explicit failed so UI can offer Retry instead of stuck generating
+    const restoreStatus =
+      previousSectionStatus === "generating" ? "failed" : previousSectionStatus;
+    const target: OutlineSection["status"] =
+      restoreStatus === "generated" ||
+      restoreStatus === "failed" ||
+      restoreStatus === "pending"
+        ? restoreStatus
+        : "failed";
+    await markSectionStatus(target);
+    // Recompute project generation status from ebook_sections
+    const { count } = await supabase
+      .from("ebook_sections")
+      .select("*", { count: "exact", head: true })
+      .eq("project_id", project.id)
+      .in("status", ["generated", "edited"]);
+    const generated = count ?? 0;
+    const total = project.total_sections || outlineSections.length || 1;
+    const progress = Math.round((generated / total) * 100);
+    const status = generated >= total ? "generated" : "approved";
+    await supabase
+      .from("projects")
+      .update({
+        sections_generated: generated,
+        progress,
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", project.id);
+  };
 
   const refundLocalCharge = async (label: string) => {
     if (!chargedHere) return;
@@ -265,28 +322,13 @@ async function generateOne(opts: {
     }
 
     // Mark current section generating on mutable copy, then persist
-    if (sectionIndex >= 0) {
-      outlineSections[sectionIndex] = {
-        ...outlineSections[sectionIndex],
-        status: "generating",
-      };
-      const { error: outGenErr } = await supabase
-        .from("outlines")
-        .update({
-          sections: outlineSections,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("project_id", project.id);
-      if (outGenErr) {
+    {
+      const errMsg = await markSectionStatus("generating");
+      if (errMsg) {
         await refundLocalCharge("Refund section generate DB failure");
-        return {
-          error: jsonError(
-            getSupabaseErrorMessage(outGenErr, "Failed to update outline status"),
-            500,
-            "db_error",
-          ),
-        };
+        return { error: jsonError(errMsg, 500, "db_error") };
       }
+      markedGenerating = true;
     }
 
     const prevOs =
@@ -362,6 +404,7 @@ async function generateOne(opts: {
       .eq("outline_section_id", outlineSection.id)
       .maybeSingle();
     if (existErr) {
+      await restoreAfterFailure();
       await refundLocalCharge("Refund section generate DB failure");
       return {
         error: jsonError(
@@ -388,7 +431,8 @@ async function generateOne(opts: {
         .select("*")
         .single();
       if (error) {
-        await refundLocalCharge("Refund section generate DB failure");
+        await restoreAfterFailure();
+      await refundLocalCharge("Refund section generate DB failure");
         return { error: jsonError(error.message, 500, "db_error") };
       }
       row = data;
@@ -408,30 +452,19 @@ async function generateOne(opts: {
         .select("*")
         .single();
       if (error) {
-        await refundLocalCharge("Refund section generate DB failure");
+        await restoreAfterFailure();
+      await refundLocalCharge("Refund section generate DB failure");
         return { error: jsonError(error.message, 500, "db_error") };
       }
       row = data;
     }
 
-    if (sectionIndex >= 0) {
-      outlineSections[sectionIndex] = {
-        ...outlineSections[sectionIndex],
-        status: "generated",
-      };
-      const { error: outDoneErr } = await supabase
-        .from("outlines")
-        .update({ sections: outlineSections, updated_at: now })
-        .eq("project_id", project.id);
-      if (outDoneErr) {
+    {
+      const errMsg = await markSectionStatus("generated");
+      if (errMsg) {
+        await restoreAfterFailure();
         await refundLocalCharge("Refund section generate DB failure");
-        return {
-          error: jsonError(
-            getSupabaseErrorMessage(outDoneErr, "Failed to finalize outline status"),
-            500,
-            "db_error",
-          ),
-        };
+        return { error: jsonError(errMsg, 500, "db_error") };
       }
     }
 
@@ -474,6 +507,7 @@ async function generateOne(opts: {
       outlineSections,
     };
   } catch (err) {
+    await restoreAfterFailure();
     await refundLocalCharge("Refund section generate failure");
     throw err;
   }
