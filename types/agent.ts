@@ -1,19 +1,6 @@
-// AI agent metadata — internal to generation, surfaced in chat + outline.
+// Title style metadata (label + description for badge rendering)
 
 import type { TitleStyle } from "./ai-suggestions";
-
-export type AgentSlug = "strategist" | "planner" | "writer" | "enhancement" | "title";
-
-export interface AgentMeta {
-  slug: string;
-  name: string;
-  description: string;
-  color: string;
-}
-
-// ---------------------------------------------------------------------------
-// Title style metadata (label + description for badge rendering)
-// ---------------------------------------------------------------------------
 
 export const TITLE_STYLES: {
   id: TitleStyle;
