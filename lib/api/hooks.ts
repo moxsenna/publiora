@@ -39,7 +39,8 @@ import type {
   SectionUpdateInput,
   Subscription,
 } from "@/types";
-import type { SendMessageInput } from "@/types/message";
+import type { SendMessageInput, ChatResponse } from "@/types/message";
+import type { ProjectStateV2 } from "@/types/strategy";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 
 const READER_ID = "reader@publiora.demo";
@@ -232,12 +233,48 @@ export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: SendMessageInput) =>
-      apiFetch<ChatMessage>(`/api/projects/${input.project_id}/chat`, {
+      apiFetch<ChatResponse>(`/api/projects/${input.project_id}/chat`, {
         method: "POST",
-        body: JSON.stringify({ content: input.content, agent: input.agent }),
+        body: JSON.stringify({ content: input.content }),
       }),
     onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: qk.messages(data.project_id) });
+      qc.invalidateQueries({ queryKey: qk.messages(data.message.project_id) });
+      qc.invalidateQueries({ queryKey: qk.strategy(data.message.project_id) });
+    },
+  });
+}
+
+// Strategy
+export interface StrategyResponse {
+  state: ProjectStateV2;
+  readiness_score: number;
+}
+
+export function useStrategy(projectId: string) {
+  return useQuery({
+    queryKey: qk.strategy(projectId),
+    queryFn: () =>
+      apiFetch<StrategyResponse>(`/api/projects/${projectId}/strategy`),
+    enabled: !!projectId,
+  });
+}
+
+export function usePatchStrategy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      strategy_patch,
+    }: {
+      projectId: string;
+      strategy_patch: Record<string, unknown>;
+    }) =>
+      apiFetch<StrategyResponse>(`/api/projects/${projectId}/strategy`, {
+        method: "PATCH",
+        body: JSON.stringify({ strategy_patch }),
+      }),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: qk.strategy(variables.projectId) });
     },
   });
 }

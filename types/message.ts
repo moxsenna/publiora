@@ -1,4 +1,5 @@
 // AI chat messages inside a project workspace.
+import type { ProjectStateV2, StrategyNextAction } from "./strategy";
 
 export type MessageRole = "user" | "assistant" | "system";
 
@@ -22,5 +23,13 @@ export interface ChatMessage {
 export interface SendMessageInput {
   project_id: string;
   content: string;
-  agent?: AgentName;
+}
+
+/** Response shape for POST /api/projects/[id]/chat */
+export interface ChatResponse {
+  message: ChatMessage;
+  state: ProjectStateV2;
+  readiness_score: number;
+  next_action: StrategyNextAction;
+  missing_fields: string[];
 }

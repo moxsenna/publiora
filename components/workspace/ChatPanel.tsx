@@ -4,47 +4,20 @@ import * as React from "react";
 import { useMessages, useSendMessage } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { AGENT_LABELS, AGENT_COLORS } from "@/lib/ai/agents/meta";
-import type { AgentName } from "@/types/message";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Send, MessageSquare } from "lucide-react";
-import { AGENTS } from "./agents";
 import { cn } from "@/lib/utils";
 
-const SUGGESTIONS: Record<AgentName, string[]> = {
-  strategist: [
-    "Bantu susun pillar topik untuk audiens ini",
-    "Apa angle paling kuat dari brief saya?",
-    "Ringkas positioning ebook dalam 3 kalimat",
-  ],
-  planner: [
-    "Buatkan outline 5–6 bab yang actionable",
-    "Susun ulang outline agar alur lebih logis",
-    "Tambah section tentang pitfall umum",
-  ],
-  writer: [
-    "Tulis ulang section ini lebih padat",
-    "Tambah contoh konkret di section 1",
-    "Perkuat opening paragraph",
-  ],
-  enhancement: [
-    "Perbaiki alur dan kejelasan paragraf",
-    "Rapikan tone agar lebih taktis",
-    "Singkatkan tanpa hilang poin utama",
-  ],
-  title: [
-    "Generate 5 variasi judul",
-    "Buat judul yang lebih outcome-driven",
-    "Usulkan subtitle yang complementary",
-  ],
-  cta: [
-    "Generate 5 CTA untuk landing page",
-    "CTA untuk email claim link",
-    "CTA yang lebih soft-sell",
-  ],
-};
+const SUGGESTIONS = [
+  "Bantu susun pillar topik untuk audiens ini",
+  "Apa angle paling kuat dari brief saya?",
+  "Ringkas positioning ebook dalam 3 kalimat",
+];
+
+const DISPLAY_AGENT = "strategist" as const;
 
 export function ChatPanel({ projectId }: { projectId: string }) {
   const { data: messages, isLoading } = useMessages(projectId);
@@ -53,7 +26,6 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   const [text, setText] = React.useState("");
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const taRef = React.useRef<HTMLTextAreaElement>(null);
-  const [agent, setAgent] = React.useState<AgentName>("strategist");
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -78,7 +50,6 @@ export function ChatPanel({ projectId }: { projectId: string }) {
       await send.mutateAsync({
         project_id: projectId,
         content: body,
-        agent,
       });
     } catch {
       pushToast({ title: "Pesan gagal dikirim", variant: "danger" });
@@ -86,34 +57,10 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   };
 
   const empty = !messages || messages.length === 0;
+  const agentLabel = AGENT_LABELS[DISPLAY_AGENT];
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface-2)]">
-      <div className="border-b border-[var(--color-publiora-border)] bg-white px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        {AGENTS.map((a) => {
-          const active = agent === a.slug;
-          return (
-            <button
-              key={a.slug}
-              type="button"
-              onClick={() => setAgent(a.slug as AgentName)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap border transition-colors",
-                active
-                  ? "bg-[var(--color-publiora-black)] text-white border-[var(--color-publiora-black)]"
-                  : "bg-white text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)] border-[var(--color-publiora-border)]"
-              )}
-            >
-              <span
-                className="inline-block h-1.5 w-1.5 rounded-full mr-1.5 align-middle"
-                style={{ background: AGENT_COLORS[a.slug as AgentName] }}
-              />
-              {AGENT_LABELS[a.slug as AgentName]}
-            </button>
-          );
-        })}
-      </div>
-
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3">
         {isLoading ? (
           <div className="space-y-2.5 max-w-xl">
@@ -126,10 +73,10 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             <EmptyState
               icon={<MessageSquare className="h-5 w-5" />}
               title="Mulai percakapan"
-              description={`Chat dengan ${AGENT_LABELS[agent]} untuk membentuk brief ebook.`}
+              description={`Chat dengan ${agentLabel} untuk membentuk brief ebook.`}
             />
             <div className="mt-4 flex flex-wrap gap-2 justify-center">
-              {SUGGESTIONS[agent].map((s) => (
+              {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -156,7 +103,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
                   <div
                     className="h-7 w-7 rounded-lg grid place-items-center text-white text-xs font-semibold"
                     style={{
-                      background: AGENT_COLORS[m.agent ?? "strategist"],
+                      background: AGENT_COLORS[m.agent ?? DISPLAY_AGENT],
                     }}
                   >
                     {m.agent ? AGENT_LABELS[m.agent].slice(0, 2) : "AI"}
@@ -190,7 +137,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
 
       {!empty && (
         <div className="px-4 pb-1 flex flex-wrap gap-1.5">
-          {SUGGESTIONS[agent].slice(0, 2).map((s) => (
+          {SUGGESTIONS.slice(0, 2).map((s) => (
             <button
               key={s}
               type="button"
@@ -216,7 +163,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               }
             }}
             rows={1}
-            placeholder={`Pesan ke ${AGENT_LABELS[agent]}…`}
+            placeholder={`Pesan ke ${agentLabel}…`}
             className="flex-1 max-h-32 resize-none rounded-xl border border-[var(--color-publiora-border)] px-3 py-2 text-sm text-[var(--color-deep-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] bg-white"
           />
           <Button

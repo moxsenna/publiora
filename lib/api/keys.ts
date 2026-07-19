@@ -6,6 +6,7 @@ export const qk = {
   outline: (projectId: string) => ["projects", projectId, "outline"] as const,
   sections: (projectId: string) => ["projects", projectId, "sections"] as const,
   messages: (projectId: string) => ["projects", projectId, "messages"] as const,
+  strategy: (projectId: string) => ["projects", projectId, "strategy"] as const,
   published: ["published"] as const,
   publishedEbook: (id: string) => ["published", id] as const,
   publishedSlug: (slug: string) => ["published", "slug", slug] as const,

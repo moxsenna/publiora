@@ -305,7 +305,6 @@ export async function sendMessage(input: SendMessageInput): Promise<ChatMessage>
   db.messages.push(userMsg);
 
   const project = db.projects.find((p) => p.id === input.project_id);
-  const agent = input.agent ?? "strategist";
   const reply = strategistReply({
     title: project?.title ?? "Project",
     description: project?.description ?? "",
@@ -315,7 +314,7 @@ export async function sendMessage(input: SendMessageInput): Promise<ChatMessage>
     id: newId("msg"),
     project_id: input.project_id,
     role: "assistant",
-    agent,
+    agent: "strategist",
     content: reply,
     created_at: nowIso(),
   };
