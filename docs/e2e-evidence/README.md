@@ -51,3 +51,11 @@ npx playwright test --project=chromium \
 
 - Failed UI login (historical): `auth-login-failed-desktop.png`
 - Authenticated workspace: `../baseline-workspace/desktop-*.png`, `mobile320-*.png`
+
+
+### Seeded journey
+
+```bash
+node scripts/seed-e2e-workflow-project.mjs
+npx playwright test --project=chromium e2e/workflow-journey.spec.ts
+```

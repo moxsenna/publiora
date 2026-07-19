@@ -137,7 +137,9 @@ Each stage is gated: incomplete strategy blocks outline, missing sections block 
 ```
 e2e/workflow-happy-path.spec.ts  — 7 passed
 e2e/workspace-shell.spec.ts      — 10 passed (incl. keyboard 1/5 + mobile 320px)
-TOTAL                            — 17 passed
+e2e/workflow-journey.spec.ts     — 6 passed (seeded Strategy→Publish content)
+e2e/smoke-public.spec.ts         — 6 passed (chromium)
+TOTAL chromium e2e               — 29 passed
 ```
 
 Auth approach (not UI form):
