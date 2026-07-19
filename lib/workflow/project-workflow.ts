@@ -7,6 +7,7 @@ import type {
   ProjectStateV2,
   EbookStrategy,
 } from "@/types/strategy";
+import { REQUIRED_STRATEGY_FIELDS } from "@/types/strategy";
 import type {
   ProjectWorkflowStep,
   WorkflowStepStatus,
@@ -157,13 +158,18 @@ export function deriveProjectWorkflow(
   // -----------------------------------------------------------------------
   const hasBlockers = checks.some((c) => c.severity === "blocker");
 
-  const completedSectionCount = countCompletedSections(sections);
   const totalSectionCount = outline
     ? countValidOutlineSections(outline)
     : 0;
+  const completedSectionCount = outline
+    ? countCompletedSections(outline, sections)
+    : 0;
   const writingProgress =
     totalSectionCount > 0
-      ? Math.round((completedSectionCount / totalSectionCount) * 100)
+      ? Math.min(
+          100,
+          Math.round((completedSectionCount / totalSectionCount) * 100),
+        )
       : 0;
 
   return {
@@ -187,15 +193,7 @@ function checkStrategyComplete(
   readinessScore: number,
 ): boolean {
   if (readinessScore < 70) return false;
-  const requiredScalars: (keyof EbookStrategy)[] = [
-    "topic",
-    "audience",
-    "primary_problem",
-    "desired_outcome",
-    "core_promise",
-    "unique_angle",
-  ];
-  for (const key of requiredScalars) {
+  for (const key of REQUIRED_STRATEGY_FIELDS) {
     const v = strategy[key];
     if (!v || (typeof v === "string" && v.trim().length === 0)) return false;
   }
@@ -615,9 +613,19 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-function countCompletedSections(sections: Section[]): number {
+function countCompletedSections(
+  outline: Outline,
+  sections: Section[],
+): number {
+  const validIds = new Set(
+    outline.sections
+      .filter((s) => s.title && s.title.trim().length > 0)
+      .map((s) => s.id),
+  );
   return sections.filter(
-    (s) => s.status === "generated" || s.status === "edited",
+    (s) =>
+      validIds.has(s.outline_section_id) &&
+      (s.status === "generated" || s.status === "edited"),
   ).length;
 }
 

@@ -4,6 +4,7 @@ import {
   normalizeProjectState,
   mergeProjectState,
   computeMissingFields,
+  clampReadinessScore,
 } from "@/lib/project-state/normalize";
 import type { EbookStrategy, StrategistResult, ProjectStateV2 } from "@/types/strategy";
 
@@ -349,17 +350,15 @@ describe("mergeProjectState", () => {
   });
 
   it("readiness is clamped to 0..100", () => {
-    let merged = mergeProjectState(fullState, {
-      ...emptyResult,
-      state_patch: {},
-      readiness_score: -10,
-      next_action: "continue_strategy",
-    });
-    // readiness itself is not stored on ProjectStateV2, but the function clamps it internally
-    // We verify it doesn't crash and the missing_fields reflect state
-    expect(merged.missing_fields).toEqual([]);
+    expect(clampReadinessScore(150)).toBe(100);
+    expect(clampReadinessScore(-5)).toBe(0);
+    expect(clampReadinessScore(50)).toBe(50);
+    expect(clampReadinessScore(NaN)).toBe(0);
+    expect(clampReadinessScore(undefined)).toBe(0);
+    expect(clampReadinessScore("80")).toBe(0);
 
-    merged = mergeProjectState(fullState, {
+    // merge still succeeds when readiness is out of range (not stored on state)
+    const merged = mergeProjectState(fullState, {
       ...emptyResult,
       state_patch: {},
       readiness_score: 200,

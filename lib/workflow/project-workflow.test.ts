@@ -3,7 +3,6 @@ import {
   deriveProjectWorkflow,
   checkStrategyComplete,
   checkOutlineComplete,
-  checkWriteComplete,
   stripHtml,
   isValidUrl,
   countValidOutlineSections,
@@ -786,6 +785,44 @@ describe("deriveProjectWorkflow - step statuses", () => {
     });
     expect(state.writingProgress).toBe(0);
     expect(state.totalSectionCount).toBe(0);
+  });
+
+  it("orphan sections do not inflate completedSectionCount or progress", () => {
+    const outline = makeApprovedOutline();
+    const sections = [
+      makeSection({
+        id: "sec-1",
+        outline_section_id: "os-1",
+        status: "generated",
+        content_html: "<p>A</p>",
+      }),
+      // orphan: not in outline
+      makeSection({
+        id: "sec-orphan",
+        outline_section_id: "os-orphan",
+        status: "generated",
+        content_html: "<p>Orphan</p>",
+      }),
+      // extra completed row for same outline id still maps once for write-complete,
+      // but countCompletedSections counts matching rows; only valid IDs count
+      makeSection({
+        id: "sec-extra",
+        outline_section_id: "os-999",
+        status: "edited",
+        content_html: "<p>Extra</p>",
+      }),
+    ];
+    const state = deriveProjectWorkflow({
+      project: makeProject(),
+      strategyState: makeStrategyState(),
+      readinessScore: 85,
+      outline,
+      sections,
+    });
+    expect(state.completedSectionCount).toBe(1);
+    expect(state.totalSectionCount).toBe(3);
+    expect(state.writingProgress).toBe(33);
+    expect(state.writingProgress).toBeLessThanOrEqual(100);
   });
 });
 

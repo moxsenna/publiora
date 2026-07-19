@@ -40,6 +40,12 @@ function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
 
+/** Clamp readiness score to 0..100. Non-finite / non-number → 0. */
+export function clampReadinessScore(score: unknown): number {
+  if (typeof score !== "number" || !Number.isFinite(score)) return 0;
+  return clamp(score, 0, 100);
+}
+
 /** Check if value is a plain non-null object (not an array). */
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -67,11 +73,6 @@ const STRATEGY_ARRAY_KEYS: (keyof EbookStrategy)[] = [
   "pain_points",
   "content_pillars",
 ];
-
-const ALL_STRATEGY_KEYS = new Set<string>([
-  ...STRATEGY_SCALAR_KEYS,
-  ...STRATEGY_ARRAY_KEYS,
-]);
 
 // ---------------------------------------------------------------------------
 // createEmptyProjectState
@@ -187,8 +188,8 @@ export function mergeProjectState(
 
   const missing_fields = computeMissingFields(merged);
 
-  // Clamp readiness and choose next action
-  const readinessScore = clamp(result.readiness_score ?? 0, 0, 100);
+  // Clamp readiness (not stored on ProjectStateV2; helper used for callers/Task 3)
+  void clampReadinessScore(result.readiness_score);
   const nextAction = result.next_action ?? current.next_action;
 
   return {
