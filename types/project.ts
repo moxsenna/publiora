@@ -59,6 +59,12 @@ export interface Project {
   /** When the ebook was published. */
   published_at: string | null;
   cover_color: string;
+  /** Selected CTA goal type (MVP — set during strategy/review). */
+  cta_goal?: string | null;
+  /** Final CTA display text. */
+  final_cta?: string | null;
+  /** Destination URL for URL-required CTA goals. */
+  cta_url?: string | null;
 }
 
 export interface ProjectInput {
