@@ -70,6 +70,9 @@ export async function POST(
         total_readers: 0,
         active_claims: 0,
         published_at: now,
+        cta_goal: project.cta_goal ?? null,
+        final_cta: project.final_cta ?? null,
+        cta_url: project.cta_url ?? null,
       })
       .select("*")
       .single();
@@ -104,6 +107,9 @@ export async function POST(
       total_readers: pub.total_readers,
       active_claims: pub.active_claims,
       is_public: pub.is_public,
+      cta_goal: pub.cta_goal ?? null,
+      final_cta: pub.final_cta ?? null,
+      cta_url: pub.cta_url ?? null,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Server error";

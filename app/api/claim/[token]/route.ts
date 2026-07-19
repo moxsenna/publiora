@@ -54,6 +54,9 @@ export async function GET(
         total_readers: ebook.total_readers ?? 0,
         active_claims: ebook.active_claims ?? 0,
         is_public: ebook.is_public,
+        cta_goal: ebook.cta_goal ?? null,
+        final_cta: ebook.final_cta ?? null,
+        cta_url: ebook.cta_url ?? null,
       },
     });
   } catch (err) {
@@ -151,6 +154,9 @@ export async function POST(
       total_readers: ebook.total_readers ?? 0,
       active_claims: ebook.active_claims ?? 0,
       is_public: ebook.is_public,
+      cta_goal: ebook.cta_goal ?? null,
+      final_cta: ebook.final_cta ?? null,
+      cta_url: ebook.cta_url ?? null,
     };
 
     const { data: existing } = await admin

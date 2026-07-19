@@ -90,6 +90,9 @@ export async function createProject(input: ProjectInput): Promise<Project> {
     created_at: nowIso(),
     updated_at: nowIso(),
     published_at: null,
+    cta_goal: null,
+    final_cta: null,
+    cta_url: null,
   };
   db.projects.unshift(project);
   return delay(structuredClone(project));
@@ -379,6 +382,9 @@ export async function publishEbook(input: {
     total_readers: 0,
     active_claims: 0,
     is_public: input.is_public ?? true,
+    cta_goal: project.cta_goal ?? null,
+    final_cta: project.final_cta ?? null,
+    cta_url: project.cta_url ?? null,
   };
   // unlink earlier publications from same project
   db.published = db.published.filter((p) => p.project_id !== project.id);

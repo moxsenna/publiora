@@ -168,9 +168,9 @@ export function mergeProjectState(
     if (key in patch) {
       const v = (patch as Record<string, unknown>)[key];
       if (v === null || v === undefined) {
-        merged[key] = null;
+        (merged as unknown as Record<string, unknown>)[key] = null;
       } else {
-        merged[key] = cleanString(v);
+        (merged as unknown as Record<string, unknown>)[key] = cleanString(v);
       }
     }
     // else: retain existing value (including null) – no change
@@ -179,7 +179,7 @@ export function mergeProjectState(
   // Array fields
   for (const key of STRATEGY_ARRAY_KEYS) {
     if (key in patch) {
-      merged[key] = cleanStringArray(
+      (merged as unknown as Record<string, unknown>)[key] = cleanStringArray(
         (patch as Record<string, unknown>)[key],
       );
     }
@@ -235,13 +235,13 @@ function normalizeStrategy(src: Record<string, unknown>): EbookStrategy {
 
   for (const key of STRATEGY_SCALAR_KEYS) {
     if (key in source) {
-      strategy[key] = cleanString(source[key]);
+      (strategy as unknown as Record<string, unknown>)[key] = cleanString(source[key]);
     }
   }
 
   for (const key of STRATEGY_ARRAY_KEYS) {
     if (key in source) {
-      strategy[key] = cleanStringArray(source[key]);
+      (strategy as unknown as Record<string, unknown>)[key] = cleanStringArray(source[key]);
     }
   }
 

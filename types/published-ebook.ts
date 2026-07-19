@@ -1,5 +1,7 @@
 // Published ebook — a project that has been turned into a reader-facing artifact.
 
+import type { CtaGoal } from "@/types/ai-suggestions";
+
 export interface PublishedEbook {
   id: string;
   project_id: string;
@@ -20,6 +22,12 @@ export interface PublishedEbook {
   total_readers: number;
   active_claims: number;
   is_public: boolean;
+  /** Snapshot of CTA settings from the source project. */
+  cta_goal: CtaGoal | null;
+  /** Final CTA display text. */
+  final_cta: string | null;
+  /** Destination URL for URL-required CTA goals. */
+  cta_url: string | null;
 }
 
 export interface PublishInput {

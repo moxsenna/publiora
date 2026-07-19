@@ -1,5 +1,7 @@
 // Project entity — single ebook generation lifecycle.
 
+import type { CtaGoal } from "@/types/ai-suggestions";
+
 export type ProjectStatus =
   | "draft" // created, outline not generated yet
   | "outline_draft" // outline generated, awaiting approval
@@ -60,11 +62,11 @@ export interface Project {
   published_at: string | null;
   cover_color: string;
   /** Selected CTA goal type (MVP — set during strategy/review). */
-  cta_goal?: string | null;
+  cta_goal: CtaGoal | null;
   /** Final CTA display text. */
-  final_cta?: string | null;
+  final_cta: string | null;
   /** Destination URL for URL-required CTA goals. */
-  cta_url?: string | null;
+  cta_url: string | null;
 }
 
 export interface ProjectInput {
@@ -89,4 +91,7 @@ export interface ProjectUpdate {
   niche?: string;
   ebook_type?: EbookType;
   cover_color?: string;
+  cta_goal?: CtaGoal | null;
+  final_cta?: string | null;
+  cta_url?: string | null;
 }

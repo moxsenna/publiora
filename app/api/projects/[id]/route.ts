@@ -1,8 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { jsonError } from "@/lib/api/errors";
 import type { ProjectUpdate } from "@/types/project";
+import type { CtaGoal } from "@/types/ai-suggestions";
 
 type RouteCtx = { params: Promise<{ id: string }> };
+
+const VALID_CTA_GOALS: readonly CtaGoal[] = [
+  "visit_product",
+  "join_whatsapp",
+  "claim_bonus",
+  "buy_product",
+  "follow_creator",
+  "custom",
+];
 
 const PATCH_KEYS = [
   "title",
@@ -13,6 +23,9 @@ const PATCH_KEYS = [
   "tone",
   "niche",
   "cover_color",
+  "cta_goal",
+  "final_cta",
+  "cta_url",
 ] as const satisfies readonly (keyof ProjectUpdate)[];
 
 export async function GET(_req: Request, ctx: RouteCtx) {
@@ -76,6 +89,16 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
 
     if (Object.keys(patch).length === 0) {
       return jsonError("No updatable fields provided", 400, "validation_error");
+    }
+
+    if ("cta_goal" in patch && patch.cta_goal !== null && patch.cta_goal !== undefined) {
+      if (!(VALID_CTA_GOALS as readonly string[]).includes(patch.cta_goal)) {
+        return jsonError(
+          `Invalid cta_goal. Must be one of: ${VALID_CTA_GOALS.join(", ")}`,
+          400,
+          "validation_error",
+        );
+      }
     }
 
     const { data, error } = await supabase
