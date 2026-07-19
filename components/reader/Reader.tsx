@@ -164,11 +164,33 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
                 <h2>{s.title}</h2>
                 <div dangerouslySetInnerHTML={{ __html: s.content_html }} />
                 {i === ebook.sections.length - 1 && (
-                  <div className="not-prose mt-10 rounded-2xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] p-6">
-                    <p className="text-sm text-[var(--color-medium-gray)]">
-                      Selesai membaca? Simpan ebook di library dan lanjutkan kapan saja.
-                    </p>
-                    <Link href="/library" className="inline-block mt-3">
+                  <div className="not-prose mt-10 space-y-4">
+                    {ebook.final_cta ? (
+                      <div className="rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/5 p-6">
+                        <p className="text-sm font-medium text-[var(--color-publiora-black)]">
+                          {ebook.final_cta}
+                        </p>
+                        {ebook.cta_url && (
+                          <a
+                            href={ebook.cta_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block mt-3"
+                          >
+                            <Button size="sm" variant="gold">
+                              {ebook.final_cta}
+                            </Button>
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] p-6">
+                        <p className="text-sm text-[var(--color-medium-gray)]">
+                          Selesai membaca? Simpan ebook di library dan lanjutkan kapan saja.
+                        </p>
+                      </div>
+                    )}
+                    <Link href="/library">
                       <Button size="sm">Kembali ke library</Button>
                     </Link>
                   </div>

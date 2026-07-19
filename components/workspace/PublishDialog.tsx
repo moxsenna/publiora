@@ -22,6 +22,7 @@ export function PublishDialog({ open, onClose, projectId }: PublishDialogProps) 
   const [visibility, setVisibility] = React.useState<"public" | "private">("public");
 
   const onPublish = async () => {
+    if (publish.isPending) return;
     try {
       const ebook = await publish.mutateAsync({
         project_id: projectId,
@@ -30,22 +31,26 @@ export function PublishDialog({ open, onClose, projectId }: PublishDialogProps) 
       pushToast({ title: "Ebook published", description: "Klaim link bisa dibuat sekarang.", variant: "success" });
       onClose();
       router.push(`/published/${ebook.id}`);
-    } catch {
-      pushToast({ title: "Publish gagal", variant: "danger" });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Publish gagal. Periksa blocker dan coba lagi.";
+      pushToast({ title: message, variant: "danger" });
     }
   };
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={publish.isPending ? () => {} : onClose}
       title="Publish ebook"
       description="Publish menjadikan semua section terkini menjadi versi reader. Public = slug aktif."
       footer={
         <>
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={onPublish} loading={publish.isPending}>
-            Publish sekarang
+          <Button variant="outline" onClick={onClose} disabled={publish.isPending}>Batal</Button>
+          <Button onClick={onPublish} loading={publish.isPending} disabled={publish.isPending}>
+            {publish.isPending ? "Memproses..." : "Publish sekarang"}
           </Button>
         </>
       }
