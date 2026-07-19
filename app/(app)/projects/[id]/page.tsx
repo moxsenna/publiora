@@ -20,15 +20,15 @@ import { WorkspaceStageFooter } from "@/components/workspace/WorkspaceStageFoote
 import { StrategyPanel } from "@/components/workspace/StrategyPanel";
 import { OutlinePanel } from "@/components/workspace/OutlinePanel";
 import { SectionsPanel } from "@/components/workspace/SectionsPanel";
-import { PreviewPanel } from "@/components/workspace/PreviewPanel";
+import { ReviewPanel } from "@/components/workspace/ReviewPanel";
 import { PublishDialog } from "@/components/workspace/PublishDialog";
+import { PublishPanel } from "@/components/workspace/PublishPanel";
 import { deriveProjectWorkflow, parseWorkflowStep } from "@/lib/workflow/project-workflow";
 import {
   ArrowLeft,
   Trash2,
   AlertTriangle,
   Lock,
-  Rocket,
 } from "lucide-react";
 import type {
   ProjectWorkflowStep,
@@ -194,9 +194,13 @@ export default function WorkspacePage() {
     );
   }
 
-  // Footer next CTA: only advance when current stage complete
-  // (viewing later stages still allowed via nav; push still works)
-  const canAct = workflow ? workflow.steps[currentStep] === "complete" : false;
+  // Footer next CTA: advance when current stage complete or review without blockers
+  const canAct = workflow
+    ? currentStep === "review"
+      ? workflow.canPublish ||
+        !workflow.checks.some((c) => c.severity === "blocker")
+      : workflow.steps[currentStep] === "complete"
+    : false;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 h-[calc(100vh-3rem)]">
@@ -223,7 +227,10 @@ export default function WorkspacePage() {
           step={currentStep}
           projectId={id}
           workflow={workflow}
+          project={project}
+          sections={sections}
           onNavigate={pushStep}
+          onContinueToPublish={() => setPublishOpen(true)}
         />
       </div>
 
@@ -281,12 +288,18 @@ function StageContent({
   step,
   projectId,
   workflow,
+  project,
+  sections,
   onNavigate,
+  onContinueToPublish,
 }: {
   step: ProjectWorkflowStep;
   projectId: string;
   workflow: ProjectWorkflowState | null;
+  project: import("@/types").Project | undefined;
+  sections: import("@/types").Section[] | undefined;
   onNavigate: (step: ProjectWorkflowStep) => void;
+  onContinueToPublish: () => void;
 }) {
   const stepStatus = workflow?.steps[step];
   const allBlockers = workflow?.blockers ?? [];
@@ -351,13 +364,25 @@ function StageContent({
       )}
       {step === "write" && <SectionsPanel projectId={projectId} />}
       {step === "review" && (
-        <div className="h-full overflow-y-auto">
-          <ReviewStage projectId={projectId} workflow={workflow} />
+        <div className="h-full overflow-hidden">
+          <ReviewPanel
+            projectId={projectId}
+            workflow={workflow}
+            onNavigate={onNavigate}
+            onContinueToPublish={onContinueToPublish}
+          />
         </div>
       )}
       {step === "publish" && (
         <div className="h-full overflow-y-auto">
-          <PublishStage workflow={workflow} onNavigate={onNavigate} />
+          <PublishStage
+            projectId={projectId}
+            workflow={workflow}
+            project={project}
+            sections={sections}
+            onNavigate={onNavigate}
+            onContinueToPublish={onContinueToPublish}
+          />
         </div>
       )}
     </div>
@@ -365,113 +390,50 @@ function StageContent({
 }
 
 // ---------------------------------------------------------------------------
-// Review stage: PreviewPanel + blocker checklist
-// ---------------------------------------------------------------------------
-
-function ReviewStage({
-  projectId,
-  workflow,
-}: {
-  projectId: string;
-  workflow: ProjectWorkflowState | null;
-}) {
-  const checks = workflow?.checks.filter((c) => c.targetStep === "review") ?? [];
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Preview */}
-      <div className="flex-1 min-h-0">
-        <PreviewPanel projectId={projectId} />
-      </div>
-
-      {/* Review checklist */}
-      {checks.length > 0 && (
-        <div className="border-t border-[var(--color-publiora-border)] bg-white px-4 py-3 max-h-40 overflow-y-auto">
-          <h4 className="text-xs font-semibold text-[var(--color-publiora-black)] mb-2 uppercase tracking-wide">
-            Review Checklist
-          </h4>
-          <ul className="space-y-1">
-            {checks.map((c) => (
-              <li key={c.id} className="flex items-center gap-2 text-xs">
-                <span
-                  className={
-                    c.severity === "blocker"
-                      ? "text-[var(--color-danger)]"
-                      : "text-[var(--color-gold)]"
-                  }
-                >
-                  {c.severity === "blocker" ? "\u26A0" : "\u2139"}
-                </span>
-                <span className="text-[var(--color-deep-gray)]">{c.label}</span>
-                {c.message && (
-                  <span className="text-[var(--color-medium-gray)] ml-auto">
-                    {c.message}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Publish stage: simple panel showing canPublish / blockers + Publish button
+// Publish stage: comprehensive panel using PublishPanel
 // ---------------------------------------------------------------------------
 
 function PublishStage({
+  projectId,
   workflow,
+  project,
+  sections,
   onNavigate,
+  onContinueToPublish,
 }: {
+  projectId: string;
   workflow: ProjectWorkflowState | null;
+  project: import("@/types").Project | undefined;
+  sections: import("@/types").Section[] | undefined;
   onNavigate: (step: ProjectWorkflowStep) => void;
+  onContinueToPublish: () => void;
 }) {
-  const blockers = workflow?.blockers ?? [];
-  const canPublish = workflow?.canPublish ?? false;
+  const isPublished = project?.status === "published";
+  const completedSections = (sections ?? []).filter(
+    (s) => s.status === "generated" || s.status === "edited",
+  );
+
+  const handleNavigate = React.useCallback(
+    (step: string) => onNavigate(step as ProjectWorkflowStep),
+    [onNavigate],
+  );
 
   return (
-    <div className="max-w-lg mx-auto py-10 px-4">
-      <div className="text-center space-y-4">
-        <Rocket className="h-10 w-10 mx-auto text-[var(--color-gold)]" />
-        <h2 className="text-lg font-semibold text-[var(--color-publiora-black)]">
-          {canPublish ? "Ready to publish" : "Not ready to publish yet"}
-        </h2>
-        <p className="text-sm text-[var(--color-medium-gray)]">
-          {canPublish
-            ? "Your ebook passes all checks and is ready to be published."
-            : "Resolve the issues below before publishing your ebook."}
-        </p>
-
-        {blockers.length > 0 && (
-          <div className="bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] rounded-xl p-4 text-left space-y-2">
-            <h4 className="text-xs font-semibold text-[var(--color-publiora-black)] uppercase tracking-wide">
-              Blockers
-            </h4>
-            <ul className="space-y-1.5">
-              {blockers.map((b) => (
-                <li
-                  key={b.code}
-                  className="flex items-start gap-2 text-sm text-[var(--color-deep-gray)]"
-                >
-                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-gold)]" />
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <span>{b.message}</span>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate(b.targetStep)}
-                      className="block text-xs font-medium text-[var(--color-publiora-blue)] hover:underline"
-                    >
-                      Go to {b.targetStep}
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </div>
+    <PublishPanel
+      projectId={projectId}
+      workflow={workflow}
+      projectTitle={project?.title ?? null}
+      projectSubtitle={project?.subtitle ?? null}
+      projectAuthor={project?.author ?? null}
+      sectionsCount={completedSections.length}
+      hasCta={!!(project?.cta_goal || project?.final_cta)}
+      ctaGoal={project?.cta_goal ?? null}
+      ctaText={project?.final_cta ?? null}
+      ctaUrl={project?.cta_url ?? null}
+      publishedSlug={null}
+      publishedId={null}
+      isPublished={isPublished}
+      onNavigate={handleNavigate}
+    />
   );
 }
