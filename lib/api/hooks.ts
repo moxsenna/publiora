@@ -39,7 +39,9 @@ import type {
   SectionUpdateInput,
   Subscription,
 } from "@/types";
-import type { SendMessageInput } from "@/types/message";
+import type { SendMessageInput, ChatResponse } from "@/types/message";
+import type { ProjectStateV2 } from "@/types/strategy";
+import type { EnhancementSuggestion, EnhancementAction, CtaGenerateRequest, CtaGenerateResponse } from "@/types/ai-suggestions";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 
 const READER_ID = "reader@publiora.demo";
@@ -232,12 +234,48 @@ export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: SendMessageInput) =>
-      apiFetch<ChatMessage>(`/api/projects/${input.project_id}/chat`, {
+      apiFetch<ChatResponse>(`/api/projects/${input.project_id}/chat`, {
         method: "POST",
-        body: JSON.stringify({ content: input.content, agent: input.agent }),
+        body: JSON.stringify({ content: input.content }),
       }),
     onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: qk.messages(data.project_id) });
+      qc.invalidateQueries({ queryKey: qk.messages(data.message.project_id) });
+      qc.invalidateQueries({ queryKey: qk.strategy(data.message.project_id) });
+    },
+  });
+}
+
+// Strategy
+export interface StrategyResponse {
+  state: ProjectStateV2;
+  readiness_score: number;
+}
+
+export function useStrategy(projectId: string) {
+  return useQuery({
+    queryKey: qk.strategy(projectId),
+    queryFn: () =>
+      apiFetch<StrategyResponse>(`/api/projects/${projectId}/strategy`),
+    enabled: !!projectId,
+  });
+}
+
+export function usePatchStrategy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      strategy_patch,
+    }: {
+      projectId: string;
+      strategy_patch: Record<string, unknown>;
+    }) =>
+      apiFetch<StrategyResponse>(`/api/projects/${projectId}/strategy`, {
+        method: "PATCH",
+        body: JSON.stringify({ strategy_patch }),
+      }),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: qk.strategy(variables.projectId) });
     },
   });
 }
@@ -545,11 +583,11 @@ export function useGenerateTitles() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (projectId: string) =>
-      apiFetch<string[]>(`/api/projects/${projectId}/titles`, {
+      apiFetch<{ suggestions: import("@/types").TitleSuggestion[] }>(`/api/projects/${projectId}/titles`, {
         method: "POST",
       }),
     onSuccess: (data, projectId) => {
-      qc.setQueryData(qk.titles(projectId), data);
+      qc.setQueryData(qk.titles(projectId), data.suggestions);
       qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });
@@ -558,12 +596,19 @@ export function useGenerateTitles() {
 export function useGenerateCtas() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (projectId: string) =>
-      apiFetch<string[]>(`/api/projects/${projectId}/ctas`, {
+    mutationFn: ({
+      projectId,
+      request,
+    }: {
+      projectId: string;
+      request: CtaGenerateRequest;
+    }) =>
+      apiFetch<CtaGenerateResponse>(`/api/projects/${projectId}/ctas`, {
         method: "POST",
+        body: JSON.stringify(request),
       }),
-    onSuccess: (data, projectId) => {
-      qc.setQueryData(qk.ctas(projectId), data);
+    onSuccess: (data, variables) => {
+      qc.setQueryData(qk.ctas(variables.projectId), data.suggestions);
       qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });
@@ -575,18 +620,26 @@ export function useEnhanceSection() {
     mutationFn: ({
       projectId,
       sectionId,
+      action,
+      selection_html,
+      instruction,
     }: {
       projectId: string;
       sectionId: string;
+      action: EnhancementAction;
+      selection_html?: string | null;
+      instruction?: string | null;
     }) =>
-      apiFetch<Section>(
+      apiFetch<{ suggestion: EnhancementSuggestion }>(
         `/api/projects/${projectId}/sections/${sectionId}/enhance`,
-        { method: "POST" }
+        {
+          method: "POST",
+          body: JSON.stringify({ action, selection_html, instruction }),
+        },
       ),
-    onSuccess: (data) => {
-      if (data?.project_id) {
-        qc.invalidateQueries({ queryKey: qk.sections(data.project_id) });
-      }
+    onSuccess: () => {
+      // Do NOT invalidate sections — enhancement is non-destructive and
+      // does not persist to ebook_sections.  Only invalidate billing balance.
       qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });

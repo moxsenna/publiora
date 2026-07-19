@@ -2,6 +2,7 @@ import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
 import { runTitleGenerator } from "@/lib/ai/agents/title";
 import { chargeGeneration, grantCredits } from "@/lib/credits";
+import { normalizeProjectState } from "@/lib/project-state/normalize";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 
 export async function POST(
@@ -17,8 +18,27 @@ export async function POST(
     const access = await requireOwnedProject(id);
     if ("error" in access && access.error) return access.error;
 
-    const { user, project } = access;
+    const { supabase, user, project } = access;
     userId = user.id;
+
+    // ---- Load strategy state for richer title context ----
+    let strategy = null;
+    try {
+      const { data: stateRow } = await supabase
+        .from("project_states")
+        .select("state_json")
+        .eq("project_id", id)
+        .maybeSingle();
+
+      if (stateRow?.state_json) {
+        const normalized = normalizeProjectState(stateRow.state_json);
+        strategy = normalized.strategy;
+      }
+    } catch {
+      // Strategy load is optional — proceed without it
+    }
+
+    // ---- Charge credits ----
     try {
       await chargeGeneration(user.id, "title", id);
       charged = true;
@@ -30,12 +50,18 @@ export async function POST(
       throw err;
     }
 
-    const titles = await runTitleGenerator({
-      title: project.title,
-      description: project.description,
-      audience: project.audience,
+    const suggestions = await runTitleGenerator({
+      project: {
+        title: project.title,
+        description: project.description,
+        audience: project.audience,
+        tone: project.tone,
+        ebook_type: project.ebook_type,
+      },
+      strategy,
     });
-    return Response.json(titles);
+
+    return Response.json({ suggestions });
   } catch (err) {
     if (charged && userId) {
       await grantCredits({

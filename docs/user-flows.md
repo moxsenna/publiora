@@ -1,471 +1,243 @@
-\# user-flows.md — Publiora MVP
+# user-flows.md -- Publiora (Workflow-First)
 
-\## 1. Overview
+## 1. Overview
 
 Publiora core flow:
 
-\`\`\`txt
-
-Create Ebook → Generate → Publish → Share Claim Link → Reader Access
+```
+Create Ebook -> Generate -> Publish -> Share Claim Link -> Reader Access
+```
 
 Primary users:
-
-Creator
-
-Reader / Buyer
+- Creator
+- Reader / Buyer
 
 ---
 
-2\. Creator Flow — Create Ebook
+## 2. Creator Flow -- Create Ebook (Five-Stage Workspace)
 
-Goal
+### Goal
 
-Creator membuat ebook marketing-ready dengan AI.
+Creator builds a marketing-ready ebook with AI through a structured five-stage workspace.
 
-Flow
+### Workspace Stages
 
-Login
+```
+Strategy -> Outline -> Write -> Review -> Publish
+```
 
-→ Dashboard
+### Steps
 
-→ Create New Ebook
+**1. Login**
+User navigates to `app.publiora.web.id` and authenticates.
 
-→ Choose Ebook Type
+**2. Dashboard**
+User views existing projects, published ebooks, and a "Create New Ebook" button.
 
-→ AI Strategist Chat
+**3. Create New Ebook**
+User clicks "Create New Ebook" and is taken to the workspace at `/projects/[id]`.
 
-→ Generate Outline
+**4. Stage 1 -- Strategy**
+AI Strategist (chat-based) helps the user define:
+- Ebook topic
+- Target audience
+- Primary problem
+- Desired outcome
+- Core promise
+- Unique angle
 
-→ Review Outline
+Output: Structured strategy with readiness score. When readiness >= 70 and all required fields are filled, the Outline stage unlocks.
 
-→ Generate Ebook
+**5. Stage 2 -- Outline**
+AI Planner generates a section-structured outline from the approved strategy.
+User can:
+- Edit section titles and summaries
+- Reorder sections
+- Add/remove sections
+- Regenerate outline (with regeneration safety confirmation)
 
-→ Edit / Enhance
+Output: Approved outline with sections.
 
-→ Preview
+**6. Stage 3 -- Write**
+AI Writer generates content per section. User can:
+- Edit content via RichTextEditor
+- Regenerate individual sections
+- Apply AI enhancements (expand, shorten, simplify, persuasive, professional, examples, checklist)
+- Review enhancement suggestions side-by-side before accepting
 
-Steps
+Output: All sections generated and edited.
 
-1\. Login
+**7. Stage 4 -- Review**
+User reviews the complete ebook:
+- Readiness checklist showing blockers, warnings, and passed checks
+- Final title and subtitle editing
+- Title suggestions (one per style)
+- CTA composer (goal, text, URL, placement)
+- Live HTML preview
 
-User masuk ke:
+Output: All blockers resolved, final title and CTA set.
 
-app.publiora.web.id
+**8. Stage 5 -- Publish**
+User publishes the ebook:
+- Publication summary (title, author, sections, CTA)
+- Blockers/warnings display
+- Visibility selection (public/private)
+- Publish action creates snapshot in `published_ebooks`
 
-2\. Dashboard
-
-User melihat:
-
-existing projects
-
-published ebooks
-
-create new ebook button
-
-3\. Create New Ebook
-
-User klik:
-
-Create New Ebook
-
-4\. Choose Ebook Type
-
-Options:
-
-Lead Magnet
-
-Bonus Product
-
-Sellable Ebook
-
-5\. AI Strategist Chat
-
-AI bertanya:
-
-produk apa yang didukung ebook ini?
-
-siapa target audience?
-
-masalah utama audience?
-
-hasil apa yang ingin dicapai pembaca?
-
-CTA akhir ebook?
-
-6\. Generate Outline
-
-AI menghasilkan:
-
-title
-
-subtitle
-
-chapter list
-
-section list
-
-CTA strategy
-
-7\. Review Outline
-
-User bisa:
-
-edit chapter
-
-reorder chapter
-
-delete section
-
-regenerate outline
-
-8\. Generate Ebook
-
-System generate per section.
-
-Chapter 1 Section 1
-
-→ Chapter 1 Section 2
-
-→ Chapter 2 Section 1
-
-→ ...
-
-9\. Edit / Enhance
-
-User bisa:
-
-edit manual
-
-expand section
-
-make persuasive
-
-add checklist
-
-add examples
-
-10\. Preview
-
-User melihat live HTML preview.
+Output: Ebook URL at `publiora.web.id/read/:slug`.
 
 ---
 
-3\. Creator Flow — Publish Ebook
+## 3. Creator Flow -- Publish Ebook
 
-Goal
+### Goal
 
-Creator menerbitkan ebook sebagai hosted reader.
+Creator publishes ebook as a hosted reader with claim link support.
 
-Flow
+### Visibility Options
 
-Open Project
+- **Public**: Anyone can read via the slug.
+- **Private**: Only accessible via claim links.
 
-→ Review Preview
+### Output
 
-→ Click Publish
-
-→ Choose Visibility
-
-→ Confirm Publish
-
-→ Ebook URL Created
-
-Visibility Options
-
-Public
-
-Siapa saja bisa membaca.
-
-Private
-
-Hanya creator dan user yang diberi akses.
-
-Claim Required
-
-Reader harus claim access dulu.
-
-Output
-
-publiora.web.id/read/:slug
+`publiora.web.id/read/:slug`
 
 ---
 
-4\. Creator Flow — Create Claim Link
+## 4. Creator Flow -- Create Claim Link
 
-Goal
+### Goal
 
-Creator membuat link akses ebook untuk buyer dari platform lain.
+Creator creates a managed access link for buyers from external platforms.
 
-Flow
+### Flow
 
-Open Published Ebook
+```
+Open Published Ebook -> Access Settings -> Create Claim Link -> Configure -> Share
+```
 
-→ Access Settings
+### Claim Link Settings
 
-→ Create Claim Link
+- Link name
+- Max claims
+- Expiration date
+- Active/inactive
+- Target ebook
 
-→ Configure Link
+### Distribution Channels
 
-→ Copy Link
-
-→ Share in Scalev / Lynk.id / WhatsApp / Email
-
-Claim Link Settings
-
-Creator bisa mengatur:
-
-link name
-
-max claims
-
-expiration date
-
-active/inactive
-
-target ebook
-
-Example
-
-publiora.web.id/claim/abc123
-
-Use Case
-
-Creator memasang link ini di:
-
-thank you page Scalev
-
-halaman produk Lynk.id
-
-email autoresponder
-
-WhatsApp auto-reply
-
-Telegram group
-
-bonus delivery page
+Creator can share claim links on:
+- Scalev thank you page
+- Lynk.id product page
+- Email autoresponder
+- WhatsApp auto-reply
+- Telegram group
+- Bonus delivery page
 
 ---
 
-5\. Reader Flow — Claim Ebook
+## 5. Reader Flow -- Claim Ebook
 
-Goal
+### Goal
 
-Buyer mendapat akses ebook secara instan.
+Buyer gets instant access to purchased ebook.
 
-Flow
+### Steps
 
-Open Claim Link
-
-→ Claim Page
-
-→ Login / Register
-
-→ Access Granted
-
-→ Ebook Added to Library
-
-→ Open Reader
-
-Steps
-
-1\. Buyer Opens Claim Link
-
-Buyer klik:
-
-publiora.web.id/claim/abc123
-
-2\. Claim Page
-
-Page menampilkan:
-
-ebook title
-
-creator name
-
-short description
-
-claim button
-
-3\. Login / Register
-
-Jika belum login:
-
-user daftar
-
-atau login
-
-4\. Access Granted
-
-System membuat entitlement.
-
-5\. Ebook Added to Library
-
-Ebook otomatis masuk ke:
-
-app.publiora.web.id/library
-
-6\. Open Reader
-
-Buyer bisa langsung membaca ebook.
+1. Open Claim Link (`publiora.web.id/claim/:token`)
+2. View claim page (ebook title, creator, description)
+3. Login/Register if needed
+4. Access granted (entitlement created)
+5. Ebook added to library (`app.publiora.web.id/library`)
+6. Open reader
 
 ---
 
-6\. Reader Flow — Read Ebook
+## 6. Reader Flow -- Read Ebook
 
-Goal
+### Goal
 
-Reader membaca ebook di platform Publiora tanpa download PDF.
+Reader reads ebook online in the Publiora reader.
 
-Flow
+### Reader Features (MVP)
 
-Login
-
-→ My Library
-
-→ Select Ebook
-
-→ Read Online
-
-→ Save Progress
-
-Reader Features MVP
-
-chapter navigation
-
-reading progress
-
-mobile-friendly layout
-
-clean typography
-
-CTA block from creator
+- Section navigation
+- Reading progress tracking
+- Mobile-friendly layout
+- Clean typography
+- CTA block from creator
 
 ---
 
-7\. Creator Flow — Manage Claim Links
+## 7. Creator Flow -- Manage Claim Links
 
-Goal
+### Goal
 
-Creator mengatur akses distribusi ebook.
+Creator manages distribution access for published ebooks.
 
-Flow
+### Actions
 
-Dashboard
-
-→ Published Ebook
-
-→ Claim Links
-
-→ View / Edit / Disable Link
-
-Creator Actions
-
-Creator bisa:
-
-create new claim link
-
-copy link
-
-disable link
-
-set max claims
-
-set expiry date
-
-view claim count
+- Create new claim link
+- Copy link
+- Enable/disable link
+- Set max claims
+- Set expiry date
+- View claim count
 
 ---
 
-8\. Creator Flow — Update Published Ebook
+## 8. Creator Flow -- Update Published Ebook
 
-Goal
+### Goal
 
-Creator memperbarui ebook tanpa kirim ulang file PDF.
+Creator updates ebook content without sending new file.
 
-Flow
+### Flow
 
-Open Project
+```
+Open Project -> Edit Content -> Preview -> Republish -> Reader sees latest version
+```
 
-→ Edit Content
-
-→ Preview
-
-→ Republish
-
-→ Reader Sees Latest Version
-
-Important Behavior
-
-Reader yang sudah punya akses tetap bisa membaca versi terbaru.
+Readers with existing access automatically see the latest version after republish.
 
 ---
 
-9\. Error Flows
+## 9. Error Flows
 
-Invalid Claim Link
+### Invalid Claim Link
+> Link akses tidak valid atau sudah tidak aktif.
 
-Show:
+### Expired Claim Link
+> Link akses ini sudah kedaluwarsa.
 
-Link akses tidak valid atau sudah tidak aktif.
+### Max Claims Reached
+> Kuota klaim untuk link ini sudah habis.
 
-Expired Claim Link
+### Already Claimed
+> Ebook ini sudah ada di library kamu.
 
-Show:
+### Private Ebook Without Access
+> Kamu belum memiliki akses ke ebook ini.
 
-Link akses ini sudah kedaluwarsa.
+### Insufficient Credits
+> Kredit tidak cukup. Upgrade plan atau beli top-up untuk lanjut generate.
 
-Max Claims Reached
-
-Show:
-
-Kuota klaim untuk link ini sudah habis.
-
-Already Claimed
-
-Show:
-
-Ebook ini sudah ada di library kamu.
-
-Private Ebook Without Access
-
-Show:
-
-Kamu belum memiliki akses ke ebook ini.
-
-Insufficient Credits
-
-Show:
-
-Kredit tidak cukup. Upgrade plan atau beli top-up untuk lanjut generate.
+### Publish Blocked
+> Publish blocked -- resolve issues before publishing. Shows specific blockers with links to relevant stages.
 
 ---
 
-10\. MVP Success Flow
+## 10. MVP Success Flow
 
-Ideal creator journey:
-
-Creator creates ebook
-
-→ Publishes ebook
-
-→ Creates claim link
-
-→ Shares link on external sales platform
-
-→ Buyer claims ebook
-
-→ Buyer reads inside Publiora
-
-→ Creator keeps using Publiora
+Creator creates ebook -> Publishes ebook -> Creates claim link -> Shares on external platform -> Buyer claims ebook -> Buyer reads inside Publiora -> Creator keeps using Publiora
 
 ---
 
-11\. Primary UX Principle
+## 11. Primary UX Principle
 
 Publiora should make creators feel:
-
-“Saya tidak perlu kirim PDF manual lagi.”
+> "Saya tidak perlu kirim PDF manual lagi."
 
 And readers feel:
-
-“Bonus saya langsung rapi dan mudah dibaca.”
+> "Bonus saya langsung rapi dan mudah dibaca."

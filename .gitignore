@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -72,3 +74,5 @@ testsprite_tests/**/*.log
 # Stitch html exports (png binaries)
 docs/stitch/exports/html/*.png
 deploy/paycore.env.snippet
+.env.e2e.local
+playwright/.auth/

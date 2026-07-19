@@ -15,3 +15,6 @@ export * from "./billing";
 export * from "./template";
 export * from "./agent";
 export * from "./api";
+export * from "./workflow";
+export * from "./strategy";
+export * from "./ai-suggestions";

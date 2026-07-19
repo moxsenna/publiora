@@ -16,8 +16,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
-import { Sparkles, FileText, Play, Save, Wand2, ChevronDown } from "lucide-react";
+import { EnhancementMenu } from "@/components/workspace/EnhancementMenu";
+import { EnhancementReviewDialog } from "@/components/workspace/EnhancementReviewDialog";
+import { Sparkles, FileText, Play, Save, ChevronDown } from "lucide-react";
 import type { Section } from "@/types/section";
+import type { EnhancementAction, EnhancementSuggestion } from "@/types/ai-suggestions";
 import { cn } from "@/lib/utils";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
@@ -31,6 +34,32 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
+
+  // Enhancement review dialog state
+  const [reviewOpen, setReviewOpen] = React.useState(false);
+  const [reviewSuggestion, setReviewSuggestion] = React.useState<EnhancementSuggestion | null>(null);
+  const [reviewSectionId, setReviewSectionId] = React.useState<string | null>(null);
+  const [reviewAction, setReviewAction] = React.useState<EnhancementAction | null>(null);
+  const [priorHtml, setPriorHtml] = React.useState<string | null>(null);
+  const [reviewError, setReviewError] = React.useState<string | null>(null);
+  const [accepting, setAccepting] = React.useState(false);
+  const [rejecting, setRejecting] = React.useState(false);
+  const [regenerating, setRegenerating] = React.useState(false);
+  const [undoing, setUndoing] = React.useState(false);
+
+  // Dirty tracking for beforeunload
+  const [dirty, setDirty] = React.useState(false);
+
+  // beforeunload protection
+  React.useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   const sectionsByOutline = React.useMemo(() => {
     const map = new Map<string, Section>();
@@ -53,7 +82,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         <EmptyState
           icon={<FileText className="h-6 w-6" />}
           title="Outline belum ada"
-          description="Buat outline di tab Outline dulu sebelum generate sections."
+          description="Buat outline di tab Write dulu sebelum generate sections."
         />
       </div>
     );
@@ -69,25 +98,34 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   const currentLabel = current?.title ?? currentOutline?.title ?? "Pilih section";
 
   const onGenerateAll = async () => {
+    if (generateAll.isPending) return; // prevent duplicate jobs
     try {
       await generateAll.mutateAsync(projectId);
-      pushToast({ title: "Semua section ter-generate", variant: "success" });
+      pushToast({ title: "All sections generated", variant: "success" });
     } catch (err) {
-      const e = err as { code?: string };
+      const e = err as { code?: string; message?: string };
       pushToast({
         title: e?.code === "insufficient_credits" ? "Kredit tidak cukup" : "Generate gagal",
-        description: e?.code === "insufficient_credits" ? "Buka Billing untuk top-up." : undefined,
+        description: e?.code === "insufficient_credits"
+          ? "Buka Billing untuk top-up."
+          : e?.message ?? "Coba lagi atau hubungi support.",
         variant: "danger",
       });
     }
   };
 
   const onGenerateOne = async (outlineSectionId: string) => {
+    if (generate.isPending) return; // prevent double submission
     try {
       const s = await generate.mutateAsync({ projectId, outlineSectionId });
       setActiveId(s.id);
-    } catch {
-      pushToast({ title: "Generate gagal", variant: "danger" });
+    } catch (err) {
+      const e = err as { code?: string; message?: string };
+      pushToast({
+        title: "Generate gagal",
+        description: e?.message ?? "Coba generate ulang.",
+        variant: "danger",
+      });
     }
   };
 
@@ -98,19 +136,34 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         projectId,
         patch: { content_html: html, title },
       });
+      setDirty(false);
       pushToast({ title: "Section disimpan", variant: "success" });
     } catch {
       pushToast({ title: "Simpan gagal", variant: "danger" });
     }
   };
 
-  const onEnhance = async (sectionId: string) => {
+  // Enhancement flow
+  const onEnhance = async (sectionId: string, action: EnhancementAction, currentHtml: string) => {
+    if (enhance.isPending) return; // prevent double submission
     try {
-      const s = await enhance.mutateAsync({ projectId, sectionId });
-      setActiveId(s.id);
-      pushToast({ title: "Section diperhalus", variant: "success" });
+      setReviewError(null);
+      setReviewSectionId(sectionId);
+      setReviewAction(action);
+      // Capture prior HTML before suggestion arrives (the persisted version)
+      const section = sections?.find((s) => s.id === sectionId);
+      setPriorHtml(section?.content_html ?? null);
+
+      const result = await enhance.mutateAsync({
+        projectId,
+        sectionId,
+        action,
+      });
+
+      setReviewSuggestion(result.suggestion);
+      setReviewOpen(true);
     } catch (err) {
-      const e = err as { code?: string };
+      const e = err as { code?: string; message?: string };
       pushToast({
         title:
           e?.code === "insufficient_credits"
@@ -119,9 +172,88 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         description:
           e?.code === "insufficient_credits"
             ? "Buka Billing untuk top-up."
-            : undefined,
+            : e?.message ?? "Coba lagi.",
         variant: "danger",
       });
+    }
+  };
+
+  const handleAccept = async (suggestedHtml: string) => {
+    if (!reviewSectionId || !projectId) return;
+    setAccepting(true);
+    setReviewError(null);
+    try {
+      await updateSection.mutateAsync({
+        id: reviewSectionId,
+        projectId,
+        patch: { content_html: suggestedHtml },
+      });
+      setDirty(false);
+      setReviewOpen(false);
+      setReviewSuggestion(null);
+      pushToast({ title: "Enhancement diterapkan", variant: "success" });
+    } catch (err) {
+      const e = err as { message?: string };
+      setReviewError(
+        e?.message ?? "Gagal menyimpan enhancement. Dialog tetap terbuka — silakan coba lagi."
+      );
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleReject = () => {
+    setRejecting(true);
+    // Reject is instant — just close without any persist
+    setReviewOpen(false);
+    setReviewSuggestion(null);
+    setReviewError(null);
+    setRejecting(false);
+  };
+
+  const handleRegenerate = async () => {
+    if (!reviewSectionId || !reviewAction || !projectId) return;
+    setRegenerating(true);
+    setReviewError(null);
+    try {
+      const result = await enhance.mutateAsync({
+        projectId,
+        sectionId: reviewSectionId,
+        action: reviewAction,
+      });
+      setReviewSuggestion(result.suggestion);
+    } catch (err) {
+      const e = err as { message?: string };
+      setReviewError(
+        e?.message ?? "Regenerate gagal. Silakan coba lagi."
+      );
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  const handleSessionUndo = async () => {
+    if (!reviewSectionId || !priorHtml || !projectId) return;
+    setUndoing(true);
+    setReviewError(null);
+    try {
+      await updateSection.mutateAsync({
+        id: reviewSectionId,
+        projectId,
+        patch: { content_html: priorHtml },
+      });
+      setDirty(false);
+      setReviewOpen(false);
+      setReviewSuggestion(null);
+      setPriorHtml(null);
+      pushToast({ title: "Konten dikembalikan ke versi sebelumnya", variant: "success" });
+    } catch (err) {
+      const e = err as { message?: string };
+      setReviewError(
+        e?.message ?? "Gagal mengembalikan konten. Dialog tetap terbuka — silakan coba lagi."
+      );
+    } finally {
+      setUndoing(false);
     }
   };
 
@@ -153,9 +285,14 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                   {s?.title ?? os.title}
                 </span>
                 {s ? (
-                  <Badge variant={s.status === "edited" ? "info" : "success"}>
-                    {s.word_count}w
-                  </Badge>
+                  <>
+                    <Badge variant={s.status === "edited" ? "info" : "success"}>
+                      {s.word_count}w
+                    </Badge>
+                    <span className="text-[11px] text-[var(--color-medium-gray)]">
+                      {s.status}
+                    </span>
+                  </>
                 ) : (
                   <Badge variant="default">pending</Badge>
                 )}
@@ -167,6 +304,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                     variant="outline"
                     className="w-full"
                     loading={generate.isPending}
+                    disabled={generate.isPending}
                     onClick={(e) => {
                       e.stopPropagation();
                       onGenerateOne(os.id);
@@ -197,9 +335,10 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             variant="outline"
             onClick={onGenerateAll}
             loading={generateAll.isPending}
+            disabled={generateAll.isPending}
           >
             <Play className="h-3.5 w-3.5" />
-            Generate all
+            {generateAll.isPending ? "Generating…" : "Generate all"}
           </Button>
         </div>
         {sectionList}
@@ -215,6 +354,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-lg border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-2.5 py-2 text-left"
               aria-expanded={pickerOpen}
               aria-haspopup="listbox"
+              aria-label="Select section"
             >
               <span className="min-w-0">
                 <span className="block text-xs text-[var(--color-medium-gray)]">
@@ -236,6 +376,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               variant="outline"
               onClick={onGenerateAll}
               loading={generateAll.isPending}
+              disabled={generateAll.isPending}
               aria-label="Generate semua section"
             >
               <Play className="h-3.5 w-3.5" />
@@ -256,7 +397,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             <EmptyState
               icon={<FileText className="h-6 w-6" />}
               title="Belum ada section ter-generate"
-              description="Pilih section di atas, lalu generate untuk mulai menulis."
+              description="Pilih section di navigator, lalu generate untuk mulai menulis."
             />
           </div>
         ) : (
@@ -265,12 +406,34 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             section={current}
             onSave={onSave}
             onRegenerate={() => onGenerateOne(current.outline_section_id)}
-            onEnhance={() => onEnhance(current.id)}
+            onEnhance={(action) => onEnhance(current.id, action, current.content_html)}
             generating={generate.isPending}
             enhancing={enhance.isPending}
+            onDirtyChange={setDirty}
           />
         )}
       </div>
+
+      {/* Enhancement review dialog */}
+      <EnhancementReviewDialog
+        open={reviewOpen}
+        onClose={() => {
+          setReviewOpen(false);
+          setReviewSuggestion(null);
+          setReviewError(null);
+        }}
+        suggestion={reviewSuggestion}
+        priorHtml={priorHtml}
+        accepting={accepting}
+        rejecting={rejecting}
+        regenerating={regenerating}
+        undoing={undoing}
+        onAccept={handleAccept}
+        onReject={handleReject}
+        onRegenerate={handleRegenerate}
+        onSessionUndo={handleSessionUndo}
+        error={reviewError}
+      />
     </div>
   );
 }
@@ -282,28 +445,46 @@ function SectionEditor({
   onEnhance,
   generating,
   enhancing,
+  onDirtyChange,
 }: {
   section: Section;
   onSave: (id: string, html: string, title: string) => void;
   onRegenerate: () => void;
-  onEnhance: () => void;
+  onEnhance: (action: EnhancementAction) => void;
   generating?: boolean;
   enhancing?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [title, setTitle] = React.useState(section.title);
   const [html, setHtml] = React.useState(section.content_html);
-  const [dirty, setDirty] = React.useState(false);
+  const [localDirty, setLocalDirty] = React.useState(false);
 
   React.useEffect(() => {
     setTitle(section.title);
     setHtml(section.content_html);
-    setDirty(false);
+    setLocalDirty(false);
   }, [section.id, section.title, section.content_html]);
+
+  React.useEffect(() => {
+    onDirtyChange?.(localDirty);
+  }, [localDirty, onDirtyChange]);
 
   const onChange = (v: string) => {
     setHtml(v);
-    setDirty(true);
+    setLocalDirty(true);
   };
+
+  const wordCount = React.useMemo(() => {
+    if (!html) return 0;
+    const text = html.replace(/<[^>]*>/g, " ");
+    const words = text
+      .replace(/&[a-z]+;/gi, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+    return words.length;
+  }, [html]);
+
+  const hasContent = (html ?? "").replace(/<[^>]*>/g, "").trim().length > 0;
 
   return (
     <div className="p-3 space-y-3 max-w-3xl mx-auto">
@@ -312,19 +493,18 @@ function SectionEditor({
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
-            setDirty(true);
+            setLocalDirty(true);
           }}
           className="text-sm font-semibold min-w-[10rem] flex-1"
         />
-        <Button
-          variant="outline"
-          size="sm"
+        <span className="text-[11px] text-[var(--color-medium-gray)] min-w-[3rem] text-right">
+          {wordCount}w
+        </span>
+        <EnhancementMenu
+          onAction={onEnhance}
           loading={enhancing}
-          onClick={onEnhance}
-        >
-          <Wand2 className="h-4 w-4" />
-          Enhance
-        </Button>
+          disabled={!hasContent}
+        />
         <Button
           variant="outline"
           size="sm"
@@ -336,7 +516,7 @@ function SectionEditor({
         </Button>
         <Button
           size="sm"
-          disabled={!dirty}
+          disabled={!localDirty}
           onClick={() => onSave(section.id, html, title)}
         >
           <Save className="h-4 w-4" />

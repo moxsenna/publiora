@@ -46,6 +46,9 @@ export async function GET(
       total_readers: data.total_readers ?? 0,
       active_claims: data.active_claims ?? 0,
       is_public: data.is_public,
+      cta_goal: data.cta_goal ?? null,
+      final_cta: data.final_cta ?? null,
+      cta_url: data.cta_url ?? null,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Server error";

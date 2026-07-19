@@ -32,6 +32,9 @@ export async function GET() {
         total_readers: p.total_readers ?? 0,
         active_claims: p.active_claims ?? 0,
         is_public: p.is_public,
+        cta_goal: p.cta_goal ?? null,
+        final_cta: p.final_cta ?? null,
+        cta_url: p.cta_url ?? null,
       }))
     );
   } catch (err) {

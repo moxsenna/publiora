@@ -55,6 +55,9 @@ export const seedProjects: Project[] = [
     created_at: "2026-06-12T09:30:00.000Z",
     updated_at: "2026-06-15T11:00:00.000Z",
     published_at: "2026-06-15T11:00:00.000Z",
+    cta_goal: "visit_product",
+    final_cta: "Dapatkan template engine eksklusif",
+    cta_url: "https://publiora.com/engine",
   },
   {
     id: "prj_lead_magnet",
@@ -77,6 +80,9 @@ export const seedProjects: Project[] = [
     created_at: "2026-07-02T14:00:00.000Z",
     updated_at: "2026-07-17T08:30:00.000Z",
     published_at: null,
+    cta_goal: null,
+    final_cta: null,
+    cta_url: null,
   },
   {
     id: "prj_ai_ethics",
@@ -99,6 +105,9 @@ export const seedProjects: Project[] = [
     created_at: "2026-07-10T12:00:00.000Z",
     updated_at: "2026-07-10T12:30:00.000Z",
     published_at: null,
+    cta_goal: null,
+    final_cta: null,
+    cta_url: null,
   },
   {
     id: "prj_brand_story",
@@ -121,6 +130,9 @@ export const seedProjects: Project[] = [
     created_at: "2026-07-15T18:00:00.000Z",
     updated_at: "2026-07-15T18:00:00.000Z",
     published_at: null,
+    cta_goal: null,
+    final_cta: null,
+    cta_url: null,
   },
 ];
 
@@ -529,6 +541,9 @@ export const seedPublished: PublishedEbook[] = [
         title: s.title,
         content_html: s.content_html,
       })),
+    cta_goal: "visit_product",
+    final_cta: "Dapatkan template engine eksklusif",
+    cta_url: "https://publiora.com/engine",
   },
 ];
 
@@ -873,6 +888,7 @@ export const CREDIT_COSTS = {
   section: 10,
   title: 2,
   cta: 2,
+  enhancement: 2,
   publish: 0,
 } as const;
 

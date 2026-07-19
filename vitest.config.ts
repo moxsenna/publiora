@@ -7,6 +7,8 @@ export default defineConfig({
     globals: true,
     // Use forks pool for proper CJS/ESM interop
     pool: 'forks',
+    // Exclude Playwright e2e tests (use npm run test:e2e instead)
+    exclude: ['e2e/**', 'node_modules/**'],
   },
   resolve: {
     alias: {

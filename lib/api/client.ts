@@ -11,11 +11,16 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new ApiError(
-      body?.error?.message ?? res.statusText,
-      body?.error?.code,
-      res.status
-    );
+    const errorData = body?.error;
+    const message =
+      typeof errorData === "string"
+        ? errorData
+        : errorData?.message ?? res.statusText;
+    const code =
+      typeof errorData === "string"
+        ? body?.code
+        : errorData?.code;
+    throw new ApiError(message, code, res.status);
   }
   return body as T;
 }
