@@ -16,7 +16,7 @@ const VALID_STYLES: TitleStyle[] = [
   "outcome",
 ];
 
-const titleSuggestionSchema = z.object({
+export const titleSuggestionSchema = z.object({
   style: z.enum([
     "curiosity",
     "authority",
@@ -28,7 +28,7 @@ const titleSuggestionSchema = z.object({
   rationale: z.string().min(1),
 });
 
-const titleResponseSchema = z.object({
+export const titleResponseSchema = z.object({
   suggestions: z.array(titleSuggestionSchema),
 });
 
