@@ -1,43 +1,53 @@
 # E2E evidence (workflow-first)
 
-## Auth-gated attempt — 2026-07-19
+## Auth-gated suite — 2026-07-19 (updated)
 
-### Blocker
+### Final result
 
-Authenticated Playwright happy path and workspace screenshots require a **live Supabase Auth user**.
+| Suite | Result |
+|-------|--------|
+| Unit `npm test` | **266 passed** |
+| Smoke `e2e/smoke-public.spec.ts` (chromium) | **6 passed** |
+| Auth-gated happy path + workspace shell (chromium) | **17 passed** |
+| Workspace screenshots @screenshots | **10 images** under `docs/baseline-workspace/` |
 
-Attempted with the in-repo demo identity from `LoginForm` (`mox@publiora.demo` / `demo1234`):
+### Earlier failures (resolved)
 
-- Form filled and **Sign in** clicked
-- Page remained on `/login` (no navigation to `/dashboard`)
-- Playwright timeout: `waitForURL` 15s after login
+1. **No E2E credentials** — created ephemeral Supabase Auth user via service role (credentials only in gitignored `.env.e2e.local`).
+2. **UI form login stayed on `/login`** — demo identity not a live Auth user; also form path flaky under Playwright.
+3. **localStorage session injection failed** — app uses `@supabase/ssr` `createBrowserClient`, which persists **chunked cookies** (`base64-` JSON), not plain localStorage.
+4. **`next dev` OOM** on constrained Windows agent — switched Playwright `webServer` to production `npm run start` after `npm run build`.
 
-Screenshot: [`auth-login-failed-desktop.png`](./auth-login-failed-desktop.png)
+### Working auth recipe
 
-### Not available in agent environment
+```ts
+// e2e/helpers/auth.ts
+// 1) signInWithPassword via @supabase/supabase-js
+// 2) createChunks(storageKey, `base64-${stringToBase64URL(JSON.stringify(session))}`)
+// 3) context.addCookies(...) for sb-<projectRef>-auth-token[.N]
+// 4) page.goto('/dashboard') then /projects/:id
+```
 
-| Item | Status |
-|------|--------|
-| `E2E_EMAIL` / `E2E_PASSWORD` secrets | Not provided |
-| Valid Supabase test user | Unknown / demo identity not accepted |
-| `E2E_PROJECT_ID` | Not provided |
-| Workspace desktop/mobile screenshots after login | Blocked |
-
-### What did pass without auth
-
-- `npm test` — 266 unit tests
-- `npm run test:e2e:smoke` — 12 public-page Playwright tests
-- Public baseline screenshots under `docs/baseline-*.png`
-
-### Unblock
-
-1. Create Supabase Auth user for e2e only.
-2. Create or pick a project owned by that user.
-3. Export:
+### Unblock / re-run locally
 
 ```bash
+# create user + project (service role) or use existing
 export E2E_EMAIL=...
 export E2E_PASSWORD=...
 export E2E_PROJECT_ID=...
-npm run test:e2e -- --project=chromium
+
+npm run build
+npm run start -- --hostname 127.0.0.1 --port 3000
+
+npx playwright test --project=chromium \
+  e2e/workflow-happy-path.spec.ts \
+  e2e/workspace-shell.spec.ts
+
+npx playwright test --project=chromium \
+  e2e/capture-workspace-screenshots.spec.ts
 ```
+
+### Artifacts
+
+- Failed UI login (historical): `auth-login-failed-desktop.png`
+- Authenticated workspace: `../baseline-workspace/desktop-*.png`, `mobile320-*.png`
