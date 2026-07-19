@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
 import {
@@ -7,7 +6,11 @@ import {
   createEmptyProjectState,
   clampReadinessScore,
 } from "@/lib/project-state/normalize";
+import { strategyPatchSchema } from "@/lib/validations/strategy";
 import type { ProjectStateV2, EbookStrategy } from "@/types/strategy";
+
+// Re-export for unit tests / shared consumers
+export { strategyPatchSchema } from "@/lib/validations/strategy";
 
 // ---------------------------------------------------------------------------
 // Shared response helper
@@ -60,26 +63,6 @@ export async function GET(
 // ---------------------------------------------------------------------------
 // PATCH /api/projects/[id]/strategy
 // ---------------------------------------------------------------------------
-
-const strategyPatchSchema = z.object({
-  strategy_patch: z
-    .object({
-      topic: z.string().trim().nullable().optional(),
-      audience: z.string().trim().nullable().optional(),
-      audience_sophistication: z.string().trim().nullable().optional(),
-      primary_problem: z.string().trim().nullable().optional(),
-      pain_points: z.array(z.string().trim()).optional(),
-      desired_outcome: z.string().trim().nullable().optional(),
-      core_promise: z.string().trim().nullable().optional(),
-      unique_angle: z.string().trim().nullable().optional(),
-      content_pillars: z.array(z.string().trim()).optional(),
-      product_or_offer: z.string().trim().nullable().optional(),
-      funnel_goal: z.string().trim().nullable().optional(),
-      cta_goal: z.string().trim().nullable().optional(),
-      tone: z.string().trim().nullable().optional(),
-    })
-    .strict(),
-});
 
 export async function PATCH(
   req: Request,

@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
 import { runStrategist } from "@/lib/ai/agents/strategist";
@@ -7,22 +6,22 @@ import {
   mergeProjectState,
   clampReadinessScore,
 } from "@/lib/project-state/normalize";
+import {
+  MAX_CHAT_HISTORY,
+  buildChatHistoryForStrategist,
+  shouldPersistAfterStrategist,
+} from "@/lib/project-state/chat-flow";
+import { chatBodySchema } from "@/lib/validations/strategy";
 import type { ChatMessage } from "@/types/message";
 import type { ProjectStateV2 } from "@/types/strategy";
 
-// ---------------------------------------------------------------------------
-// Request validation
-// ---------------------------------------------------------------------------
-
-const chatBodySchema = z.object({
-  content: z
-    .string()
-    .trim()
-    .min(1, "content is required")
-    .max(4000, "content too long"),
-});
-
-const MAX_HISTORY = 20;
+// Re-export for unit tests / shared consumers
+export { chatBodySchema } from "@/lib/validations/strategy";
+export {
+  MAX_CHAT_HISTORY,
+  buildChatHistoryForStrategist,
+  shouldPersistAfterStrategist,
+} from "@/lib/project-state/chat-flow";
 
 // ---------------------------------------------------------------------------
 // POST /api/projects/[id]/chat
@@ -67,33 +66,23 @@ export async function POST(
     return jsonError("Failed to load project state", 500, "db_error");
   }
 
-  // 4. Load recent messages
+  // 4. Load true recent N messages (newest first), reverse to chronological
   let historyRows: { role: string; content: string }[];
   try {
     const { data: messages } = await supabase
       .from("messages")
       .select("role, content")
       .eq("project_id", id)
-      .order("created_at", { ascending: true })
-      .limit(MAX_HISTORY);
-    historyRows = messages ?? [];
+      .order("created_at", { ascending: false })
+      .limit(MAX_CHAT_HISTORY);
+    historyRows = buildChatHistoryForStrategist(messages ?? [], MAX_CHAT_HISTORY);
   } catch {
     return jsonError("Failed to load messages", 500, "db_error");
   }
 
-  // 5. Insert user message
-  const { error: userMsgErr } = await supabase.from("messages").insert({
-    project_id: id,
-    user_id: user.id,
-    role: "user",
-    content,
-    agent: null,
-  });
-  if (userMsgErr) {
-    return jsonError(userMsgErr.message, 500, "db_error");
-  }
-
-  // 6. Run strategist
+  // 5. Run strategist BEFORE any message/state writes.
+  //    History is prior messages only; userMessage passed separately.
+  //    On AI failure: no user msg insert, no state upsert, no assistant insert.
   let strategistResult: Awaited<ReturnType<typeof runStrategist>>;
   try {
     strategistResult = await runStrategist({
@@ -105,23 +94,39 @@ export async function POST(
         tone: project.tone,
         niche: project.niche,
       },
-      history: historyRows.map((h) => ({
-        role: h.role,
-        content: h.content,
-      })),
+      history: historyRows,
       userMessage: content,
     });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Strategist AI failed";
     console.error("[chat] Strategist failed:", message);
-    // 6a. On AI failure: leave state unchanged, return error
+    // Guard: must not persist on AI failure
+    if (shouldPersistAfterStrategist(false)) {
+      console.error("[chat] unexpected persist plan on AI failure");
+    }
     return jsonError(message, 503, "ai_unavailable");
   }
 
-  // 7. Merge state
+  if (!shouldPersistAfterStrategist(true)) {
+    return jsonError("Strategist AI failed", 503, "ai_unavailable");
+  }
+
+  // 6. Merge state
   const mergedState = mergeProjectState(currentState, strategistResult);
   const readiness = clampReadinessScore(strategistResult.readiness_score);
+
+  // 7. Persist only after AI success: user message, then state, then assistant
+  const { error: userMsgErr } = await supabase.from("messages").insert({
+    project_id: id,
+    user_id: user.id,
+    role: "user",
+    content,
+    agent: null,
+  });
+  if (userMsgErr) {
+    return jsonError(userMsgErr.message, 500, "db_error");
+  }
 
   // 8. Upsert merged state + readiness_score
   try {
