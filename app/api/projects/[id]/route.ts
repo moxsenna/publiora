@@ -1,7 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { jsonError } from "@/lib/api/errors";
 import type { ProjectUpdate } from "@/types/project";
-import type { CtaGoal } from "@/types/ai-suggestions";
+import {
+  type CtaGoal,
+} from "@/types/ai-suggestions";
+import { validateEffectiveCta } from "@/lib/projects/cta-effective";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
@@ -98,6 +101,41 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
           400,
           "validation_error",
         );
+      }
+    }
+
+    // Effective CTA validation only when CTA fields are in the patch
+    // (avoid blocking title/author edits on legacy incomplete CTA rows).
+    const touchesCta =
+      "cta_goal" in patch || "cta_url" in patch || "final_cta" in patch;
+    if (touchesCta) {
+      const { data: existing, error: existingErr } = await supabase
+        .from("projects")
+        .select("cta_goal, cta_url, final_cta")
+        .eq("id", id)
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      if (existingErr) {
+        return jsonError(existingErr.message, 500, "db_error");
+      }
+      if (!existing) {
+        return jsonError("Project not found", 404, "not_found");
+      }
+
+      const ctaError = validateEffectiveCta(
+        {
+          cta_goal: existing.cta_goal,
+          cta_url: existing.cta_url,
+          final_cta: existing.final_cta,
+        },
+        {
+          ...("cta_goal" in patch ? { cta_goal: patch.cta_goal ?? null } : {}),
+          ...("cta_url" in patch ? { cta_url: patch.cta_url ?? null } : {}),
+          ...("final_cta" in patch ? { final_cta: patch.final_cta ?? null } : {}),
+        },
+      );
+      if (ctaError) {
+        return jsonError(ctaError, 400, "validation_error");
       }
     }
 

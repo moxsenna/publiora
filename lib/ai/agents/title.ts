@@ -87,27 +87,30 @@ export async function runTitleGenerator(params: {
     throw new Error("Title generator returned no suggestions");
   }
 
-  // Ensure we have exactly one per style, deduping by style preference order
+  // Exactly one unique style each; no synthetic/mock fallbacks.
   const seen = new Set<TitleStyle>();
   const result: TitleSuggestion[] = [];
 
   for (const s of suggestions) {
     if (!seen.has(s.style)) {
       seen.add(s.style);
-      result.push({ style: s.style, title: s.title, rationale: s.rationale });
-    }
-  }
-
-  // Fill any missing styles with fallback
-  for (const style of VALID_STYLES) {
-    if (!seen.has(style)) {
       result.push({
-        style,
-        title: project.title,
-        rationale: `Based on the ${style} approach for ${project.audience}.`,
+        style: s.style,
+        title: s.title.trim(),
+        rationale: s.rationale.trim(),
       });
     }
   }
 
-  return result.slice(0, 5);
+  const missing = VALID_STYLES.filter((style) => !seen.has(style));
+  if (missing.length > 0) {
+    throw new Error(
+      `Title generator missing styles: ${missing.join(", ")}. Got ${result.length} unique styles.`,
+    );
+  }
+
+  return VALID_STYLES.map((style) => {
+    const found = result.find((s) => s.style === style)!;
+    return found;
+  });
 }

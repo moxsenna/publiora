@@ -6,6 +6,7 @@ import {
   mergeProjectState,
   clampReadinessScore,
 } from "@/lib/project-state/normalize";
+import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 import {
   MAX_CHAT_HISTORY,
   buildChatHistoryForStrategist,
@@ -54,16 +55,20 @@ export async function POST(
 
   // 3. Load current project_states -> normalize
   let currentState: ProjectStateV2;
-  try {
-    const { data: stateRow } = await supabase
+  {
+    const { data: stateRow, error: stateErr } = await supabase
       .from("project_states")
       .select("state_json, readiness_score")
       .eq("project_id", id)
       .maybeSingle();
-
+    if (stateErr) {
+      return jsonError(
+        getSupabaseErrorMessage(stateErr, "Failed to load project state"),
+        500,
+        "db_error",
+      );
+    }
     currentState = normalizeProjectState(stateRow?.state_json ?? null);
-  } catch {
-    return jsonError("Failed to load project state", 500, "db_error");
   }
 
   // 4. Load true recent N messages (newest first), reverse to chronological

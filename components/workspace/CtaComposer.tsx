@@ -83,17 +83,29 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
   }, [project.cta_goal, project.cta_url, project.final_cta]);
 
   const urlRequired = CTA_URL_REQUIRED_GOALS.includes(selectedGoal);
-  const urlValid = isValidCtaUrl(url || null);
-  const urlError = urlRequired && !urlValid && url.length > 0;
+  const trimmedUrl = url.trim();
+  // Required goals: empty or non-http(s) is invalid. Optional goals: empty OK.
+  const urlValid = urlRequired
+    ? trimmedUrl.length > 0 && isValidCtaUrl(trimmedUrl)
+    : trimmedUrl.length === 0 || isValidCtaUrl(trimmedUrl);
+  const urlError = urlRequired && !urlValid;
 
   // Generated suggestions
   const onGenerate = async () => {
+    if (urlRequired && !urlValid) {
+      pushToast({
+        title: "URL required",
+        description: "Enter a valid https:// destination before generating CTAs.",
+        variant: "danger",
+      });
+      return;
+    }
     try {
       const res = await generateCtas.mutateAsync({
         projectId,
         request: {
           goal: selectedGoal,
-          destination_url: urlRequired ? (url || null) : null,
+          destination_url: trimmedUrl.length > 0 ? trimmedUrl : null,
           placement,
           custom_instruction: null,
         },
@@ -136,7 +148,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
 
   // Save custom text
   const saveCta = async () => {
-    if (!urlValid && urlRequired && url.length > 0) {
+    if (urlRequired && !urlValid) {
       pushToast({ title: "Please enter a valid URL", variant: "danger" });
       return;
     }
@@ -146,7 +158,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
         patch: {
           cta_goal: selectedGoal,
           final_cta: ctaText || null,
-          cta_url: urlRequired ? (url || null) : null,
+          cta_url: trimmedUrl.length > 0 ? trimmedUrl : null,
         },
       });
       setAppliedGoal(selectedGoal);
@@ -267,7 +279,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
           variant="outline"
           onClick={onGenerate}
           loading={generateCtas.isPending}
-          disabled={generateCtas.isPending}
+          disabled={generateCtas.isPending || urlError}
         >
           <Sparkles className="h-3.5 w-3.5" />
           Generate Suggestions

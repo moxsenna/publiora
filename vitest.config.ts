@@ -8,7 +8,12 @@ export default defineConfig({
     // Use forks pool for proper CJS/ESM interop
     pool: 'forks',
     // Exclude Playwright e2e tests (use npm run test:e2e instead)
-    exclude: ['e2e/**', 'node_modules/**'],
+    exclude: [
+      'e2e/**',
+      'node_modules/**',
+      '.worktrees/**',
+      '**/node_modules/**',
+    ],
   },
   resolve: {
     alias: {

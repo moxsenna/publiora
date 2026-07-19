@@ -1,3 +1,7 @@
+> **Update 2026-07-20 — workflow-first alignment**
+>
+> The active product model is **flat outline sections** (not nested chapters), **HTML fragments as canonical section content** (`content_html`), and **structured Title/CTA** outputs. Strategy state uses **ProjectStateV2**. Enhancement is **non-destructive** (suggestion → accept). Prefer `docs/user-flows.md` and `docs/ai-prompts.md` for the current contracts. Older sections below that describe chapter trees, Markdown canonical storage, or string-only CTAs are historical and should not guide new work.
+
 \# architecture.md — Publiora MVP
 
 > Revision note — infrastructure alignment: MVP assumes Cloudflare Pages + Supabase. Use Supabase Auth, Supabase Postgres, Supabase Storage, and lightweight generation_jobs polling. Redis/BullMQ and a separate Node backend are post-MVP scale options. PDF export in MVP uses browser/HTML print-to-PDF or a lightweight serverless renderer — Playwright-based export is post-MVP.

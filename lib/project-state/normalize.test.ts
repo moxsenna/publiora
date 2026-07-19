@@ -5,6 +5,7 @@ import {
   mergeProjectState,
   computeMissingFields,
   clampReadinessScore,
+  computeDeterministicReadinessScore,
 } from "@/lib/project-state/normalize";
 import type { EbookStrategy, StrategistResult, ProjectStateV2 } from "@/types/strategy";
 
@@ -460,5 +461,46 @@ describe("computeMissingFields", () => {
     expect(missing).not.toContain("product_or_offer");
     expect(missing).not.toContain("funnel_goal");
     expect(missing).not.toContain("cta_goal");
+  });
+});
+
+
+describe("computeDeterministicReadinessScore", () => {
+  it("scores incomplete strategy below 70", () => {
+    const empty = {
+      topic: null,
+      audience: null,
+      audience_sophistication: null,
+      primary_problem: null,
+      pain_points: [],
+      desired_outcome: null,
+      core_promise: null,
+      unique_angle: null,
+      content_pillars: [],
+      product_or_offer: null,
+      funnel_goal: null,
+      cta_goal: null,
+      tone: null,
+    };
+    expect(computeDeterministicReadinessScore(empty)).toBe(0);
+  });
+
+  it("scores fully filled required fields at least 70", () => {
+    const full = {
+      topic: "T",
+      audience: "A",
+      audience_sophistication: "beginner",
+      primary_problem: "P",
+      pain_points: ["x"],
+      desired_outcome: "D",
+      core_promise: "C",
+      unique_angle: "U",
+      content_pillars: ["p1"],
+      product_or_offer: "offer",
+      funnel_goal: "join",
+      cta_goal: "join_whatsapp",
+      tone: "practical",
+    };
+    expect(computeDeterministicReadinessScore(full)).toBeGreaterThanOrEqual(70);
   });
 });
