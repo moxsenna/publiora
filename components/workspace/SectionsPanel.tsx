@@ -106,9 +106,17 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
 
   const onEnhance = async (sectionId: string) => {
     try {
-      const s = await enhance.mutateAsync({ projectId, sectionId });
-      setActiveId(s.id);
-      pushToast({ title: "Section diperhalus", variant: "success" });
+      const result = await enhance.mutateAsync({
+        projectId,
+        sectionId,
+        action: "professional",
+      });
+      // Enhancement is non-destructive — section content is unchanged.
+      // Task 9 will add a dialog for reviewing and applying the suggestion.
+      pushToast({
+        title: result.suggestion.summary || "Section diperhalus",
+        variant: "success",
+      });
     } catch (err) {
       const e = err as { code?: string };
       pushToast({

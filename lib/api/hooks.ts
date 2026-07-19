@@ -41,6 +41,7 @@ import type {
 } from "@/types";
 import type { SendMessageInput, ChatResponse } from "@/types/message";
 import type { ProjectStateV2 } from "@/types/strategy";
+import type { EnhancementSuggestion, EnhancementAction } from "@/types/ai-suggestions";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 
 const READER_ID = "reader@publiora.demo";
@@ -612,18 +613,26 @@ export function useEnhanceSection() {
     mutationFn: ({
       projectId,
       sectionId,
+      action,
+      selection_html,
+      instruction,
     }: {
       projectId: string;
       sectionId: string;
+      action: EnhancementAction;
+      selection_html?: string | null;
+      instruction?: string | null;
     }) =>
-      apiFetch<Section>(
+      apiFetch<{ suggestion: EnhancementSuggestion }>(
         `/api/projects/${projectId}/sections/${sectionId}/enhance`,
-        { method: "POST" }
+        {
+          method: "POST",
+          body: JSON.stringify({ action, selection_html, instruction }),
+        },
       ),
-    onSuccess: (data) => {
-      if (data?.project_id) {
-        qc.invalidateQueries({ queryKey: qk.sections(data.project_id) });
-      }
+    onSuccess: () => {
+      // Do NOT invalidate sections — enhancement is non-destructive and
+      // does not persist to ebook_sections.  Only invalidate billing balance.
       qc.invalidateQueries({ queryKey: qk.billing.balance });
     },
   });
