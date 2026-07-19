@@ -1,12 +1,12 @@
 # Baseline: Workflow-First Workspace (2026-07-19)
 
-> Recorded before any production code changes for the workflow-first UI refactor.
+> Updated after Tasks 13-16 completion. Recorded at end of workflow-first UI refactor.
 
 ## Environment
 
 - **Branch:** `feat/workflow-first-workspace`
-- **Commit:** `df58269` (`fix(env): treat empty env strings as unset; faster AI model timeout`)
-- **Node:** v22 (inferred from lockfile/Next 16.2.6)
+- **Latest Commit:** `ded3dda` (`test: cover workflow-first ebook creation journey`)
+- **Node:** v22
 - **Next.js:** 16.2.6 (Turbopack)
 - **React:** 19.2.4
 - **Test runner:** Vitest 4.1.8
@@ -15,87 +15,113 @@
 
 | Command | Result | Notes |
 |---------|--------|-------|
-| `npm install` | Pass | 224 packages, 3 vulnerabilities (2 moderate, 1 high) |
-| `npm test` | **29 passed, 0 failed (4 test files)** | All green |
-| `npm run build` | **Pass** | 52 routes compiled. First run transiently crashed during page data collection (Windows worker exit code 3221226505); second run succeeded fully. Transient crash is a known Turbopack worker issue on Windows -- reproducible but intermittent. |
+| `npm test` | **266 passed, 0 failed (14 test files)** | All green |
+| `npm run build` | **Pass** | 52 routes compiled. Transient Windows Turbopack worker crash may occur; retry resolves. |
+| `npx tsc --noEmit` | **Pass** | Zero errors |
 
 ### Test Details
 
 ```
-__tests__/design/tokens.test.ts      — 10 tests passed
-__tests__/validations/auth.property4.test.ts — 4 tests passed
-__tests__/validations/auth.property1.test.ts — 11 tests passed
-__tests__/ai/provider.fallback.test.ts — 4 tests passed
+__tests__/design/tokens.test.ts              — 10 tests
+__tests__/ai/provider.fallback.test.ts       — 4 tests
+__tests__/ai/strategist-schema.test.ts       — 24 tests
+__tests__/project-state/chat-flow.test.ts    — 7 tests
+__tests__/validations/auth.property1.test.ts — 11 tests
+__tests__/validations/auth.property4.test.ts — 4 tests
+__tests__/validations/strategy.test.ts       — 12 tests
+lib/ai/agents/planner.test.ts                — 30 tests
+lib/ai/agents/enhancement.test.ts            — 23 tests
+lib/ai/agents/cta.test.ts                    — 28 tests
+lib/ai/agents/title.test.ts                  — 12 tests (added in Task 15)
+lib/project-state/normalize.test.ts          — 30 tests
+lib/workflow/project-workflow.test.ts        — 66 tests
+lib/workflow/outline-regeneration.test.ts    — 5 tests
 ```
 
-### Build Output
+## Final Commit List (Workflow-First Implementation)
 
 ```
-Route (app)
-┌ ○ /                         (static)
-├ ○ /_not-found               (static)
-├ ○ /billing/return           (static)
-├ ○ /dashboard                (static)
-├ ○ /forgot-password          (static)
-├ ○ /library                  (static)
-├ ○ /login                    (static)
-├ ○ /projects                 (static)
-├ ○ /projects/new             (static)
-├ ○ /register                 (static)
-├ ○ /settings/billing         (static)
-├ ƒ /projects/[id]            (dynamic)
-├ ƒ /published/[id]           (dynamic)
-├ ƒ /read/[slug]              (dynamic)
-├ ƒ /claim/[token]            (dynamic)
-└ ƒ /api/* (22 routes)        (dynamic)
+ded3dda test: cover workflow-first ebook creation journey
+259d4f8 fix: harden workflow accessibility and responsive states
+43ea004 refactor: remove obsolete agent-first workspace UI
+3a208b7 feat: add validated workflow publish stage
+7a3e759 feat: add ebook review and finalization stage
+52b4121 feat: generate and persist contextual ebook CTAs
+b6eac45 feat: add safe AI editing workflow to section editor
+daf497d feat: improve outline flow and apply title suggestions
+408132d feat: add non-destructive section enhancement agent
+b37d9e3 feat: replace agent chat with strategy workspace
+f632c79 fix: workflow shell navigation history and blocked stages
+59ac942 feat: add workflow-first project workspace shell
+4b13eaf fix: enforce planner section and key-point bounds
+3f55d0e feat: generate outlines from shared strategy state
+dc99892 fix: load recent chat history and harden strategist routes
 ```
+
+## Architecture Summary
+
+### Five-Stage Workspace
+
+```
+Strategy -> Outline -> Write -> Review -> Publish
+```
+
+Each stage is gated: incomplete strategy blocks outline, missing sections block review, blockers block publish.
+
+### Component Map
+
+| Component | Stage | Purpose |
+|-----------|-------|---------|
+| WorkspaceHeader | All | Title, preview, delete |
+| WorkspaceStepNav | All | Desktop/mobile step navigation |
+| StrategyPanel | Strategy | Chat + readiness sidebar |
+| StrategyBriefCard | Strategy | Structured brief display |
+| StrategyReadinessCard | Strategy | Readiness score + missing fields |
+| StrategyFieldEditor | Strategy | Modal field editor |
+| OutlinePanel | Outline | Section outline editor + approval |
+| TitleSuggestions | Outline, Review | AI title suggestions |
+| SectionsPanel | Write | Section list + RichTextEditor |
+| EnhancementMenu | Write | Enhancement action dropdown |
+| EnhancementReviewDialog | Write | Side-by-side enhancement review |
+| ReviewPanel | Review | Checklist + title/CTA + preview |
+| ReviewChecklist | Review | Workflow checks display |
+| CtaComposer | Review | CTA goal/text/URL/placement |
+| PreviewPanel | Review | Live HTML preview |
+| PublishPanel | Publish | Summary + blockers + publish action |
+| PublishDialog | Publish | Modal wrapper for publish |
+| WorkspaceStageFooter | All | Stage navigation footer |
+
+### Removed Components (Task 13)
+
+- `components/workspace/ChatPanel.tsx` -- Replaced by StrategyPanel
+- `components/workspace/ToolsPanel.tsx` -- Functionality absorbed into TitleSuggestions, CtaComposer, and EnhancementMenu
+- `components/workspace/agents.tsx` -- Agent definitions now in types/message.ts
+- `lib/ai/agents/meta.ts` -- Dead code (only imported by ChatPanel)
+
+### Accessibility Improvements (Task 14)
+
+- Double-submission guards on all async actions (generate, enhance, publish, send message)
+- aria-label on mobile section picker
+- EnhancementReviewDialog buttons disabled during their own loading state
+- Modal component provides focus trap via Tab key cycling
 
 ## E2E / Playwright
 
 - **Playwright config:** Not present (no `playwright.config.*` file).
 - **E2E script in package.json:** None.
-- **Action:** No E2E suite to run. Playwright is installed as a dev dependency for future testing.
+- **Note:** E2E testing is deferred. No Playwright suite exists and none was created.
 
-## Screenshots (Landing Page)
+## Known Limitations
 
-Captured from local dev server (`npm run dev` on `http://localhost:3000`):
+1. **E2E Testing:** Deferred -- no Playwright configuration exists. All coverage is via unit tests (266 tests).
+2. **Windows Build Flake:** Intermittent Turbopack worker crash on `npm run build` during page data collection (exit code 3221226505). Consistently recovers on retry.
+3. **Mobile Responsiveness:** WorkspaceStepNav uses mobile dropdown selector at <640px. Section picker in SectionsPanel has similar pattern. No additional breakpoint optimization at 320px beyond existing responsive patterns.
+4. **Focus Trap in EnhancementReviewDialog:** Relies on Modal component's built-in Tab cycling (not a dedicated focus-trap library). Adequate for current use.
+5. **Mock Layer:** `lib/mock/` directory exists as legacy reference only -- not imported by any live code path. Future cleanup can remove it entirely.
 
-- `baseline-desktop-home.png` — Desktop (1440x900) landing page
-- `baseline-mobile-home.png` — Mobile (375x812) landing page
-- `baseline-desktop-login.png` — Desktop login page
+## Documentation
 
-**Limitation:** Authenticated workspace pages (dashboard, projects, library) could not be captured because the local environment lacks valid Supabase credentials in `.env.local`. The `.env.example` provides configuration templates but no actual keys for local development. These screenshots represent the unauthenticated public surface of the app.
-
-## Next.js 16 Docs Inventory
-
-The `node_modules/next/dist/docs/` directory is present with comprehensive documentation:
-
-```
-node_modules/next/dist/docs/
-├── index.md
-├── 01-app/
-│   ├── 01-getting-started/     (19 files: installation, layouts, server components, data fetching, etc.)
-│   ├── 02-guides/              (40+ files: auth, caching, forms, redirecting, AI agents, etc.)
-│   ├── 03-api-reference/       (API reference docs)
-│   └── 04-glossary.md
-├── 02-pages/                   (Pages Router docs)
-├── 03-architecture/            (Architecture docs)
-└── 04-community/               (Community docs)
-```
-
-Key guides relevant to this refactor:
-- `01-app/01-getting-started/03-layouts-and-pages.md`
-- `01-app/01-getting-started/05-server-and-client-components.md`
-- `01-app/01-getting-started/15-route-handlers.md`
-- `01-app/02-guides/ai-agents.md`
-- `01-app/02-guides/forms.md`
-- `01-app/02-guides/redirecting.md`
-
-## Security Notes
-
-- No API keys, secrets, or tokens are present in this baseline document.
-- The `.env.example` file is checked in (with placeholder values); no actual `.env.local` exists in the worktree.
-
-## Conclusion
-
-The baseline is clean. All tests pass, the build succeeds (with a documented transient Windows worker crash that recovers on retry), and no E2E suite exists. Ready to begin implementation.
+Documentation updated in Task 16:
+- `docs/ai-prompts.md` -- Five stages, internal capability mapping, HTML fragment, Strategy V2, non-destructive enhancement, structured title/CTA
+- `docs/user-flows.md` -- Strategy -> Outline -> Write -> Review -> Publish
+- Deprecated terms (ChatPanel, ToolsPanel, agent picker, Planner chat, Tools tab) removed from active documentation
