@@ -72,6 +72,16 @@ export function buildWriterUserPrompt(input: WriterInput): string {
         line("funnel_goal", s.funnel_goal),
         line("cta_goal", s.cta_goal),
         line("tone", s.tone ?? input.project.tone),
+        line("traffic_source", s.traffic_source),
+        line("bonus_role", s.bonus_role),
+        line("usage_moment", s.usage_moment),
+        line("sales_positioning", s.sales_positioning),
+        line(
+          "buyer_objections",
+          Array.isArray(s.buyer_objections) && s.buyer_objections.length
+            ? s.buyer_objections.join(" | ")
+            : null,
+        ),
       ].join("\n")
     : "Strategy: (not available — use project metadata only)";
 

@@ -104,7 +104,10 @@ export async function POST(
       );
     }
     if (stateRow?.state_json) {
-      strategy = normalizeProjectState(stateRow.state_json).strategy;
+      strategy = normalizeProjectState(
+        stateRow.state_json,
+        project.ebook_type ?? "lead_magnet",
+      ).strategy;
     }
 
     // ---- Charge credits ----

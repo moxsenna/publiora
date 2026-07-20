@@ -69,10 +69,11 @@ export async function POST(
         .eq("project_id", id)
         .maybeSingle();
 
+      const ebookType = project.ebook_type ?? "lead_magnet";
       if (stateRow?.state_json) {
-        strategyState = normalizeProjectState(stateRow.state_json);
+        strategyState = normalizeProjectState(stateRow.state_json, ebookType);
       } else {
-        strategyState = createEmptyProjectState();
+        strategyState = createEmptyProjectState(ebookType);
       }
       readinessScore = clampReadinessScore(stateRow?.readiness_score);
     } catch {
@@ -82,6 +83,7 @@ export async function POST(
     // ---- Strategy readiness gate ----
 
     const strategy = strategyState.strategy;
+    const ebookType = project.ebook_type ?? "lead_magnet";
     const ready = isStrategyReady(strategy, readinessScore);
 
     if (!ready) {
@@ -92,7 +94,7 @@ export async function POST(
         "strategy_not_ready",
         {
           blockers,
-          missing_fields: computeMissingFields(strategy),
+          missing_fields: computeMissingFields(strategy, ebookType),
           readiness_score: readinessScore,
         },
       );

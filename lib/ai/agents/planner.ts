@@ -199,6 +199,15 @@ export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
     `  core_promise: ${strategy.core_promise ?? "(none)"}`,
     `  unique_angle: ${strategy.unique_angle ?? "(none)"}`,
     `  tone: ${strategy.tone ?? project.tone}`,
+    `  product_or_offer: ${strategy.product_or_offer ?? "(none)"}`,
+    `  funnel_goal: ${strategy.funnel_goal ?? "(none)"}`,
+    `  traffic_source: ${strategy.traffic_source ?? "(none)"}`,
+    `  bonus_role: ${strategy.bonus_role ?? "(none)"}`,
+    `  usage_moment: ${strategy.usage_moment ?? "(none)"}`,
+    `  sales_positioning: ${strategy.sales_positioning ?? "(none)"}`,
+    strategy.buyer_objections?.length
+      ? `  buyer_objections: ${strategy.buyer_objections.join(" | ")}`
+      : "",
     strategy.content_pillars.length
       ? `  content_pillars: ${strategy.content_pillars.join(" | ")}`
       : "",

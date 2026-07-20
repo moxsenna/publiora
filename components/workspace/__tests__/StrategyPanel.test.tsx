@@ -40,12 +40,14 @@ const useMessagesMock = vi.fn();
 const useStrategyMock = vi.fn();
 const useSendMessageMock = vi.fn();
 const usePatchStrategyMock = vi.fn();
+const useProjectMock = vi.fn();
 
 vi.mock("@/lib/api/hooks", () => ({
   useMessages: (...args: any[]) => useMessagesMock(...args),
   useStrategy: (...args: any[]) => useStrategyMock(...args),
   useSendMessage: (...args: any[]) => useSendMessageMock(...args),
   usePatchStrategy: (...args: any[]) => usePatchStrategyMock(...args),
+  useProject: (...args: any[]) => useProjectMock(...args),
 }));
 
 // Mock the centralized strategy copy so tests reference the same values
@@ -186,6 +188,10 @@ beforeEach(() => {
   useMessagesMock.mockReturnValue(mockMessagesData());
   useStrategyMock.mockReturnValue(mockStrategyData());
   useSendMessageMock.mockReturnValue(mockSendHook());
+  useProjectMock.mockReturnValue({
+    data: { id: "proj-1", ebook_type: "lead_magnet" },
+    isLoading: false,
+  });
   usePatchStrategyMock.mockReturnValue(mockPatchHook());
 });
 
@@ -999,10 +1005,12 @@ describe("composer accessibility", () => {
 // ---------------------------------------------------------------------------
 
 describe("Indonesian copy: BriefCard progress", () => {
-  it("displays 'X dari 6 informasi inti lengkap'", () => {
-    // Uses default mock data: topic + audience filled (2 of 6 core filled)
+  it("displays type-aware brief progress for lead magnet", () => {
+    // Default mock: topic + audience filled. Lead magnet requires 7 fields.
     render(<StrategyPanel projectId="proj-1" />);
-    expect(screen.getAllByText("2 dari 6 informasi inti lengkap").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText("2 dari 7 informasi inti lengkap").length,
+    ).toBeGreaterThanOrEqual(1);
   });
 });
 

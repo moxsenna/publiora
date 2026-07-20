@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/Button";
 import type { EbookStrategy } from "@/types/strategy";
 import {
   STRATEGY_COPY_ID,
-  STRATEGY_FIELD_LABELS,
+  strategyFieldLabel,
 } from "@/lib/workflow/strategy-copy";
+import type { EbookType } from "@/types/project";
 
 // ---------------------------------------------------------------------------
 // Known scalar & array fields (mirrors EbookStrategy type)
@@ -28,11 +29,16 @@ const SCALAR_KEYS: (keyof EbookStrategy)[] = [
   "funnel_goal",
   "cta_goal",
   "tone",
+  "traffic_source",
+  "bonus_role",
+  "usage_moment",
+  "sales_positioning",
 ];
 
 const ARRAY_KEYS: (keyof EbookStrategy)[] = [
   "pain_points",
   "content_pillars",
+  "buyer_objections",
 ];
 
 // ---------------------------------------------------------------------------
@@ -66,7 +72,16 @@ const FIELD_GROUPS: FieldGroup[] = [
   },
   {
     heading: "Funnel dan penawaran",
-    keys: ["product_or_offer", "funnel_goal", "cta_goal"],
+    keys: [
+      "product_or_offer",
+      "funnel_goal",
+      "cta_goal",
+      "traffic_source",
+      "bonus_role",
+      "usage_moment",
+      "sales_positioning",
+      "buyer_objections",
+    ],
   },
   {
     heading: "Gaya penulisan",
@@ -83,6 +98,7 @@ const FULL_WIDTH_KEYS = new Set<keyof EbookStrategy>([
   "audience_sophistication",
   "pain_points",
   "content_pillars",
+  "buyer_objections",
 ]);
 
 // ---------------------------------------------------------------------------
@@ -94,6 +110,7 @@ interface StrategyFieldEditorProps {
   onClose: () => void;
   projectId: string;
   strategy: EbookStrategy;
+  ebookType?: EbookType | null;
   /** Optional field key to focus when the editor opens. */
   initialField?: keyof EbookStrategy | null;
 }
@@ -103,6 +120,7 @@ export function StrategyFieldEditor({
   onClose,
   projectId,
   strategy,
+  ebookType,
   initialField,
 }: StrategyFieldEditorProps) {
   const patch = usePatchStrategy();
@@ -174,8 +192,29 @@ export function StrategyFieldEditor({
     if (ARRAY_KEYS.includes(key)) {
       return STRATEGY_COPY_ID.editorArrayPlaceholder;
     }
-    return `Masukkan ${STRATEGY_FIELD_LABELS[key].toLowerCase()}`;
+    return `Masukkan ${strategyFieldLabel(key, ebookType).toLowerCase()}`;
   };
+
+  const visibleGroups = FIELD_GROUPS.map((group) => ({
+    ...group,
+    keys: group.keys.filter((key) => {
+      if (key === "funnel_goal" && ebookType === "bonus_product") return false;
+      if (key === "traffic_source" && ebookType !== "lead_magnet") return false;
+      if (
+        (key === "bonus_role" || key === "usage_moment") &&
+        ebookType !== "bonus_product"
+      ) {
+        return false;
+      }
+      if (
+        (key === "sales_positioning" || key === "buyer_objections") &&
+        ebookType !== "sellable_ebook"
+      ) {
+        return false;
+      }
+      return true;
+    }),
+  })).filter((g) => g.keys.length > 0);
 
   return (
     <Modal
@@ -196,7 +235,7 @@ export function StrategyFieldEditor({
       }
     >
       <div className="space-y-6">
-        {FIELD_GROUPS.map((group) => (
+        {visibleGroups.map((group) => (
           <section key={group.heading} className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)]">
               {group.heading}
@@ -208,7 +247,7 @@ export function StrategyFieldEditor({
                   className={FULL_WIDTH_KEYS.has(key) ? "sm:col-span-2" : ""}
                 >
                   <Label htmlFor={`strat-field-${key}`}>
-                    {STRATEGY_FIELD_LABELS[key]}
+                    {strategyFieldLabel(key, ebookType)}
                   </Label>
                   {ARRAY_KEYS.includes(key) ? (
                     <Textarea

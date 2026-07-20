@@ -15,13 +15,18 @@ const strategy: EbookStrategy = {
   product_or_offer: "WhatsApp group",
   funnel_goal: "join_whatsapp",
   cta_goal: "join_whatsapp",
-  tone: "practical",
+tone: "practical",
+  traffic_source: null,
+  bonus_role: null,
+  usage_moment: null,
+  sales_positioning: null,
+  buyer_objections: [],
 };
 
 describe("buildWriterUserPrompt", () => {
   it("includes strategy promise, neighbors, and target words", () => {
     const prompt = buildWriterUserPrompt({
-      project: {
+project: {
         title: "Ebook",
         audience: "Beginners",
         tone: "practical",

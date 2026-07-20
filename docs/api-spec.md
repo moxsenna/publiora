@@ -219,29 +219,57 @@ POST /projects
 
 Create new ebook project.
 
-Request
+Accepts **Create Project V2** (preferred) or **legacy flat** `ProjectInput` (compatibility window; deprecated).
 
+V2 request (discriminated `business_context`):
+
+```json
 {
-
-"title": "Untitled Ebook",
-
-"ebookType": "lead_magnet"
-
+  "version": 2,
+  "ebook_type": "lead_magnet",
+  "template_id": "tpl_checklist",
+  "common": {
+    "topic": "Lead Generation B2B",
+    "audience": "Founder SaaS tahap awal",
+    "primary_problem": "Sulit mendapatkan lead berkualitas",
+    "desired_outcome": "Rencana lead generation 30 hari",
+    "niche": "B2B SaaS Marketing",
+    "tone": "Praktis, jelas",
+    "working_title": null,
+    "author": "Bima",
+    "additional_notes": null
+  },
+  "business_context": {
+    "type": "lead_magnet",
+    "lead_goal": "collect_email",
+    "traffic_source": "Konten organik",
+    "next_offer": "Audit marketing gratis",
+    "post_read_action": "visit_product",
+    "cta_url": "https://example.com/audit"
+  }
 }
+```
 
-Response
+Server behavior:
+- Strict Zod validation (type/context must match; CTA URL when required).
+- Deterministic working title + description if omitted.
+- Seeds Strategy V3 into `project_states` (no fabricated core_promise/unique_angle).
+- Validates template compatibility for `ebook_type`.
+- Atomic insert via RPC `create_project_with_state` (project + state).
+- Lead Magnet may set `projects.cta_goal` / `cta_url`.
 
+Response `201`:
+
+```json
 {
-
-"id": "uuid",
-
-"title": "Untitled Ebook",
-
-"ebookType": "lead_magnet",
-
-"status": "draft"
-
+  "id": "uuid",
+  "title": "Panduan: Lead Generation B2B",
+  "ebook_type": "lead_magnet",
+  "status": "draft"
 }
+```
+
+Legacy flat body (`title`, `author`, `description`, `audience`, `tone`, `niche`, optional `ebook_type`/`template_id`) still works for one release.
 
 ---
 

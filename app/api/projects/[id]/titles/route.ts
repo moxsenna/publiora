@@ -31,7 +31,10 @@ export async function POST(
         .maybeSingle();
 
       if (stateRow?.state_json) {
-        const normalized = normalizeProjectState(stateRow.state_json);
+        const normalized = normalizeProjectState(
+          stateRow.state_json,
+          project.ebook_type ?? "lead_magnet",
+        );
         strategy = normalized.strategy;
       }
     } catch {

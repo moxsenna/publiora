@@ -93,9 +93,15 @@ export async function POST(
         "db_error",
       );
     }
+    const ebookType =
+      project.ebook_type === "bonus_product" ||
+      project.ebook_type === "sellable_ebook" ||
+      project.ebook_type === "lead_magnet"
+        ? project.ebook_type
+        : "lead_magnet";
     const strategyState = stateRow?.state_json
-      ? normalizeProjectState(stateRow.state_json)
-      : createEmptyProjectState();
+      ? normalizeProjectState(stateRow.state_json, ebookType)
+      : createEmptyProjectState(ebookType);
     const strategy: EbookStrategy = strategyState.strategy;
 
     // Mutable outline section statuses — critical for generate-all consistency
