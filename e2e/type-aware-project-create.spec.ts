@@ -9,6 +9,13 @@
 
 import { test, expect } from "@playwright/test";
 import { loginWithStorage } from "./helpers/auth";
+import {
+  createProjectAndOpenWorkspace,
+  ensureWizardAuthor,
+  goToFormatStep,
+  PROJECT_WORKSPACE_URL,
+  selectLeadGoal,
+} from "./helpers/wizard";
 
 test.describe("type-aware project creation (V3 shell)", () => {
   test.skip(
@@ -33,8 +40,19 @@ test.describe("type-aware project creation (V3 shell)", () => {
     await expect(
       page.getByRole("button", { name: /Ebook Berbayar/i }),
     ).toBeVisible();
-    await expect(page.getByText("Ide & Produk")).toBeVisible();
-    await expect(page.getByText("Format")).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Langkah pembuatan proyek" }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByRole("navigation", { name: "Langkah pembuatan proyek" })
+        .getByText("Ide & Produk", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByRole("navigation", { name: "Langkah pembuatan proyek" })
+        .getByText("Format", { exact: true }),
+    ).toBeVisible();
   });
 
   test("Journey B — Lead without offer reaches Strategy", async ({ page }) => {
@@ -46,20 +64,17 @@ test.describe("type-aware project creation (V3 shell)", () => {
     await page.getByRole("button", { name: /Lead Magnet/i }).click();
     await page.getByRole("button", { name: "Lanjutkan" }).click();
 
-    await expect(page.getByText("Ide & Produk").first()).toBeVisible();
+    await expect(page.getByText("Ide lead magnet")).toBeVisible();
     await page
       .getByLabel("Ide lead magnet")
       .fill("Lead Generation B2B checklist");
     await page.getByRole("button", { name: /Belum ada produk/i }).click();
-    await page.getByLabel("Tujuan Lead Magnet").selectOption("collect_email");
-    await page.getByRole("button", { name: "Lanjutkan" }).click();
+    await selectLeadGoal(page, "collect_email");
+    await ensureWizardAuthor(page);
+    await goToFormatStep(page);
+    await createProjectAndOpenWorkspace(page);
 
-    await expect(page.getByText(/Format|Ringkasan/i).first()).toBeVisible({
-      timeout: 10_000,
-    });
-    await page.getByRole("button", { name: "Buat Proyek" }).click();
-
-    await expect(page).toHaveURL(/\/projects\/[^/]+/, { timeout: 30_000 });
+    await expect(page).toHaveURL(PROJECT_WORKSPACE_URL);
     await expect(page).toHaveURL(/stage=strategy|step=strategy/, {
       timeout: 15_000,
     });

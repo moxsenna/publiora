@@ -14,6 +14,13 @@
 
 import { test, expect, type Page } from "@playwright/test";
 import { loginWithStorage } from "./helpers/auth";
+import {
+  createProjectAndOpenWorkspace,
+  ensureWizardAuthor,
+  goToFormatStep,
+  PROJECT_WORKSPACE_URL,
+  selectLeadGoal,
+} from "./helpers/wizard";
 
 const stamp = () => Date.now().toString(36);
 
@@ -76,7 +83,7 @@ test.describe("offer library journeys A–F", () => {
     await page.getByRole("button", { name: /Lead Magnet/i }).click();
     await page.getByRole("button", { name: "Lanjutkan" }).click();
 
-    await expect(page.getByText("Ide & Produk").first()).toBeVisible({
+    await expect(page.getByText("Ide lead magnet")).toBeVisible({
       timeout: 10_000,
     });
     await page.getByLabel("Ide lead magnet").fill("Checklist growth audit 7 hari");
@@ -91,25 +98,20 @@ test.describe("offer library journeys A–F", () => {
     await page.getByRole("option", { name: new RegExp(name) }).click();
     await expect(page.getByText(name).first()).toBeVisible();
 
-    await page.getByLabel("Tujuan Lead Magnet").selectOption("visit_offer");
-    await page.getByRole("button", { name: "Lanjutkan" }).click();
+    await selectLeadGoal(page, "visit_offer");
+    await ensureWizardAuthor(page);
+    await goToFormatStep(page);
+    await createProjectAndOpenWorkspace(page);
 
-    await expect(page.getByText(/Format|Ringkasan/i).first()).toBeVisible({
-      timeout: 10_000,
-    });
-    await page.getByRole("button", { name: "Buat Proyek" }).click();
-
-    await expect(page).toHaveURL(/\/projects\/[^/]+/, { timeout: 30_000 });
+    await expect(page).toHaveURL(PROJECT_WORKSPACE_URL);
     await expect(page).toHaveURL(/stage=strategy|step=strategy/);
-    await expect(
-      page.getByText(new RegExp(name)).first(),
-    ).toBeVisible({ timeout: 20_000 });
-    // Linked offer section
+    await expect(page.getByText(new RegExp(name)).first()).toBeVisible({
+      timeout: 20_000,
+    });
     await expect(
       page.getByText(/Produk \/ Penawaran|Dipromosikan/i).first(),
     ).toBeVisible({ timeout: 15_000 });
 
-    // Keep offer id for later journeys via query if needed
     void offer;
   });
 
@@ -120,11 +122,12 @@ test.describe("offer library journeys A–F", () => {
 
     await page.getByLabel("Ide lead magnet").fill("Panduan email list building");
     await page.getByRole("button", { name: /Belum ada produk/i }).click();
-    await page.getByLabel("Tujuan Lead Magnet").selectOption("collect_email");
-    await page.getByRole("button", { name: "Lanjutkan" }).click();
-    await page.getByRole("button", { name: "Buat Proyek" }).click();
+    await selectLeadGoal(page, "collect_email");
+    await ensureWizardAuthor(page);
+    await goToFormatStep(page);
+    await createProjectAndOpenWorkspace(page);
 
-    await expect(page).toHaveURL(/\/projects\/[^/]+/, { timeout: 30_000 });
+    await expect(page).toHaveURL(PROJECT_WORKSPACE_URL);
     await expect(
       page.getByText(/Brief Ebook|Asisten Strategi|email list/i).first(),
     ).toBeVisible({ timeout: 20_000 });
@@ -157,21 +160,29 @@ test.describe("offer library journeys A–F", () => {
     await page
       .getByRole("button", { name: /Mempraktikkan materi produk/i })
       .click();
-    await page.getByRole("button", { name: "Lanjutkan" }).click();
-    await page.getByRole("button", { name: "Buat Proyek" }).click();
+    await ensureWizardAuthor(page);
+    await goToFormatStep(page);
+    await createProjectAndOpenWorkspace(page);
 
-    await expect(page).toHaveURL(/\/projects\/[^/]+/, { timeout: 30_000 });
+    await expect(page).toHaveURL(PROJECT_WORKSPACE_URL);
     await expect(page.getByText(parentName).first()).toBeVisible({
       timeout: 20_000,
     });
     await expect(
-      page.getByText(/Produk utama untuk Bonus|Bonus untuk produk|Produk \/ Penawaran/i).first(),
+      page
+        .getByText(
+          /Produk utama untuk Bonus|Bonus untuk produk|Produk \/ Penawaran/i,
+        )
+        .first(),
     ).toBeVisible({ timeout: 15_000 });
   });
 
   test("Journey D — Offer update shows stale indicator and sync dialog", async ({
     page,
   }) => {
+    // Desktop rail holds StrategyBriefCard with stale badge (lg:flex).
+    await page.setViewportSize({ width: 1400, height: 900 });
+
     const name = `E2E Offer D ${stamp()}`;
     const offer = await createOfferViaApi(page, {
       name,
@@ -182,7 +193,6 @@ test.describe("offer library journeys A–F", () => {
       destination_url: "https://example.com/d",
     });
 
-    // Create lead linked to offer via wizard
     await goToNewProject(page);
     await page.getByRole("button", { name: /Lead Magnet/i }).click();
     await page.getByRole("button", { name: "Lanjutkan" }).click();
@@ -192,13 +202,28 @@ test.describe("offer library journeys A–F", () => {
       .click();
     await page.getByLabel("Cari produk").fill(name);
     await page.getByRole("option", { name: new RegExp(name) }).click();
-    await page.getByLabel("Tujuan Lead Magnet").selectOption("visit_offer");
-    await page.getByRole("button", { name: "Lanjutkan" }).click();
-    await page.getByRole("button", { name: "Buat Proyek" }).click();
-    await expect(page).toHaveURL(/\/projects\/[^/]+/, { timeout: 30_000 });
+    await selectLeadGoal(page, "visit_offer");
+    await ensureWizardAuthor(page);
+    await goToFormatStep(page);
+    await createProjectAndOpenWorkspace(page);
+    await expect(page).toHaveURL(PROJECT_WORKSPACE_URL);
     const projectUrl = page.url();
+    const projectId = projectUrl.match(/\/projects\/([^/?#]+)/)?.[1];
+    expect(projectId).toBeTruthy();
 
-    // Patch offer (makes source newer)
+    // Ensure link exists before patch.
+    const linksBefore = await page.request.get(
+      `/api/projects/${projectId}/offers`,
+    );
+    expect(linksBefore.ok()).toBeTruthy();
+    const beforeJson = (await linksBefore.json()) as {
+      items: Array<{ source_is_newer: boolean }>;
+    };
+    expect(beforeJson.items?.length ?? 0).toBeGreaterThan(0);
+
+    // Wait so offer.updated_at is strictly newer than source_offer_updated_at.
+    await page.waitForTimeout(1200);
+
     const patch = await page.request.patch(`/api/offers/${offer.id}`, {
       data: {
         target_audience: "Founder dan Head of Growth SaaS B2B",
@@ -208,7 +233,16 @@ test.describe("offer library journeys A–F", () => {
     const patchBody = (await patch.json()) as { stale_project_count?: number };
     expect((patchBody.stale_project_count ?? 0) >= 1).toBeTruthy();
 
+    const linksAfter = await page.request.get(
+      `/api/projects/${projectId}/offers`,
+    );
+    const afterJson = (await linksAfter.json()) as {
+      items: Array<{ source_is_newer: boolean }>;
+    };
+    expect(afterJson.items?.[0]?.source_is_newer).toBe(true);
+
     await page.goto(projectUrl);
+    await page.reload();
     await expect(
       page.getByText(/Produk telah diperbarui/i).first(),
     ).toBeVisible({ timeout: 20_000 });
@@ -228,8 +262,6 @@ test.describe("offer library journeys A–F", () => {
   test("Journey E — Publish snapshot includes offer_context when linked", async ({
     page,
   }) => {
-    // API-level: create offer, create project V3 with link is heavy without full generation.
-    // Verify offer detail + library endpoints and that published type accepts offer_context.
     const name = `E2E Offer E ${stamp()}`;
     const offer = await createOfferViaApi(page, {
       name,
@@ -247,13 +279,10 @@ test.describe("offer library journeys A–F", () => {
     expect(body.offer.ownership).toBe("affiliate");
     expect(Array.isArray(body.linked_projects)).toBe(true);
 
-    // Contract: publication insert shape (type-level) — reader must use snapshot only.
-    // Full publish E2E needs generated sections; covered when E2E_PROJECT_ID is publish-ready.
     if (process.env.E2E_PROJECT_ID) {
       const pub = await page.request.get(
         `/api/projects/${process.env.E2E_PROJECT_ID}`,
       );
-      // Project exists for authenticated user
       expect([200, 404]).toContain(pub.status());
     }
   });
@@ -265,7 +294,6 @@ test.describe("offer library journeys A–F", () => {
     await page.getByRole("button", { name: /Bonus Pembelian/i }).click();
     await page.getByRole("button", { name: "Lanjutkan" }).click();
 
-    // No offer selected
     await page
       .getByRole("button", { name: /Mempraktikkan materi produk/i })
       .click();
@@ -274,7 +302,6 @@ test.describe("offer library journeys A–F", () => {
     await expect(
       page.getByText(/Pilih atau buat produk utama|wajib diisi/i).first(),
     ).toBeVisible({ timeout: 10_000 });
-    // Still on ide step — cannot reach format create
     await expect(page.getByRole("button", { name: "Buat Proyek" })).toHaveCount(
       0,
     );

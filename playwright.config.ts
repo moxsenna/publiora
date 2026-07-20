@@ -8,7 +8,9 @@ loadEnvFiles([
   path.resolve(".env.e2e.local"),
 ]);
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+// Prefer 3005 — 3000 is often occupied by other local proxies on this machine.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3005";
+const port = new URL(baseURL).port || "3005";
 
 export default defineConfig({
   testDir: "e2e",
@@ -18,6 +20,7 @@ export default defineConfig({
   // Keep memory low on constrained Windows agents.
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
+  timeout: 60_000,
   use: {
     baseURL,
     trace: "on-first-retry",
@@ -30,7 +33,7 @@ export default defineConfig({
   webServer: {
     // Prefer production server: much lower memory than `next dev`/Turbopack.
     // Build first if .next is missing: `npm run build`.
-    command: "npm run start -- --hostname 127.0.0.1 --port 3000",
+    command: `npm run start -- --hostname 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

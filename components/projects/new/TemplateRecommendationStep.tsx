@@ -19,14 +19,19 @@ export function TemplateRecommendationStep({
   const [showAll, setShowAll] = React.useState(false);
 
   const ranked: RankedTemplate[] = React.useMemo(() => {
-    return rankTemplates({
-      ebookType: values.ebook_type as EbookType,
-      leadGoal: values.lead_goal,
-      bonusRole: values.bonus_role,
-      salesPositioning: values.sales_positioning,
-      desiredOutcome: values.desired_outcome || "",
-      primaryProblem: values.primary_problem || "",
-    }, SYSTEM_TEMPLATES);
+    const pick = <T extends string>(value: T | "" | undefined | null) =>
+      value ? (value as Exclude<T, "">) : undefined;
+    return rankTemplates(
+      {
+        ebookType: values.ebook_type as EbookType,
+        leadGoal: pick(values.lead_goal),
+        bonusRole: pick(values.bonus_role),
+        salesPositioning: pick(values.sales_positioning),
+        desiredOutcome: values.desired_outcome || "",
+        primaryProblem: values.primary_problem || "",
+      },
+      SYSTEM_TEMPLATES,
+    );
   }, [values]);
 
   const recommended = ranked.filter((r) => r.recommended);

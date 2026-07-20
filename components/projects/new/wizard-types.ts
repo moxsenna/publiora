@@ -16,6 +16,20 @@ const ctaGoalSchema = z.enum([
   "custom",
 ]);
 
+/**
+ * HTML <select> empty option is "". Accept "" alongside enum values so
+ * base parse succeeds; treat "" as missing in superRefine / submit mappers.
+ */
+function optionalSelectEnum<const T extends readonly [string, ...string[]]>(
+  values: T,
+) {
+  return z.union([z.enum(values), z.literal("")]).optional();
+}
+
+function hasSelectValue(value: string | undefined | null): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export const wizardFormSchema = z
   .object({
     ebook_type: z.enum(["lead_magnet", "bonus_product", "sellable_ebook"]),
@@ -34,55 +48,58 @@ export const wizardFormSchema = z
     additional_notes: z.string().trim().max(4000).optional().or(z.literal("")),
 
     // Offer selection (client-side only until submit)
-    offer_mode: z.enum(["none", "existing", "quick_create"]).optional(),
-    selected_offer_id: z.string().optional().nullable(),
+    offer_mode: optionalSelectEnum(["none", "existing", "quick_create"] as const),
+    selected_offer_id: z.string().optional().nullable().or(z.literal("")),
     no_offer: z.boolean().optional(),
 
     // Lead magnet
-    lead_goal: z
-      .enum([
-        "collect_email",
-        "join_whatsapp",
-        "webinar_registration",
-        "book_call",
-        "start_trial",
-        "visit_offer",
-        "other",
-      ])
-      .optional(),
+    lead_goal: optionalSelectEnum([
+      "collect_email",
+      "join_whatsapp",
+      "webinar_registration",
+      "book_call",
+      "start_trial",
+      "visit_offer",
+      "other",
+    ] as const),
     traffic_source: z.string().trim().max(200).optional().or(z.literal("")),
     next_offer: z.string().trim().max(500).optional().or(z.literal("")),
-    post_read_action: ctaGoalSchema.optional(),
+    post_read_action: optionalSelectEnum([
+      "visit_product",
+      "join_whatsapp",
+      "claim_bonus",
+      "buy_product",
+      "follow_creator",
+      "custom",
+    ] as const),
     cta_url: z.string().trim().max(2000).optional().or(z.literal("")),
 
     // Bonus
     parent_product: z.string().trim().max(500).optional().or(z.literal("")),
-    bonus_role: z
-      .enum([
-        "implementation_aid",
-        "ready_to_use_assets",
-        "speed_to_result",
-        "objection_handler",
-        "increase_perceived_value",
-        "support_next_step",
-        "other",
-      ])
-      .optional(),
+    bonus_role: optionalSelectEnum([
+      "implementation_aid",
+      "ready_to_use_assets",
+      "speed_to_result",
+      "objection_handler",
+      "increase_perceived_value",
+      "support_next_step",
+      "other",
+    ] as const),
     bonus_intent: z.string().trim().max(1000).optional().or(z.literal("")),
     usage_moment: z.string().trim().max(500).optional().or(z.literal("")),
 
     // Sellable (V3 modes + legacy positioning)
-    sellable_mode: z
-      .enum(["standalone", "bundle_component", "entry_to_offer"])
-      .optional(),
-    sales_positioning: z
-      .enum([
-        "entry_product",
-        "core_product",
-        "premium_authority",
-        "bundle_component",
-      ])
-      .optional(),
+    sellable_mode: optionalSelectEnum([
+      "standalone",
+      "bundle_component",
+      "entry_to_offer",
+    ] as const),
+    sales_positioning: optionalSelectEnum([
+      "entry_product",
+      "core_product",
+      "premium_authority",
+      "bundle_component",
+    ] as const),
     buyer_objections_text: z
       .string()
       .trim()
@@ -97,7 +114,7 @@ export const wizardFormSchema = z
       !!val.working_title?.trim();
 
     if (val.ebook_type === "lead_magnet") {
-      if (!val.lead_goal) {
+      if (!hasSelectValue(val.lead_goal)) {
         ctx.addIssue({
           code: "custom",
           path: ["lead_goal"],
@@ -111,9 +128,9 @@ export const wizardFormSchema = z
           message: "Masukkan ide lead magnet.",
         });
       }
-      if (val.post_read_action) {
+      if (hasSelectValue(val.post_read_action)) {
         const requiresUrl = (CTA_URL_REQUIRED_GOALS as CtaGoal[]).includes(
-          val.post_read_action,
+          val.post_read_action as CtaGoal,
         );
         if (requiresUrl) {
           const url = val.cta_url?.trim() ?? "";
@@ -129,7 +146,7 @@ export const wizardFormSchema = z
     }
 
     if (val.ebook_type === "bonus_product") {
-      if (!val.selected_offer_id && !val.parent_product?.trim()) {
+      if (!hasSelectValue(val.selected_offer_id) && !val.parent_product?.trim()) {
         ctx.addIssue({
           code: "custom",
           path: ["selected_offer_id"],
@@ -146,17 +163,17 @@ export const wizardFormSchema = z
     }
 
     if (val.ebook_type === "sellable_ebook") {
-      if (!val.sellable_mode && !val.sales_positioning) {
+      if (!hasSelectValue(val.sellable_mode) && !hasSelectValue(val.sales_positioning)) {
         ctx.addIssue({
           code: "custom",
           path: ["sellable_mode"],
           message: "Pilih peran ebook ini.",
         });
       }
-      const mode = val.sellable_mode;
+      const mode = hasSelectValue(val.sellable_mode) ? val.sellable_mode : undefined;
       if (
         (mode === "bundle_component" || mode === "entry_to_offer") &&
-        !val.selected_offer_id
+        !hasSelectValue(val.selected_offer_id)
       ) {
         ctx.addIssue({
           code: "custom",
@@ -228,27 +245,27 @@ export function hasTypeSpecificDirty(
 ): boolean {
   if (ebookType === "lead_magnet") {
     return Boolean(
-      values.lead_goal ||
+      hasSelectValue(values.lead_goal) ||
         values.traffic_source?.trim() ||
-        values.selected_offer_id ||
+        hasSelectValue(values.selected_offer_id) ||
         values.next_offer?.trim() ||
-        values.post_read_action ||
+        hasSelectValue(values.post_read_action) ||
         values.cta_url?.trim(),
     );
   }
   if (ebookType === "bonus_product") {
     return Boolean(
-      values.selected_offer_id ||
+      hasSelectValue(values.selected_offer_id) ||
         values.parent_product?.trim() ||
         values.bonus_intent?.trim() ||
-        values.bonus_role ||
+        hasSelectValue(values.bonus_role) ||
         values.usage_moment?.trim(),
     );
   }
   return Boolean(
-    values.sellable_mode ||
-      values.sales_positioning ||
-      values.selected_offer_id ||
+    hasSelectValue(values.sellable_mode) ||
+      hasSelectValue(values.sales_positioning) ||
+      hasSelectValue(values.selected_offer_id) ||
       values.buyer_objections_text?.trim(),
   );
 }
@@ -257,7 +274,8 @@ function relationshipForWizard(
   values: WizardFormValues,
 ): ProjectOfferRelationship | null {
   if (values.ebook_type === "lead_magnet") {
-    return values.selected_offer_id || values.offer_mode === "existing"
+    return hasSelectValue(values.selected_offer_id) ||
+      values.offer_mode === "existing"
       ? "promotes"
       : null;
   }
@@ -321,9 +339,20 @@ export function toCreateProjectV3(
       offer_context,
       business_context: {
         type: "lead_magnet" as const,
-        lead_goal: values.lead_goal!,
+        lead_goal: (hasSelectValue(values.lead_goal)
+          ? values.lead_goal
+          : "other") as
+          | "collect_email"
+          | "join_whatsapp"
+          | "webinar_registration"
+          | "book_call"
+          | "start_trial"
+          | "visit_offer"
+          | "other",
         traffic_source: values.traffic_source?.trim() || null,
-        post_read_action: values.post_read_action ?? null,
+        post_read_action: hasSelectValue(values.post_read_action)
+          ? values.post_read_action
+          : null,
         cta_url: values.cta_url?.trim() || null,
       },
     };
@@ -338,7 +367,7 @@ export function toCreateProjectV3(
       offer_context,
       business_context: {
         type: "bonus_product" as const,
-        bonus_role: values.bonus_role ?? null,
+        bonus_role: hasSelectValue(values.bonus_role) ? values.bonus_role : null,
         bonus_intent:
           values.bonus_intent?.trim() ||
           values.desired_outcome?.trim() ||
@@ -354,13 +383,13 @@ export function toCreateProjectV3(
     .filter(Boolean)
     .slice(0, 8);
 
-  const sellable_mode =
-    values.sellable_mode ??
-    (values.sales_positioning === "bundle_component"
+  const sellable_mode = hasSelectValue(values.sellable_mode)
+    ? values.sellable_mode
+    : values.sales_positioning === "bundle_component"
       ? "bundle_component"
       : values.sales_positioning === "entry_product"
         ? "entry_to_offer"
-        : "standalone");
+        : "standalone";
 
   return {
     version: 3 as const,

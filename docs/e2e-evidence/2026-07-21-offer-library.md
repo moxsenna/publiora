@@ -39,21 +39,25 @@ Without credentials, Playwright **skips** these suites cleanly (same pattern as 
 
 | Check | Result |
 |---|---|
-| `npx tsc --noEmit` | clean |
-| `npm test` (vitest) | 40 files / 592 tests pass |
-| `npx playwright test … --list` | 11 tests registered (7 journeys + 4 V3 shell) |
-| `npx playwright test e2e/offer-library-journeys.spec.ts e2e/type-aware-project-create.spec.ts --project=chromium` | **11 skipped** — `E2E_EMAIL` / `E2E_PASSWORD` not set in `.env.local` (suite gates with `test.skip`) |
+| Local Supabase migrations `20260721000001`–`003` | applied via `npx supabase db reset` |
+| Ephemeral E2E user | created against local Supabase (`OFFERS_TABLE_OK=yes`) |
+| `npm run build` | success |
+| App server | `http://127.0.0.1:3005` (port 3000 occupied by unrelated proxy) |
+| `npx tsc --noEmit` / vitest | clean / 592 pass earlier in branch |
+| Playwright chromium | **11 passed / 0 failed** (21.5s) |
 
-To execute live (after migrations 20260721000001–003 on target Supabase):
+Command that went green:
 
 ```bash
-# add to .env.e2e.local (gitignored)
-# E2E_EMAIL=...
-# E2E_PASSWORD=...
+# .env.local → local Supabase (127.0.0.1:54321)
+# .env.e2e.local → E2E_EMAIL / E2E_PASSWORD / PLAYWRIGHT_BASE_URL=http://127.0.0.1:3005
 npm run build
-npx playwright test e2e/offer-library-journeys.spec.ts e2e/type-aware-project-create.spec.ts --project=chromium
-npx playwright test e2e/offer-library-journeys.spec.ts --project=mobile
+npm run start -- --hostname 127.0.0.1 --port 3005
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3005 \
+  npx playwright test e2e/offer-library-journeys.spec.ts e2e/type-aware-project-create.spec.ts --project=chromium
 ```
+
+Log: `playwright-offer-green.log` (local, gitignored noise ok).
 
 ## Desktop / mobile UI evidence
 

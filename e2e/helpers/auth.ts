@@ -116,7 +116,7 @@ export async function loginWithStorage(page: Page): Promise<{
   projectId?: string;
 }> {
   const { session, storageKey } = await fetchE2ESession();
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3005";
   await injectSupabaseSessionCookies(page.context(), session, storageKey, baseURL);
 
   await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
