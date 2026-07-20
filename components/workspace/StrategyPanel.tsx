@@ -15,7 +15,7 @@ import { StrategyFieldEditor } from "@/components/workspace/StrategyFieldEditor"
 import { Send, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/message";
-import type { StrategyNextAction } from "@/types/strategy";
+import type { EbookStrategy, StrategyNextAction } from "@/types/strategy";
 import {
   STRATEGY_COPY_ID,
   STRATEGY_STARTER_REPLIES_ID,
@@ -41,6 +41,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const [text, setText] = React.useState("");
   const [pendingText, setPendingText] = React.useState<string | null>(null);
   const [editorOpen, setEditorOpen] = React.useState(false);
+  const [editorInitialField, setEditorInitialField] = React.useState<keyof EbookStrategy | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const taRef = React.useRef<HTMLTextAreaElement>(null);
   const sendStatusRef = React.useRef<HTMLDivElement>(null);
@@ -286,12 +287,20 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           <>
             <StrategyBriefCard
               strategy={strategy}
-              onEdit={() => setEditorOpen(true)}
+              onEdit={() => {
+                setEditorInitialField(null);
+                setEditorOpen(true);
+              }}
+              onEditField={(key) => {
+                setEditorInitialField(key);
+                setEditorOpen(true);
+              }}
             />
             <StrategyReadinessCard
               readinessScore={readinessScore}
               missingFields={missingFields}
               nextAction={nextAction}
+              onRequestOutline={onRequestOutline}
             />
           </>
         ) : (
@@ -319,12 +328,20 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           <>
             <StrategyBriefCard
               strategy={strategy}
-              onEdit={() => setEditorOpen(true)}
+              onEdit={() => {
+                setEditorInitialField(null);
+                setEditorOpen(true);
+              }}
+              onEditField={(key) => {
+                setEditorInitialField(key);
+                setEditorOpen(true);
+              }}
             />
             <StrategyReadinessCard
               readinessScore={readinessScore}
               missingFields={missingFields}
               nextAction={nextAction}
+              onRequestOutline={onRequestOutline}
             />
           </>
         ) : (
@@ -345,9 +362,13 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
       {strategy && (
         <StrategyFieldEditor
           open={editorOpen}
-          onClose={() => setEditorOpen(false)}
+          onClose={() => {
+            setEditorOpen(false);
+            setEditorInitialField(null);
+          }}
           projectId={projectId}
           strategy={strategy}
+          initialField={editorInitialField}
         />
       )}
     </div>

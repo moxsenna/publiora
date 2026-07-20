@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardBody } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { Button } from "@/components/ui/Button";
 import { AlertTriangle, ArrowRight, Edit3, FileText, PenTool } from "lucide-react";
 import type { StrategyNextAction } from "@/types/strategy";
 import {
@@ -16,6 +17,8 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
+const MAX_VISIBLE_MISSING = 3;
+
 const NEXT_ACTION_ICONS: Record<StrategyNextAction, React.ReactNode> = {
   continue_strategy: <Edit3 className="h-4 w-4" />,
   create_outline: <FileText className="h-4 w-4" />,
@@ -23,20 +26,39 @@ const NEXT_ACTION_ICONS: Record<StrategyNextAction, React.ReactNode> = {
   start_writing: <PenTool className="h-4 w-4" />,
 };
 
+function missingFieldLabel(field: string): string {
+  return STRATEGY_MISSING_FIELD_SHORT_LABELS[field] ?? field.replace(/_/g, " ");
+}
+
 interface StrategyReadinessCardProps {
   readinessScore: number;
   missingFields: string[];
   nextAction: StrategyNextAction;
+  /** Called when user clicks the primary CTA (Buat/Buka struktur ebook). */
+  onRequestOutline?: () => void;
 }
 
 export function StrategyReadinessCard({
   readinessScore,
   missingFields,
   nextAction,
+  onRequestOutline,
 }: StrategyReadinessCardProps) {
   const score = Math.max(0, Math.min(100, readinessScore));
   const label = STRATEGY_NEXT_ACTION_LABELS[nextAction] ?? nextAction;
   const icon = NEXT_ACTION_ICONS[nextAction] ?? null;
+
+  // Determine primary CTA
+  const nMissing = missingFields.length;
+  const canCreateOutline = nextAction !== "continue_strategy";
+
+  // Whether outline already exists (review_outline or later)
+  const outlineExists =
+    nextAction === "review_outline" || nextAction === "start_writing";
+
+  // Missing list with max 3 + overflow
+  const visibleMissing = missingFields.slice(0, MAX_VISIBLE_MISSING);
+  const overflowCount = missingFields.length - MAX_VISIBLE_MISSING;
 
   return (
     <Card>
@@ -85,17 +107,21 @@ export function StrategyReadinessCard({
               {STRATEGY_COPY_ID.missingSectionTitle}
             </h4>
             <ul className="space-y-1.5">
-              {missingFields.map((field) => (
+              {visibleMissing.map((field) => (
                 <li
                   key={field}
                   className="flex items-start gap-2 text-sm text-[var(--color-deep-gray)]"
                 >
                   <span className="inline-block mt-0.5 h-1.5 w-1.5 rounded-full bg-[var(--color-gold)] shrink-0" />
-                  <span>
-                    {STRATEGY_MISSING_FIELD_SHORT_LABELS[field] ?? field.replace(/_/g, " ")}
-                  </span>
+                  <span className="break-words">{missingFieldLabel(field)}</span>
                 </li>
               ))}
+              {overflowCount > 0 && (
+                <li className="flex items-start gap-2 text-sm text-[var(--color-medium-gray)] italic">
+                  <span className="inline-block mt-0.5 h-1.5 w-1.5 rounded-full bg-[var(--color-medium-gray)] shrink-0" />
+                  <span>+{overflowCount} lainnya</span>
+                </li>
+              )}
             </ul>
           </div>
         )}
@@ -105,6 +131,35 @@ export function StrategyReadinessCard({
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
             {STRATEGY_COPY_ID.allComplete}
           </div>
+        )}
+
+        {/* Primary CTA */}
+        {!canCreateOutline && nMissing > 0 && (
+          <p className="text-xs text-[var(--color-medium-gray)] text-center">
+            {STRATEGY_COPY_ID.footerIncomplete(nMissing)}
+          </p>
+        )}
+
+        {canCreateOutline && !outlineExists && (
+          <Button
+            onClick={onRequestOutline}
+            disabled={!onRequestOutline}
+            className="w-full"
+          >
+            <FileText className="h-4 w-4 mr-1.5" />
+            {STRATEGY_COPY_ID.createOutline}
+          </Button>
+        )}
+
+        {canCreateOutline && outlineExists && (
+          <Button
+            variant="outline"
+            onClick={onRequestOutline}
+            className="w-full"
+          >
+            <ArrowRight className="h-4 w-4 mr-1.5" />
+            {STRATEGY_COPY_ID.openOutline}
+          </Button>
         )}
       </CardBody>
     </Card>

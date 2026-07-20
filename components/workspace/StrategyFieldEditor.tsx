@@ -40,6 +40,8 @@ interface StrategyFieldEditorProps {
   onClose: () => void;
   projectId: string;
   strategy: EbookStrategy;
+  /** Optional field key to focus when the editor opens. */
+  initialField?: keyof EbookStrategy | null;
 }
 
 export function StrategyFieldEditor({
@@ -47,6 +49,7 @@ export function StrategyFieldEditor({
   onClose,
   projectId,
   strategy,
+  initialField,
 }: StrategyFieldEditorProps) {
   const patch = usePatchStrategy();
   const pushToast = useUiStore((s) => s.pushToast);
@@ -66,6 +69,23 @@ export function StrategyFieldEditor({
     }
     setForm(next);
   }, [open, strategy]);
+
+  // Auto-focus the initialField input when the editor opens
+  React.useEffect(() => {
+    if (!open || !initialField) return;
+    // Small delay so the Modal has finished its open transition
+    const id = setTimeout(() => {
+      const el = document.getElementById(`strat-field-${initialField}`);
+      if (el) {
+        el.focus();
+        // If it is a textarea (array fields), move cursor to end
+        if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
+          el.setSelectionRange(el.value.length, el.value.length);
+        }
+      }
+    }, 100);
+    return () => clearTimeout(id);
+  }, [open, initialField]);
 
   const setField = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
