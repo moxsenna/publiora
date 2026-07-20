@@ -2,18 +2,26 @@
 
 import { cn } from "@/lib/utils";
 
-const STEPS = [
+const ALL_STEPS = [
   { id: 1, label: "Tujuan" },
-  { id: 2, label: "Brief" },
+  { id: 2, label: "Ide & Produk" },
   { id: 3, label: "Format" },
   { id: 4, label: "Tinjau" },
 ] as const;
 
-export function NewProjectStepProgress({ step }: { step: number }) {
+export function NewProjectStepProgress({
+  step,
+  maxStep = 4,
+}: {
+  step: number;
+  maxStep?: number;
+}) {
+  const STEPS = ALL_STEPS.filter((s) => s.id <= maxStep);
+
   return (
     <nav aria-label="Langkah pembuatan proyek" className="w-full">
       <ol className="flex items-center gap-1 sm:gap-2">
-        {STEPS.map((s, idx) => {
+        {STEPS.map((s) => {
           const active = step === s.id;
           const done = step > s.id;
           return (
@@ -39,31 +47,14 @@ export function NewProjectStepProgress({ step }: { step: number }) {
                       "border-[var(--color-publiora-border)]",
                   )}
                 >
-                  {s.id}
+                  {done && !active ? "✓" : s.id}
                 </span>
-                <span className="truncate hidden sm:inline font-medium">
-                  {s.label}
-                </span>
-                <span className="sm:hidden font-medium">{s.id}/4</span>
+                <span className="truncate font-medium">{s.label}</span>
               </div>
-              {idx < STEPS.length - 1 && (
-                <div
-                  className={cn(
-                    "mx-1 h-px flex-1 min-w-2",
-                    done
-                      ? "bg-[var(--color-publiora-black)]"
-                      : "bg-[var(--color-publiora-border)]",
-                  )}
-                  aria-hidden
-                />
-              )}
             </li>
           );
         })}
       </ol>
-      <p className="sr-only">
-        Langkah {step} dari 4: {STEPS[step - 1]?.label}
-      </p>
     </nav>
   );
 }

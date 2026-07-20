@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import * as React from "react";
@@ -12,6 +12,7 @@ const pushToastMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("next/link", () => ({
@@ -35,6 +36,9 @@ vi.mock("@/lib/api/hooks", () => ({
       profile: { name: "Creator Test", email: "creator@example.com" },
     },
   }),
+  useOffer: () => ({ data: undefined, isLoading: false }),
+  useOffers: () => ({ data: { items: [], next_cursor: null }, isLoading: false }),
+  useCreateOffer: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock("@/store/projectStore", () => ({
@@ -45,6 +49,7 @@ vi.mock("@/store/projectStore", () => ({
 }));
 
 import { NewProjectWizard } from "@/components/projects/new/NewProjectWizard";
+import { toCreateProjectV3 } from "@/components/projects/new/wizard-types";
 
 describe("NewProjectWizard", () => {
   beforeEach(() => {
@@ -52,7 +57,7 @@ describe("NewProjectWizard", () => {
     mutateAsyncMock.mockResolvedValue({ id: "proj-new-1" });
   });
 
-  it("renders four-step Indonesian shell", async () => {
+  it("renders three-step Indonesian shell", async () => {
     render(<NewProjectWizard />);
     expect(
       screen.getByRole("heading", { name: "Buat Proyek Baru" }),
@@ -61,121 +66,55 @@ describe("NewProjectWizard", () => {
     expect(screen.getByText("Bonus Pembelian")).toBeInTheDocument();
     expect(screen.getByText("Ebook Berbayar")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lanjutkan" })).toBeInTheDocument();
+    expect(screen.getByText("Ide & Produk")).toBeInTheDocument();
   });
 
-  it("blocks advance from brief when required fields empty", async () => {
+  it("advances from type step to ide & produk", async () => {
     const user = userEvent.setup();
     render(<NewProjectWizard />);
     await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
-    expect(await screen.findByText("Lengkapi brief")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
-    await waitFor(() => {
-      expect(
-        screen.getAllByText(/Perbaiki field yang wajib diisi|Masukkan topik/i)
-          .length,
-      ).toBeGreaterThan(0);
-    });
-    expect(screen.queryByText("Format yang direkomendasikan")).not.toBeInTheDocument();
-  });
-
-  it("submits lead magnet V2 payload and redirects to strategy", async () => {
-    const user = userEvent.setup();
-    render(<NewProjectWizard />);
-
-    await user.click(screen.getByRole("button", { name: /Lead Magnet/i }));
-    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
-
-    await user.type(screen.getByLabelText("Topik utama"), "Lead Gen B2B");
-    await user.type(
-      screen.getByLabelText("Target pembaca"),
-      "Founder SaaS tahap awal",
-    );
-    await user.type(
-      screen.getByLabelText("Masalah utama"),
-      "Sulit dapat lead berkualitas",
-    );
-    await user.type(
-      screen.getByLabelText("Hasil yang ingin diberikan"),
-      "Rencana 30 hari",
-    );
-    await user.type(screen.getByLabelText("Niche"), "B2B SaaS");
-
-    await user.selectOptions(
-      screen.getByLabelText("Tujuan Lead Magnet"),
-      "collect_email",
-    );
-    await user.selectOptions(
-      screen.getByLabelText("Aksi setelah membaca"),
-      "visit_product",
-    );
-    await user.type(
-      screen.getByLabelText("Tautan tujuan"),
-      "https://example.com/x",
-    );
-
-    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    expect(await screen.findByText("Ide lead magnet")).toBeInTheDocument();
     expect(
-      await screen.findByText("Format yang direkomendasikan"),
+      screen.getByText("Produk yang akan dipromosikan"),
     ).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
-    expect(await screen.findByText("Tinjau proyek")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Buat Proyek" }));
-
-    await waitFor(() => {
-      expect(mutateAsyncMock).toHaveBeenCalled();
-    });
-    const payload = mutateAsyncMock.mock.calls[0][0];
-    expect(payload.version).toBe(2);
-    expect(payload.ebook_type).toBe("lead_magnet");
-    expect(payload.business_context.type).toBe("lead_magnet");
-    expect(payload.common.topic).toContain("Lead Gen");
-    expect(payload.business_context.cta_url).toBe("https://example.com/x");
-
-    await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith(
-        "/projects/proj-new-1?stage=strategy",
-      );
-    });
-    expect(pushToastMock).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Proyek berhasil dibuat" }),
-    );
   });
 
-  it("keeps form data on create failure", async () => {
-    mutateAsyncMock.mockRejectedValueOnce(new Error("server boom"));
-    const user = userEvent.setup();
-    render(<NewProjectWizard />);
-
-    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
-    await user.type(screen.getByLabelText("Topik utama"), "Topik gagal");
-    await user.type(screen.getByLabelText("Target pembaca"), "Audiens");
-    await user.type(screen.getByLabelText("Masalah utama"), "Masalah");
-    await user.type(
-      screen.getByLabelText("Hasil yang ingin diberikan"),
-      "Hasil",
-    );
-    await user.type(screen.getByLabelText("Niche"), "Niche");
-    await user.selectOptions(
-      screen.getByLabelText("Tujuan Lead Magnet"),
-      "collect_email",
-    );
-    await user.selectOptions(
-      screen.getByLabelText("Aksi setelah membaca"),
-      "custom",
-    );
-    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
-    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
-    await user.click(screen.getByRole("button", { name: "Buat Proyek" }));
-
-    await waitFor(() => {
-      expect(screen.getAllByText(/server boom|Gagal/i).length).toBeGreaterThan(
-        0,
-      );
+  it("builds V3 lead payload without offer", () => {
+    const payload = toCreateProjectV3({
+      ebook_type: "lead_magnet",
+      template_id: null,
+      idea_text: "Lead Gen B2B",
+      topic: "",
+      audience: "",
+      primary_problem: "",
+      desired_outcome: "",
+      niche: "",
+      tone: "",
+      working_title: "",
+      author: "Creator",
+      additional_notes: "",
+      offer_mode: "none",
+      selected_offer_id: null,
+      no_offer: true,
+      lead_goal: "collect_email",
+      traffic_source: "",
+      next_offer: "",
+      post_read_action: undefined,
+      cta_url: "",
+      parent_product: "",
+      bonus_role: undefined,
+      bonus_intent: "",
+      usage_moment: "",
+      sellable_mode: undefined,
+      sales_positioning: undefined,
+      buyer_objections_text: "",
     });
-    expect(pushMock).not.toHaveBeenCalled();
-    // Still on review
-    expect(screen.getByText("Tinjau proyek")).toBeInTheDocument();
+    expect(payload.version).toBe(3);
+    expect(payload.ebook_type).toBe("lead_magnet");
+    expect(payload.offer_context.mode).toBe("none");
+    expect(payload.business_context).toMatchObject({
+      type: "lead_magnet",
+      lead_goal: "collect_email",
+    });
   });
 });

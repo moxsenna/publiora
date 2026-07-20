@@ -2,6 +2,7 @@ import { completeJson } from "@/lib/ai/provider";
 import { WRITER_SYSTEM } from "@/lib/ai/prompts";
 import type { EbookStrategy } from "@/types/strategy";
 import type { OutlineSection } from "@/types/outline";
+import type { ProjectOfferContext } from "@/types/offer";
 
 export type WriterNeighbor = {
   title: string;
@@ -32,6 +33,8 @@ export type WriterInput = {
   nextSection?: WriterNeighbor | null;
   /** Optional short plain-text summary of already-written previous section body. */
   previousSectionBodySummary?: string | null;
+  /** Safe offer snapshot fields only. */
+  offer_context?: ProjectOfferContext | null;
 };
 
 export type WriterResult = {
@@ -46,6 +49,7 @@ function line(label: string, value: string | null | undefined): string {
 
 export function buildWriterUserPrompt(input: WriterInput): string {
   const s = input.strategy ?? null;
+  const oc = input.offer_context ?? null;
   const strategyBlock = s
     ? [
         "Strategy (primary source of truth):",
@@ -84,6 +88,21 @@ export function buildWriterUserPrompt(input: WriterInput): string {
         ),
       ].join("\n")
     : "Strategy: (not available — use project metadata only)";
+
+  const offerBlock = oc
+    ? [
+        "Offer context (accepted snapshot only — do not invent features):",
+        line("relationship", oc.relationship),
+        line("offer_name", oc.snapshot.name),
+        line("ownership", oc.snapshot.ownership),
+        line("primary_outcome", oc.snapshot.primary_outcome),
+        line(
+          "destination_url_present",
+          oc.snapshot.destination_url ? "yes" : "no",
+        ),
+        "Name the offer only when useful. Avoid repetitive promotion. Affiliate wording must not claim ownership.",
+      ].join("\n")
+    : "Offer context: (none)";
 
   const outlineBlock =
     input.outlineSections && input.outlineSections.length
@@ -128,6 +147,8 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     "",
     strategyBlock,
     "",
+    offerBlock,
+    "",
     outlineBlock,
     outlineBlock ? "" : null,
     neighbors,
@@ -139,7 +160,7 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     line("target_words", String(targetWords)),
     line("position", input.section.position != null ? String(input.section.position) : null),
     "",
-    "Rules reminder: do not re-introduce the whole ebook; continue from previous section; match tone and promise.",
+    "Rules reminder: do not re-introduce the whole ebook; continue from previous section; match tone and promise; never fabricate product capabilities.",
   ]
     .filter((x) => x !== null)
     .join("\n");

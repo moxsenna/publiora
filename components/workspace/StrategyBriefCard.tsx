@@ -15,6 +15,10 @@ import {
   STRATEGY_COPY_ID,
   strategyBriefFieldLabel,
 } from "@/lib/workflow/strategy-copy";
+import { OfferOwnershipBadge } from "@/components/offers/OfferOwnershipBadge";
+import { OfferTypeBadge } from "@/components/offers/OfferTypeBadge";
+import { describeProjectOfferRelationship } from "@/lib/offers/copy";
+import type { Offer, ProjectOfferLink } from "@/types/offer";
 
 // ---------------------------------------------------------------------------
 // Field display helpers
@@ -172,6 +176,13 @@ interface StrategyBriefCardProps {
   ebookType?: EbookType | null;
   /** Called when a field row is clicked, so the parent can open the editor focused on that field. */
   onEditField?: (key: keyof EbookStrategy) => void;
+  linkedOffer?: {
+    offer: Offer;
+    link: ProjectOfferLink;
+    source_is_newer: boolean;
+  } | null;
+  onSyncOffer?: () => void;
+  onReplaceOffer?: () => void;
 }
 
 export function StrategyBriefCard({
@@ -179,6 +190,9 @@ export function StrategyBriefCard({
   onEdit,
   onEditField,
   ebookType,
+  linkedOffer = null,
+  onSyncOffer,
+  onReplaceOffer,
 }: StrategyBriefCardProps) {
   const requiredKeys = ebookType
     ? getRequiredStrategyFields(ebookType)
@@ -209,6 +223,43 @@ export function StrategyBriefCard({
       </CardHeader>
 
       <CardBody>
+        {linkedOffer ? (
+          <div className="mb-4 rounded-lg border border-[var(--color-publiora-border)] p-3 space-y-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)]">
+              Produk / Penawaran
+            </div>
+            <div className="text-sm font-medium text-[var(--color-publiora-black)]">
+              {linkedOffer.link.context_snapshot.name}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <OfferTypeBadge offerType={linkedOffer.link.context_snapshot.offer_type} />
+              <OfferOwnershipBadge ownership={linkedOffer.link.context_snapshot.ownership} />
+              {linkedOffer.source_is_newer ? (
+                <Badge variant="warning">Produk telah diperbarui</Badge>
+              ) : null}
+            </div>
+            <p className="text-xs text-[var(--color-medium-gray)]">
+              Relasi:{" "}
+              {describeProjectOfferRelationship(
+                ebookType ?? "lead_magnet",
+                linkedOffer.link.relationship,
+              )}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {onSyncOffer && linkedOffer.source_is_newer ? (
+                <Button type="button" size="sm" variant="secondary" onClick={onSyncOffer}>
+                  Sinkronkan
+                </Button>
+              ) : null}
+              {onReplaceOffer ? (
+                <Button type="button" size="sm" variant="ghost" onClick={onReplaceOffer}>
+                  Ganti
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {/* Core fields (always visible) */}
         <ul className="space-y-2" aria-label="Informasi inti strategi ebook">
           {CORE_FIELDS.map((f) => (

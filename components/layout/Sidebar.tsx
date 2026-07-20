@@ -8,6 +8,7 @@ import {
   Folder,
   BookOpen,
   CreditCard,
+  Package,
   Plus,
   ChevronLeft,
   X,
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: Folder },
+  { href: "/offers", label: "Produk & Penawaran", icon: Package },
   { href: "/library", label: "Library", icon: BookOpen },
   { href: "/settings/billing", label: "Billing", icon: CreditCard },
 ];

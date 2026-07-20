@@ -1,6 +1,7 @@
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
 import { runPlanner } from "@/lib/ai/agents/planner";
+import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 import { chargeGeneration, grantCredits } from "@/lib/credits";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 import {
@@ -166,6 +167,12 @@ export async function POST(
 
     // ---- Run planner ----
 
+    const offer_context = await loadPrimaryProjectOfferContext({
+      supabase,
+      projectId: id,
+      ownerId: user.id,
+    });
+
     const planned = await runPlanner({
       project: {
         title: project.title,
@@ -179,6 +186,7 @@ export async function POST(
       strategy,
       readinessScore,
       userInstruction,
+      offer_context,
     });
 
     // ---- Persist outline ----

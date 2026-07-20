@@ -3,6 +3,7 @@ import { completeJson } from "@/lib/ai/provider";
 import { PLANNER_SYSTEM } from "@/lib/ai/prompts";
 import type { OutlineSection } from "@/types/outline";
 import type { EbookStrategy } from "@/types/strategy";
+import type { ProjectOfferContext } from "@/types/offer";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,6 +27,8 @@ export interface PlannerInput {
   readinessScore: number;
   /** Optional free-form user instruction to guide the AI. */
   userInstruction?: string;
+  /** Accepted offer snapshot for outline patterns. */
+  offer_context?: ProjectOfferContext | null;
 }
 
 export interface PlannerResult {
@@ -185,7 +188,13 @@ export function normalizePlannerResult(
  * - tone
  */
 export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
-  const { project, strategy, readinessScore, userInstruction } = input;
+  const {
+    project,
+    strategy,
+    readinessScore,
+    userInstruction,
+    offer_context = null,
+  } = input;
 
   // ---- Build user prompt ----
 
@@ -232,10 +241,33 @@ export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
     .filter(Boolean)
     .join("\n");
 
+  const offerBlock = offer_context
+    ? [
+        "Offer relationship context (accepted snapshot):",
+        `  relationship: ${offer_context.relationship}`,
+        `  offer_name: ${offer_context.snapshot.name}`,
+        `  ownership: ${offer_context.snapshot.ownership}`,
+        `  primary_outcome: ${offer_context.snapshot.primary_outcome ?? "(none)"}`,
+      ].join("\n")
+    : "Offer relationship context: (none)";
+
+  const patternGuidance =
+    project.ebook_type === "lead_magnet"
+      ? "Outline pattern for lead magnet: quick problem framing → immediate insight → action steps → quick win → bridge to offer → CTA."
+      : project.ebook_type === "bonus_product"
+        ? "Outline pattern for bonus: when to use the bonus → setup → implementation → checklist/assets → return to parent product."
+        : offer_context?.relationship === "upsells_to"
+          ? "Sellable with upsell: deliver full paid value first; place upsell bridge near the end only."
+          : "Sellable outline: practical depth, clear progression, no weak filler.";
+
   const userParts = [
     projectBlock,
     "",
     strategyBlock,
+    "",
+    offerBlock,
+    "",
+    patternGuidance,
   ];
 
   if (userInstruction) {

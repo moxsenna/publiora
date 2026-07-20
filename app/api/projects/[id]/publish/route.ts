@@ -11,6 +11,7 @@ import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 import type { Project } from "@/types/project";
 import type { Section } from "@/types/section";
 import type { Outline } from "@/types/outline";
+import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 
 function slugify(s: string): string {
   return s
@@ -268,6 +269,36 @@ export async function POST(
         : null
       : null;
 
+    const offer_context = await loadPrimaryProjectOfferContext({
+      supabase,
+      projectId: id,
+      ownerId: user.id,
+    });
+
+    if (project.ebook_type === "bonus_product" && !offer_context) {
+      await restoreProjectStatus(
+        supabase,
+        id,
+        previousStatus === "published"
+          ? "generated"
+          : (previousStatus ?? "generated"),
+        now,
+        previousPublishedAt,
+      );
+      return jsonError(
+        "Bonus Pembelian membutuhkan penawaran utama yang terhubung sebelum publish.",
+        400,
+        "bonus_requires_offer",
+      );
+    }
+
+    const offerContextSnapshot = offer_context
+      ? {
+          relationship: offer_context.relationship,
+          snapshot: offer_context.snapshot,
+        }
+      : null;
+
     const slug =
       slugify(project.title) + "-" + Math.random().toString(36).slice(2, 6);
 
@@ -289,6 +320,7 @@ export async function POST(
         cta_goal: project.cta_goal ?? null,
         final_cta: finalCta,
         cta_url: ctaUrl,
+        offer_context: offerContextSnapshot,
       })
       .select("*")
       .single();

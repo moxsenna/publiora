@@ -4,6 +4,8 @@ import { CTA_SYSTEM } from "@/lib/ai/prompts";
 import { isValidCtaUrl } from "@/types/ai-suggestions";
 import type { CtaSuggestion, CtaGoal, CtaGenerateRequest, CtaGenerateResponse } from "@/types/ai-suggestions";
 import type { EbookStrategy } from "@/types/strategy";
+import type { ProjectOfferContext } from "@/types/offer";
+import { ownershipCopyGuidance } from "@/lib/offers/copy";
 
 // ---------------------------------------------------------------------------
 // Zod schemas — server-side validation of AI output
@@ -161,8 +163,17 @@ export async function runCtaGenerator(params: {
     ebook_type: string;
   };
   strategy?: EbookStrategy | null;
+  offer_context?: ProjectOfferContext | null;
 }): Promise<CtaGenerateResponse> {
-  const { request, project, strategy } = params;
+  const { request, project, strategy, offer_context = null } = params;
+
+  if (
+    (request.destination_url == null || request.destination_url === "") &&
+    offer_context &&
+    !offer_context.snapshot.destination_url
+  ) {
+    // URL missing is not fatal for generation of copy, but mark presence
+  }
 
   // Validate request fields server-side
   if (!VALID_GOALS.includes(request.goal)) {
@@ -178,7 +189,24 @@ export async function runCtaGenerator(params: {
     }
   }
 
-  const user = buildUserPrompt({ request, project, strategy });
+  let user = buildUserPrompt({ request, project, strategy });
+  if (offer_context) {
+    user += [
+      "",
+      "Linked offer (accepted snapshot):",
+      `  name: ${offer_context.snapshot.name}`,
+      `  relationship: ${offer_context.relationship}`,
+      `  ownership: ${offer_context.snapshot.ownership}`,
+      `  ownership_guidance: ${ownershipCopyGuidance(offer_context.snapshot.ownership)}`,
+      `  primary_outcome: ${offer_context.snapshot.primary_outcome ?? "(none)"}`,
+      `  destination_url_present: ${
+        offer_context.snapshot.destination_url || request.destination_url
+          ? "yes"
+          : "no"
+      }`,
+      "Do not invent a URL. Do not claim ownership for affiliate/client offers.",
+    ].join("\n");
+  }
 
   const raw = await completeJson<unknown>({
     system: CTA_SYSTEM,

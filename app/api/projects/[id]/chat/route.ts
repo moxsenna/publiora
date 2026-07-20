@@ -1,6 +1,7 @@
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
 import { runStrategist } from "@/lib/ai/agents/strategist";
+import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 import {
   normalizeProjectState,
   mergeProjectState,
@@ -95,6 +96,12 @@ export async function POST(
   //    On AI failure: no user msg insert, no state upsert, no assistant insert.
   let strategistResult: Awaited<ReturnType<typeof runStrategist>>;
   try {
+    const offer_context = await loadPrimaryProjectOfferContext({
+      supabase,
+      projectId: id,
+      ownerId: user.id,
+    });
+
     strategistResult = await runStrategist({
       currentState,
       project: {
@@ -110,6 +117,7 @@ export async function POST(
       },
       history: historyRows,
       userMessage: content,
+      offer_context,
     });
   } catch (err) {
     const message =

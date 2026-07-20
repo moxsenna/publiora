@@ -29,4 +29,9 @@ export const qk = {
   me: ["auth", "me"] as const,
   titles: (projectId: string) => ["projects", projectId, "titles"] as const,
   ctas: (projectId: string) => ["projects", projectId, "ctas"] as const,
+  offers: (params?: { status?: string; search?: string }) =>
+    ["offers", params?.status ?? "active", params?.search ?? ""] as const,
+  offer: (id: string) => ["offers", "detail", id] as const,
+  projectOffers: (projectId: string) =>
+    ["projects", projectId, "offers"] as const,
 };

@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   useMessages,
   useProject,
+  useProjectOffers,
   useSendMessage,
   useStrategy,
 } from "@/lib/api/hooks";
@@ -18,6 +19,8 @@ import { StrategyBriefCard } from "@/components/workspace/StrategyBriefCard";
 import { StrategyReadinessCard } from "@/components/workspace/StrategyReadinessCard";
 import { StrategyFieldEditor } from "@/components/workspace/StrategyFieldEditor";
 import { StrategyBriefSheet } from "@/components/workspace/StrategyBriefSheet";
+import { OfferSyncDialog } from "@/components/offers/OfferSyncDialog";
+import { LegacyOfferConversionCard } from "@/components/offers/LegacyOfferConversionCard";
 import { Send, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/message";
@@ -47,6 +50,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const { data: messages, isLoading: msgsLoading } = useMessages(projectId);
   const { data: strategyData, isLoading: strategyLoading } = useStrategy(projectId);
   const { data: project } = useProject(projectId);
+  const { data: projectOffers } = useProjectOffers(projectId);
   const ebookType = project?.ebook_type ?? "lead_magnet";
   const send = useSendMessage();
   const pushToast = useUiStore((s) => s.pushToast);
@@ -56,6 +60,12 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editorInitialField, setEditorInitialField] = React.useState<keyof EbookStrategy | null>(null);
   const [briefSheetOpen, setBriefSheetOpen] = React.useState(false);
+  const [syncOpen, setSyncOpen] = React.useState(false);
+
+  const primaryOffer = React.useMemo(() => {
+    const items = projectOffers?.items ?? [];
+    return items.find((i) => i.link.is_primary) ?? items[0] ?? null;
+  }, [projectOffers]);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const taRef = React.useRef<HTMLTextAreaElement>(null);
   const sendStatusRef = React.useRef<HTMLDivElement>(null);
@@ -336,6 +346,17 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
             <StrategyBriefCard
               strategy={strategy}
               ebookType={ebookType}
+              linkedOffer={primaryOffer}
+              onSyncOffer={() => setSyncOpen(true)}
+              onReplaceOffer={() => {
+                if (
+                  window.confirm(
+                    "Ganti produk yang terhubung?\n\nStrategi dan CTA tidak akan diubah sampai Anda memilih field yang ingin diterapkan dari produk baru.",
+                  )
+                ) {
+                  setBriefSheetOpen(true);
+                }
+              }}
               onEdit={() => {
                 setEditorInitialField(null);
                 setEditorOpen(true);
@@ -345,6 +366,13 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
                 setEditorOpen(true);
               }}
             />
+            {!primaryOffer && strategy.product_or_offer ? (
+              <LegacyOfferConversionCard
+                projectId={projectId}
+                ebookType={ebookType}
+                legacyText={strategy.product_or_offer}
+              />
+            ) : null}
             <StrategyReadinessCard
               readinessScore={readinessScore}
               missingFields={missingFields}
@@ -365,6 +393,16 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           </div>
         )}
       </div>
+
+      {primaryOffer ? (
+        <OfferSyncDialog
+          open={syncOpen}
+          onClose={() => setSyncOpen(false)}
+          projectId={projectId}
+          link={primaryOffer.link}
+          offer={primaryOffer.offer}
+        />
+      ) : null}
 
       {/* Field editor modal */}
       {strategy && (

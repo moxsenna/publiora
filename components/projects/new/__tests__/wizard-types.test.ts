@@ -11,6 +11,7 @@ function base(overrides: Partial<WizardFormValues> = {}): WizardFormValues {
   return {
     ebook_type: "lead_magnet",
     template_id: null,
+    idea_text: "Ide lead magnet singkat",
     topic: "Topik",
     audience: "Audiens",
     primary_problem: "Masalah",
@@ -20,6 +21,9 @@ function base(overrides: Partial<WizardFormValues> = {}): WizardFormValues {
     working_title: "",
     author: "Penulis",
     additional_notes: "",
+    offer_mode: "none",
+    selected_offer_id: null,
+    no_offer: true,
     lead_goal: "collect_email",
     traffic_source: "Konten organik",
     next_offer: "Offer",
@@ -27,7 +31,9 @@ function base(overrides: Partial<WizardFormValues> = {}): WizardFormValues {
     cta_url: "https://example.com",
     parent_product: "",
     bonus_role: undefined,
+    bonus_intent: "",
     usage_moment: "",
+    sellable_mode: undefined,
     sales_positioning: undefined,
     buyer_objections_text: "",
     ...overrides,
@@ -40,21 +46,26 @@ describe("wizardFormSchema", () => {
     expect(r.success).toBe(true);
   });
 
-  it("blocks lead without CTA URL when required", () => {
+  it("accepts lead without CTA URL when offer not required", () => {
     const r = wizardFormSchema.safeParse(
       base({ cta_url: "", post_read_action: "join_whatsapp" }),
     );
-    expect(r.success).toBe(false);
+    // V3: CTA URL may be deferred; invalid URL only when provided
+    expect(r.success).toBe(true);
   });
 
-  it("accepts bonus with parent product", () => {
+  it("accepts bonus with selected offer", () => {
     const r = wizardFormSchema.safeParse(
       base({
         ebook_type: "bonus_product",
         lead_goal: undefined,
         post_read_action: undefined,
         cta_url: "",
+        selected_offer_id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+        offer_mode: "existing",
+        no_offer: false,
         parent_product: "Kelas X",
+        bonus_intent: "Mempraktikkan materi produk",
         bonus_role: "implementation_aid",
         usage_moment: "Setelah modul",
       }),
@@ -62,13 +73,15 @@ describe("wizardFormSchema", () => {
     expect(r.success).toBe(true);
   });
 
-  it("blocks bonus without parent product", () => {
+  it("blocks bonus without offer", () => {
     const r = wizardFormSchema.safeParse(
       base({
         ebook_type: "bonus_product",
         lead_goal: undefined,
         post_read_action: undefined,
         parent_product: "",
+        selected_offer_id: null,
+        bonus_intent: "Mempraktikkan materi",
         bonus_role: "implementation_aid",
         usage_moment: "Kapan saja",
       }),
@@ -76,12 +89,13 @@ describe("wizardFormSchema", () => {
     expect(r.success).toBe(false);
   });
 
-  it("accepts sellable with positioning", () => {
+  it("accepts sellable standalone mode", () => {
     const r = wizardFormSchema.safeParse(
       base({
         ebook_type: "sellable_ebook",
         lead_goal: undefined,
         post_read_action: undefined,
+        sellable_mode: "standalone",
         sales_positioning: "core_product",
       }),
     );
@@ -144,8 +158,9 @@ describe("toCreateProjectV2", () => {
 describe("wizard helpers", () => {
   it("step2 fields differ by type", () => {
     expect(step2FieldsForType("lead_magnet")).toContain("lead_goal");
-    expect(step2FieldsForType("bonus_product")).toContain("parent_product");
-    expect(step2FieldsForType("sellable_ebook")).toContain("sales_positioning");
+    expect(step2FieldsForType("bonus_product")).toContain("selected_offer_id");
+    expect(step2FieldsForType("bonus_product")).toContain("bonus_intent");
+    expect(step2FieldsForType("sellable_ebook")).toContain("sellable_mode");
   });
 
   it("detects type-specific dirty state", () => {

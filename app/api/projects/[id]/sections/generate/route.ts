@@ -13,6 +13,7 @@ import {
 import type { EbookStrategy } from "@/types/strategy";
 import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 import { setOutlineSectionStatus } from "@/lib/outline/section-status";
+import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 import { planGenerationRestore } from "@/lib/outline/generation-recovery";
 
 function mapSection(row: Record<string, unknown>): Section {
@@ -375,6 +376,12 @@ async function generateOne(opts: {
       }
     }
 
+    const offer_context = await loadPrimaryProjectOfferContext({
+      supabase,
+      projectId: project.id,
+      ownerId: userId,
+    });
+
     const writtenRaw = await runWriter({
       project: {
         title: project.title,
@@ -384,6 +391,7 @@ async function generateOne(opts: {
         ebook_type: project.ebook_type,
       },
       strategy,
+      offer_context,
       outlineSections: outlineSections.map((s) => ({
         id: s.id,
         title: s.title,

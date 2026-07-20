@@ -3,6 +3,8 @@ import { completeJson } from "@/lib/ai/provider";
 import { STRATEGIST_SYSTEM } from "@/lib/ai/prompts";
 import type { EbookStrategy, ProjectStateV2, StrategistResult } from "@/types/strategy";
 import { normalizeStrategySuggestedReplies } from "@/lib/ai/strategy-suggestions";
+import type { ProjectOfferContext } from "@/types/offer";
+import { ownershipCopyGuidance } from "@/lib/offers/copy";
 
 // ---------------------------------------------------------------------------
 // Zod schema for the raw AI JSON response. Matches StrategistResult domain type.
@@ -97,6 +99,8 @@ export interface StrategistInput {
   history: { role: string; content: string }[];
   /** The latest user message for this turn. */
   userMessage: string;
+  /** Accepted project offer snapshot (never live offer unless synced). */
+  offer_context?: ProjectOfferContext | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -179,9 +183,28 @@ export async function runStrategist(
     project,
     history,
     userMessage,
+    offer_context = null,
   } = input;
 
   // ---- Build prompt ----
+
+  const offerBlock = offer_context
+    ? [
+        "Linked offer context (accepted snapshot — do not invent product details):",
+        `  relationship: ${offer_context.relationship}`,
+        `  name: ${offer_context.snapshot.name}`,
+        `  offer_type: ${offer_context.snapshot.offer_type}`,
+        `  ownership: ${offer_context.snapshot.ownership}`,
+        `  ownership_guidance: ${ownershipCopyGuidance(offer_context.snapshot.ownership)}`,
+        `  short_description: ${offer_context.snapshot.short_description ?? "(none)"}`,
+        `  target_audience: ${offer_context.snapshot.target_audience ?? "(none)"}`,
+        `  primary_problem: ${offer_context.snapshot.primary_problem ?? "(none)"}`,
+        `  primary_outcome: ${offer_context.snapshot.primary_outcome ?? "(none)"}`,
+        `  niche: ${offer_context.snapshot.niche ?? "(none)"}`,
+        `  destination_url_present: ${offer_context.snapshot.destination_url ? "yes" : "no"}`,
+        `  source_is_newer: ${offer_context.source_is_newer ? "yes (informational only — do not auto-use live offer)" : "no"}`,
+      ].join("\n")
+    : "Linked offer context: (none)";
 
   const currentStateBlock = [
     "Current strategy state:",
@@ -220,10 +243,14 @@ export async function runStrategist(
   const ebookType = project.ebook_type ?? "lead_magnet";
   const typeGuidance =
     ebookType === "lead_magnet"
-      ? "Ebook type: lead_magnet. Ensure one clear quick win, align lead goal with promise, bridge to next offer, keep length conversion-friendly. Do not re-ask known funnel_goal/traffic_source."
+      ? offer_context
+        ? "Ebook type: lead_magnet WITH linked offer. Understand product outcome; define a smaller quick win that leads to it; avoid sales brochure; do not invent product features; do not re-ask known audience/niche/offer name."
+        : "Ebook type: lead_magnet WITHOUT offer. Do not block. Help audience/value first; later clarify next offer if needed. Do not re-ask known funnel_goal/traffic_source."
       : ebookType === "bonus_product"
-        ? "Ebook type: bonus_product. Ground advice in parent product (product_or_offer). Bonus must not duplicate entire parent product. Use bonus_role and usage_moment. Deliver narrower outcome."
-        : "Ebook type: sellable_ebook. Ensure standalone paid value, clear differentiation, sufficient depth, address buyer_objections honestly.";
+        ? "Ebook type: bonus_product. Anchor to linked parent offer snapshot. Bonus must complement not duplicate parent. Ask usage moment only if missing. Keep bonus outcome narrower than parent outcome."
+        : offer_context
+          ? "Ebook type: sellable_ebook with linked destination/bundle offer. Deliver standalone paid value; upsell/cross-sell only near end; do not weaken paid product."
+          : "Ebook type: sellable_ebook. Ensure standalone paid value, clear differentiation, sufficient depth, address buyer_objections honestly.";
 
   const user = [
     `Project metadata:`,
@@ -236,6 +263,8 @@ export async function runStrategist(
     `  cta_goal: ${project.cta_goal ?? "(none)"}`,
     `  cta_url_present: ${project.cta_url_present ? "yes" : "no"}`,
     `  template_id: ${project.template_id ?? "(none)"}`,
+    "",
+    offerBlock,
     "",
     typeGuidance,
     "",

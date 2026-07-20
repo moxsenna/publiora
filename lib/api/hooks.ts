@@ -38,11 +38,20 @@ import type {
   Section,
   SectionUpdateInput,
   Subscription,
+  Offer,
+  OfferLinkedProjectSummary,
+  ProjectOfferLink,
 } from "@/types";
 import type { SendMessageInput, ChatResponse } from "@/types/message";
 import type { ProjectStateV2 } from "@/types/strategy";
 import type { EnhancementSuggestion, EnhancementAction, CtaGenerateRequest, CtaGenerateResponse } from "@/types/ai-suggestions";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
+import type {
+  CreateOfferInput,
+  PatchOfferInput,
+  QuickCreateOfferInput,
+  SyncProjectOfferInput,
+} from "@/lib/offers/schemas";
 
 const READER_ID = "reader@publiora.demo";
 
@@ -62,8 +71,11 @@ export function useProject(id: string) {
   });
 }
 
-/** V2 structured create body or legacy flat ProjectInput. */
-export type CreateProjectBody = ProjectInput | { version: 2; [key: string]: unknown };
+/** V2/V3 structured create body or legacy flat ProjectInput. */
+export type CreateProjectBody =
+  | ProjectInput
+  | { version: 2; [key: string]: unknown }
+  | { version: 3; [key: string]: unknown };
 
 export function useCreateProject() {
   const qc = useQueryClient();
@@ -662,6 +674,191 @@ export function useEnhanceSection() {
       // Do NOT invalidate sections — enhancement is non-destructive and
       // does not persist to ebook_sections.  Only invalidate billing balance.
       qc.invalidateQueries({ queryKey: qk.billing.balance });
+    },
+  });
+}
+
+// Offers
+export type OfferListItem = Offer & { linked_project_count: number };
+
+export function useOffers(params?: { status?: string; search?: string }) {
+  const status = params?.status ?? "active";
+  const search = params?.search ?? "";
+  const qs = new URLSearchParams();
+  if (status) qs.set("status", status);
+  if (search) qs.set("search", search);
+  return useQuery({
+    queryKey: qk.offers({ status, search }),
+    queryFn: () =>
+      apiFetch<{ items: OfferListItem[]; next_cursor: string | null }>(
+        `/api/offers?${qs.toString()}`,
+      ),
+  });
+}
+
+export function useOffer(id: string) {
+  return useQuery({
+    queryKey: qk.offer(id),
+    queryFn: () =>
+      apiFetch<{ offer: Offer; linked_projects: OfferLinkedProjectSummary[] }>(
+        `/api/offers/${id}`,
+      ),
+    enabled: !!id,
+  });
+}
+
+export function useCreateOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateOfferInput | QuickCreateOfferInput) =>
+      apiFetch<{ offer: Offer }>("/api/offers", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["offers"] });
+    },
+  });
+}
+
+export function useUpdateOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: PatchOfferInput }) =>
+      apiFetch<{ offer: Offer; stale_project_count: number }>(
+        `/api/offers/${id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(patch),
+        },
+      ),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["offers"] });
+      qc.setQueryData(qk.offer(data.offer.id), (prev: unknown) => {
+        if (prev && typeof prev === "object") {
+          return { ...(prev as object), offer: data.offer };
+        }
+        return prev;
+      });
+    },
+  });
+}
+
+export function useArchiveOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ archived: true }>(`/api/offers/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["offers"] });
+    },
+  });
+}
+
+export function useProjectOffers(projectId: string) {
+  return useQuery({
+    queryKey: qk.projectOffers(projectId),
+    queryFn: () =>
+      apiFetch<{
+        items: Array<{
+          link: ProjectOfferLink;
+          offer: Offer;
+          source_is_newer: boolean;
+        }>;
+      }>(`/api/projects/${projectId}/offers`),
+    enabled: !!projectId,
+  });
+}
+
+export function useLinkProjectOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      offer_id,
+      relationship,
+      is_primary = true,
+      replace_primary = false,
+    }: {
+      projectId: string;
+      offer_id: string;
+      relationship: string;
+      is_primary?: boolean;
+      replace_primary?: boolean;
+    }) =>
+      apiFetch<{ link: ProjectOfferLink; offer: Offer }>(
+        `/api/projects/${projectId}/offers`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            offer_id,
+            relationship,
+            is_primary,
+            replace_primary,
+          }),
+        },
+      ),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: qk.projectOffers(vars.projectId) });
+      qc.invalidateQueries({ queryKey: qk.strategy(vars.projectId) });
+      qc.invalidateQueries({ queryKey: ["offers"] });
+    },
+  });
+}
+
+export function useReplaceProjectOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      offer_id,
+      relationship,
+    }: {
+      projectId: string;
+      offer_id: string;
+      relationship: string;
+    }) =>
+      apiFetch<{ link: ProjectOfferLink; offer: Offer }>(
+        `/api/projects/${projectId}/offers`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            offer_id,
+            relationship,
+            is_primary: true,
+            replace_primary: true,
+          }),
+        },
+      ),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: qk.projectOffers(vars.projectId) });
+      qc.invalidateQueries({ queryKey: qk.strategy(vars.projectId) });
+    },
+  });
+}
+
+export function useSyncProjectOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      body,
+    }: {
+      projectId: string;
+      body: SyncProjectOfferInput;
+    }) =>
+      apiFetch<{
+        link: ProjectOfferLink;
+        changed_fields: unknown[];
+        snapshot: unknown;
+      }>(`/api/projects/${projectId}/offers/sync`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: qk.projectOffers(vars.projectId) });
+      qc.invalidateQueries({ queryKey: qk.strategy(vars.projectId) });
+      qc.invalidateQueries({ queryKey: qk.project(vars.projectId) });
     },
   });
 }

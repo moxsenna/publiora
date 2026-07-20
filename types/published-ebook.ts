@@ -1,6 +1,7 @@
 // Published ebook — a project that has been turned into a reader-facing artifact.
 
 import type { CtaGoal } from "@/types/ai-suggestions";
+import type { OfferContextSnapshot, ProjectOfferRelationship } from "@/types/offer";
 
 export interface PublishedEbook {
   id: string;
@@ -28,6 +29,11 @@ export interface PublishedEbook {
   final_cta: string | null;
   /** Destination URL for URL-required CTA goals. */
   cta_url: string | null;
+  /** Immutable offer context at publish time (reader must not query live offers). */
+  offer_context?: {
+    relationship: ProjectOfferRelationship;
+    snapshot: OfferContextSnapshot;
+  } | null;
 }
 
 export interface PublishInput {

@@ -12,6 +12,7 @@ import {
 } from "@/types/ai-suggestions";
 import type { EbookStrategy } from "@/types/strategy";
 import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
+import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 
 // ---------------------------------------------------------------------------
 // Request body schema
@@ -122,6 +123,20 @@ export async function POST(
       throw err;
     }
 
+    const offer_context = await loadPrimaryProjectOfferContext({
+      supabase,
+      projectId: id,
+      ownerId: user.id,
+    });
+
+    // Prefer project CTA URL, else accepted offer snapshot URL for generation context
+    if (
+      (!request.destination_url || request.destination_url === "") &&
+      offer_context?.snapshot.destination_url
+    ) {
+      request.destination_url = offer_context.snapshot.destination_url;
+    }
+
     // ---- Generate CTAs ----
     const result = await runCtaGenerator({
       request,
@@ -132,6 +147,7 @@ export async function POST(
         ebook_type: project.ebook_type,
       },
       strategy,
+      offer_context,
     });
 
     return Response.json(result);
