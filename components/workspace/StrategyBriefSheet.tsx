@@ -6,6 +6,7 @@ import { StrategyBriefCard } from "@/components/workspace/StrategyBriefCard";
 import { StrategyReadinessCard } from "@/components/workspace/StrategyReadinessCard";
 import type { EbookStrategy, StrategyNextAction } from "@/types/strategy";
 import type { EbookType } from "@/types/project";
+import type { Offer, ProjectOfferLink } from "@/types/offer";
 
 // ---------------------------------------------------------------------------
 // StrategyBriefSheet
@@ -36,6 +37,13 @@ interface StrategyBriefSheetProps {
   onEdit: () => void;
   onEditField: (key: keyof EbookStrategy) => void;
   onRequestOutline?: () => void;
+  linkedOffer?: {
+    offer: Offer;
+    link: ProjectOfferLink;
+    source_is_newer: boolean;
+  } | null;
+  onSyncOffer?: () => void;
+  onReplaceOffer?: () => void;
 }
 
 export function StrategyBriefSheet({
@@ -49,6 +57,9 @@ export function StrategyBriefSheet({
   onEdit,
   onEditField,
   onRequestOutline,
+  linkedOffer = null,
+  onSyncOffer,
+  onReplaceOffer,
 }: StrategyBriefSheetProps) {
   const panelRef = React.useRef<HTMLDivElement>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
@@ -156,6 +167,9 @@ export function StrategyBriefSheet({
           <StrategyBriefCard
             strategy={strategy}
             ebookType={ebookType}
+            linkedOffer={linkedOffer}
+            onSyncOffer={onSyncOffer}
+            onReplaceOffer={onReplaceOffer}
             onEdit={onEdit}
             onEditField={onEditField}
           />

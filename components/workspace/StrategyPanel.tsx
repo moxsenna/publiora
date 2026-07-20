@@ -429,6 +429,20 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           readinessScore={readinessScore}
           missingFields={missingFields}
           nextAction={nextAction}
+          linkedOffer={primaryOffer}
+          onSyncOffer={() => {
+            setBriefSheetOpen(false);
+            setSyncOpen(true);
+          }}
+          onReplaceOffer={() => {
+            if (
+              window.confirm(
+                "Ganti produk yang terhubung?\n\nStrategi dan CTA tidak akan diubah sampai Anda memilih field yang ingin diterapkan dari produk baru.",
+              )
+            ) {
+              setBriefSheetOpen(true);
+            }
+          }}
           onEdit={() => {
             setBriefSheetOpen(false);
             setEditorInitialField(null);

@@ -17,7 +17,9 @@ import { loginWithStorage } from "./helpers/auth";
 import {
   createProjectAndOpenWorkspace,
   ensureWizardAuthor,
+  expectVisibleOfferContext,
   goToFormatStep,
+  openMobileNavIfNeeded,
   PROJECT_WORKSPACE_URL,
   selectLeadGoal,
 } from "./helpers/wizard";
@@ -57,6 +59,7 @@ test.describe("offer library journeys A–F", () => {
     page,
   }) => {
     await page.goto("/dashboard");
+    await openMobileNavIfNeeded(page);
     await expect(
       page.getByRole("link", { name: /Produk & Penawaran/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
@@ -105,11 +108,9 @@ test.describe("offer library journeys A–F", () => {
 
     await expect(page).toHaveURL(PROJECT_WORKSPACE_URL);
     await expect(page).toHaveURL(/stage=strategy|step=strategy/);
-    await expect(page.getByText(new RegExp(name)).first()).toBeVisible({
-      timeout: 20_000,
-    });
+    const offerRoot = await expectVisibleOfferContext(page, { offerName: name });
     await expect(
-      page.getByText(/Produk \/ Penawaran|Dipromosikan/i).first(),
+      offerRoot.getByText(/Dipromosikan|Produk \/ Penawaran/i).first(),
     ).toBeVisible({ timeout: 15_000 });
 
     void offer;
@@ -165,11 +166,11 @@ test.describe("offer library journeys A–F", () => {
     await createProjectAndOpenWorkspace(page);
 
     await expect(page).toHaveURL(PROJECT_WORKSPACE_URL);
-    await expect(page.getByText(parentName).first()).toBeVisible({
-      timeout: 20_000,
+    const offerRoot = await expectVisibleOfferContext(page, {
+      offerName: parentName,
     });
     await expect(
-      page
+      offerRoot
         .getByText(
           /Produk utama untuk Bonus|Bonus untuk produk|Produk \/ Penawaran/i,
         )
@@ -179,9 +180,12 @@ test.describe("offer library journeys A–F", () => {
 
   test("Journey D — Offer update shows stale indicator and sync dialog", async ({
     page,
+    isMobile,
   }) => {
-    // Desktop rail holds StrategyBriefCard with stale badge (lg:flex).
-    await page.setViewportSize({ width: 1400, height: 900 });
+    // Desktop rail shows StrategyBriefCard permanently; mobile uses brief sheet.
+    if (!isMobile) {
+      await page.setViewportSize({ width: 1400, height: 900 });
+    }
 
     const name = `E2E Offer D ${stamp()}`;
     const offer = await createOfferViaApi(page, {
@@ -243,11 +247,9 @@ test.describe("offer library journeys A–F", () => {
 
     await page.goto(projectUrl);
     await page.reload();
-    await expect(
-      page.getByText(/Produk telah diperbarui/i).first(),
-    ).toBeVisible({ timeout: 20_000 });
+    const offerRoot = await expectVisibleOfferContext(page, { stale: true });
 
-    const syncBtn = page.getByRole("button", { name: /Sinkronkan/i }).first();
+    const syncBtn = offerRoot.getByRole("button", { name: /^Sinkronkan$/i });
     await expect(syncBtn).toBeVisible({ timeout: 10_000 });
     await syncBtn.click();
     await expect(
