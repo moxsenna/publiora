@@ -35,6 +35,60 @@ const ARRAY_KEYS: (keyof EbookStrategy)[] = [
   "content_pillars",
 ];
 
+// ---------------------------------------------------------------------------
+// Field grouping (plan §5.9)
+// ---------------------------------------------------------------------------
+
+interface FieldGroup {
+  heading: string;
+  /** Keys in display order within the group. */
+  keys: (keyof EbookStrategy)[];
+}
+
+const FIELD_GROUPS: FieldGroup[] = [
+  {
+    heading: "Fondasi ebook",
+    keys: ["topic", "core_promise", "unique_angle"],
+  },
+  {
+    heading: "Audiens dan masalah",
+    keys: [
+      "audience",
+      "audience_sophistication",
+      "primary_problem",
+      "pain_points",
+      "desired_outcome",
+    ],
+  },
+  {
+    heading: "Positioning",
+    keys: ["content_pillars"],
+  },
+  {
+    heading: "Funnel dan penawaran",
+    keys: ["product_or_offer", "funnel_goal", "cta_goal"],
+  },
+  {
+    heading: "Gaya penulisan",
+    keys: ["tone"],
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Fields that span full width (arrays, tone, audience_sophistication)
+// ---------------------------------------------------------------------------
+
+const FULL_WIDTH_KEYS = new Set<keyof EbookStrategy>([
+  "tone",
+  "audience_sophistication",
+  "pain_points",
+  "content_pillars",
+]);
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 interface StrategyFieldEditorProps {
   open: boolean;
   onClose: () => void;
@@ -65,7 +119,8 @@ export function StrategyFieldEditor({
     }
     for (const key of ARRAY_KEYS) {
       const arr = strategy[key] ?? [];
-      next[key] = Array.isArray(arr) ? arr.join(", ") : "";
+      // one-item-per-line (plan preference)
+      next[key] = Array.isArray(arr) ? arr.join("\n") : "";
     }
     setForm(next);
   }, [open, strategy]);
@@ -100,8 +155,9 @@ export function StrategyFieldEditor({
     }
     for (const key of ARRAY_KEYS) {
       const raw = (form[key] ?? "").trim();
+      // one-item-per-line (plan preference)
       strategy_patch[key] = raw
-        ? raw.split(",").map((s) => s.trim()).filter(Boolean)
+        ? raw.split("\n").map((s) => s.trim()).filter(Boolean)
         : [];
     }
 
@@ -139,37 +195,41 @@ export function StrategyFieldEditor({
         </>
       }
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {SCALAR_KEYS.map((key) => (
-          <div
-            key={key}
-            className={
-              key === "tone" || key === "audience_sophistication"
-                ? "sm:col-span-2"
-                : ""
-            }
-          >
-            <Label htmlFor={`strat-field-${key}`}>{STRATEGY_FIELD_LABELS[key]}</Label>
-            <Input
-              id={`strat-field-${key}`}
-              value={form[key] ?? ""}
-              onChange={(e) => setField(key, e.target.value)}
-              placeholder={placeholderFor(key)}
-            />
-          </div>
-        ))}
-
-        {ARRAY_KEYS.map((key) => (
-          <div key={key} className="sm:col-span-2">
-            <Label htmlFor={`strat-field-${key}`}>{STRATEGY_FIELD_LABELS[key]}</Label>
-            <Textarea
-              id={`strat-field-${key}`}
-              value={form[key] ?? ""}
-              onChange={(e) => setField(key, e.target.value)}
-              rows={3}
-              placeholder={placeholderFor(key)}
-            />
-          </div>
+      <div className="space-y-6">
+        {FIELD_GROUPS.map((group) => (
+          <section key={group.heading} className="space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)]">
+              {group.heading}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {group.keys.map((key) => (
+                <div
+                  key={key}
+                  className={FULL_WIDTH_KEYS.has(key) ? "sm:col-span-2" : ""}
+                >
+                  <Label htmlFor={`strat-field-${key}`}>
+                    {STRATEGY_FIELD_LABELS[key]}
+                  </Label>
+                  {ARRAY_KEYS.includes(key) ? (
+                    <Textarea
+                      id={`strat-field-${key}`}
+                      value={form[key] ?? ""}
+                      onChange={(e) => setField(key, e.target.value)}
+                      rows={3}
+                      placeholder={placeholderFor(key)}
+                    />
+                  ) : (
+                    <Input
+                      id={`strat-field-${key}`}
+                      value={form[key] ?? ""}
+                      onChange={(e) => setField(key, e.target.value)}
+                      placeholder={placeholderFor(key)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </Modal>

@@ -1036,7 +1036,7 @@ describe("Indonesian copy: FieldEditor title and buttons", () => {
     });
 
     expect(screen.getByText(COPY.editorTitle)).toBeInTheDocument();
-    expect(screen.getByText("Simpan")).toBeInTheDocument();
+    expect(screen.getByText("Simpan perubahan")).toBeInTheDocument();
     expect(screen.getByText("Batal")).toBeInTheDocument();
   });
 });

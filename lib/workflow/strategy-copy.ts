@@ -39,12 +39,11 @@ export const STRATEGY_COPY_ID = {
   editorTitle: "Edit Informasi Strategi",
   editorDescription:
     "Lengkapi detail yang menentukan strategi ebook Anda.",
-  editorSave: "Simpan",
+  editorSave: "Simpan perubahan",
   editorCancel: "Batal",
   editorSaveSuccess: "Informasi strategi berhasil disimpan.",
   editorSaveError: "Gagal menyimpan informasi strategi.",
-  editorArrayPlaceholder:
-    "Pisahkan dengan koma, misalnya: poin pertama, poin kedua",
+  editorArrayPlaceholder: "Satu item per baris",
 
   // Strategy unavailable state
   strategyUnavailable:

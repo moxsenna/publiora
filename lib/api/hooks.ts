@@ -276,6 +276,7 @@ export function usePatchStrategy() {
       }),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: qk.strategy(variables.projectId) });
+      qc.invalidateQueries({ queryKey: qk.messages(variables.projectId) });
     },
   });
 }
