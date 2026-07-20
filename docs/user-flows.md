@@ -37,14 +37,40 @@ User views existing projects, published ebooks, and a "Create New Ebook" button.
 **3. Create New Ebook**
 User clicks "Create New Ebook" and is taken to the workspace at `/projects/[id]`.
 
-**4. Stage 1 -- Strategy**
-AI Strategist (chat-based) helps the user define:
-- Ebook topic
-- Target audience
-- Primary problem
-- Desired outcome
-- Core promise
-- Unique angle
+**4. Stage 1 -- Strategy (AI-Guided Brief Builder)**
+
+The Strategy stage is an AI-guided brief builder, not a generic chatbot. The interface has two panels:
+
+- **Left panel:** Conversation with the AI Strategist. The assistant asks one strategic question per turn in Bahasa Indonesia (default) or English.
+- **Right panel (desktop):** Structured brief (Brief Ebook) showing 6 core + 7 advanced fields, plus a readiness score card (Kesiapan Strategi). On mobile, the brief is accessible via a bottom sheet.
+
+Key UX features:
+- **Contextual quick replies:** The latest assistant message shows clickable chip suggestions (2-4 per turn). Each chip sends a complete first-person reply.
+- **Starter chips (empty state):** When the conversation is empty, 3 static starter chips appear ("Cari topik ebook", "Saya sudah punya topik", "Ebook untuk leads").
+- **Indonesian-first UI:** Labels, placeholders, buttons, and helper text are in Bahasa Indonesia. The assistant name is "Asisten Strategi" and the brief is "Brief Ebook".
+- **Manual brief editing:** Users can click "Edit brief" or tap a field to open StrategyFieldEditor (modal on desktop, full-screen on mobile). Manual edits update `strategy.updated_at`, which invalidates old assistant chips as stale context.
+- **Deterministic outline gate:** When all 6 required fields (topic, audience, primary_problem, desired_outcome, core_promise, unique_angle) are filled AND readiness_score >= 70, the "Buat struktur ebook" button becomes active.
+- **Mobile brief sheet:** On screens <lg, a compact trigger ("Lihat brief -- 3/6 -- Kesiapan 50%") opens a bottom sheet with the brief and readiness card.
+- **No raw markdown in assistant bubble:** Assistant messages are rendered through `AssistantMessageContent` which strips markdown artifacts and presents clean text.
+
+The AI Strategist helps the user define 13 fields total:
+
+Core (required for outline gate):
+- Ebook topic (topik)
+- Target audience (target pembaca)
+- Primary problem (masalah utama)
+- Desired outcome (hasil yang diinginkan)
+- Core promise (janji utama)
+- Unique angle (sudut unik)
+
+Advanced (collapsible):
+- Audience sophistication (tingkat pemahaman audiens)
+- Pain points (titik masalah)
+- Content pillars (pilar konten)
+- Product or offer (produk/penawaran)
+- Funnel goal (tujuan funnel)
+- CTA goal (tujuan CTA)
+- Tone (gaya bahasa)
 
 Output: Structured strategy with readiness score. When readiness >= 70 and all required fields are filled, the Outline stage unlocks.
 

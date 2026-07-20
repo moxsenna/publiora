@@ -244,6 +244,31 @@ Index:
 
 create index idx_messages_project_id on messages(project_id);
 
+**messages.metadata shape (ChatMessageMetadata):**
+
+Assistant messages carry structured metadata (see `types/message.ts`):
+
+```json
+{
+  "suggested_replies": [
+    {
+      "label": "SEO organik",
+      "message": "Saya paling berpengalaman di SEO organik.",
+      "field": "unique_angle",
+      "intent": "answer"
+    }
+  ],
+  "strategy_context_updated_at": "2026-07-20T10:00:00.000Z",
+  "response_language": "id"
+}
+```
+
+- `suggested_replies`: 0-4 contextual quick-reply chips attached to the latest assistant message. Each contains `label`, `message`, `field` (one of 13 strategy fields), and `intent` (answer|ask_recommendation|confirm|clarify).
+- `strategy_context_updated_at`: Mirrors `project_states.updated_at` at the time the suggestions were generated. Used by the frontend to hide stale chips after manual brief edits.
+- `response_language`: "id" or "en" -- the language the assistant used for this turn.
+
+User-role messages and system messages use `metadata: {}`.
+
 ---
 
 7\. Outlines

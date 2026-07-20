@@ -314,113 +314,107 @@ archived
 
 ---
 
-5.4 AI Conversation Agent
+5.4 AI Conversation Agent (Strategist)
 
 Purpose:
 
-brainstorm ebook idea
+- brainstorm ebook idea
+- ask product-related questions
+- understand audience
+- recommend angle
+- prepare structured state
+- produce contextual quick-reply suggestions attached to assistant messages
 
-ask product-related questions
+Source of truth: `lib/ai/prompts.ts` (STRATEGIST_SYSTEM) and `lib/ai/agents/strategist.ts` (aiStrategistResponseSchema).
 
-understand audience
+Input (sent to `runStrategist`):
 
-recommend angle
-
-prepare structured state
-
-Input:
-
-latest_user_message
-
-conversation_summary
-
-structured_state
+- currentState (ProjectStateV2 from project_states)
+- project metadata (title, description, audience, tone, niche)
+- history (recent messages, role+content, max 12)
+- userMessage (latest user text)
 
 Output:
 
+```
 {
-
-"assistant_message": "Menurut saya angle ini masih terlalu umum. Siapa target pembaca paling spesifiknya?",
-
-"state_patch": {},
-
-"readiness_score": 55,
-
-"next_action": "ask_question"
-
+  "assistant_message": "Menurut saya angle ini masih terlalu umum. Siapa target pembaca paling spesifiknya?",
+  "state_patch": {},
+  "readiness_score": 55,
+  "missing_fields": ["core_promise", "unique_angle"],
+  "next_action": "continue_strategy",
+  "conversation_summary": "Creator is uncertain about audience specifics...",
+  "response_language": "id",
+  "suggested_replies": [
+    { "label": "Founder startup", "message": "...", "field": "audience", "intent": "answer" },
+    { "label": "Marketer corporate", "message": "...", "field": "audience", "intent": "answer" }
+  ]
 }
+```
+
+Allowed next_action values:
+- `continue_strategy` -- more questions needed
+- `create_outline` -- gate met (all 6 required fields + readiness >= 70)
+- `review_outline` -- post-outline (not used during strategy)
+- `start_writing` -- write stage (not used during strategy)
+
+The suggested_replies are persisted on the assistant ChatMessage.metadata field alongside `strategy_context_updated_at` (for stale-check) and `response_language`. See `lib/api/chat-metadata.ts` (buildAssistantMetadata) and `types/message.ts` (ChatMessageMetadata).
 
 ---
 
-5.5 Structured State
+5.5 Structured State (ProjectStateV2)
 
 Do not rely only on chat history.
-
-Store extracted strategy data as JSON.
+Store extracted strategy data as JSON in project_states.
 
 Table:
 
 project_states (
-
-id uuid primary key,
-
-project_id uuid references projects(id),
-
-state_json jsonb,
-
-conversation_summary text,
-
-updated_at timestamp
-
+  id uuid primary key,
+  project_id uuid references projects(id) unique,
+  state_json jsonb,         -- ProjectStateV2 (see types/strategy.ts)
+  conversation_summary text,
+  readiness_score int,      -- 0-100, computed by strategist or deterministic fallback
+  created_at timestamp,
+  updated_at timestamp
 );
 
-Example:
+Current shape (schema_version = 2):
 
+```
 {
-
-"ebook_type": "lead_magnet",
-
-"product": {
-
-"name": "Course Affiliate TikTok",
-
-"type": "online_course",
-
-"description": "Course untuk pemula yang ingin mulai affiliate TikTok"
-
-},
-
-"audience": {
-
-"segment": "affiliate marketer pemula",
-
-"pain_points": \[
-
-"video sepi",
-
-"bingung pilih produk",
-
-"tidak punya strategi konten"
-
-\],
-
-"desired_transformation": "punya sistem konten affiliate sederhana"
-
-},
-
-"ebook_strategy": {
-
-"goal": "collect_leads",
-
-"angle": "7 kesalahan affiliate TikTok pemula",
-
-"tone": "praktis dan santai",
-
-"cta_goal": "join grup WhatsApp"
-
+  "schema_version": 2,
+  "strategy": {
+    "topic": null,
+    "audience": null,
+    "audience_sophistication": null,
+    "primary_problem": null,
+    "pain_points": [],
+    "desired_outcome": null,
+    "core_promise": null,
+    "unique_angle": null,
+    "content_pillars": [],
+    "product_or_offer": null,
+    "funnel_goal": null,
+    "cta_goal": null,
+    "tone": null
+  },
+  "missing_fields": ["topic", "audience", "primary_problem", "desired_outcome", "core_promise", "unique_angle"],
+  "next_action": "continue_strategy",
+  "conversation_summary": null,
+  "updated_at": "2026-07-20T10:00:00.000Z"
 }
+```
 
-}
+Required fields for outline gate: topic, audience, primary_problem, desired_outcome, core_promise, unique_angle.
+When all 6 are non-empty AND readiness_score >= 70, next_action transitions to "create_outline".
+
+The messages table stores per-turn chat history. Assistant messages carry `metadata` jsonb with:
+- `suggested_replies` -- array of { label, message, field, intent }
+- `strategy_context_updated_at` -- state.updated_at for stale-chip detection
+- `response_language` -- "id" or "en"
+
+Types: `types/strategy.ts` (EbookStrategy, ProjectStateV2, StrategistResult, StrategySuggestedReply) and `types/message.ts` (ChatMessage, ChatMessageMetadata).
 
 ---
 

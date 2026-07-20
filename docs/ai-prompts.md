@@ -30,66 +30,100 @@ Six AI agents map to the five stages:
 
 ### Purpose
 
-Help user brainstorm ebook positioning, identify audience, and connect ebook to product/funnel. Outputs structured state with readiness scoring.
+Help user brainstorm ebook positioning, identify audience, and connect ebook to product/funnel. Outputs structured state with readiness scoring. The strategist is an **AI-guided brief builder**, not a generic chatbot.
+
+### Key Behaviors
+
+- **One main question per turn.** The strategist asks a single strategic question per response, keeping `assistant_message` concise (60-120 words).
+- **Bahasa Indonesia by default.** Unless the user writes in English, both `assistant_message` and `suggested_replies` use Indonesian. `response_language` is always set ("id" | "en").
+- **Contextual quick replies.** Each turn includes 0-4 `suggested_replies` -- clickable chips with complete first-person user messages. Suggestions are stored on the assistant message `metadata` field (not a separate AI call).
+- **Starter chips only on empty state.** When no messages exist, the UI shows 3 static starter chips ("Cari topik ebook", "Saya sudah punya topik", "Ebook untuk leads"). After the first exchange, chips are replaced by AI-generated contextual replies.
+- **Manual edit invalidates old chips.** If the user manually edits the brief via StrategyFieldEditor, `strategy.updated_at` changes, and the stale-check in StrategyPanel hides outdated `suggested_replies`.
+- **Deterministic outline gate.** When all 6 required fields are non-empty and `readiness_score >= 70`, `next_action` becomes `"create_outline"`, which enables the "Buat struktur ebook" button.
 
 ### System Prompt
 
-```
-You are an AI publishing strategist helping creators build marketing-focused ebooks.
+**Source of truth:** `lib/ai/prompts.ts` exported as `STRATEGIST_SYSTEM`. See also `lib/ai/agents/strategist.ts` for the Zod schema (`aiStrategistResponseSchema`) and the `parseStrategistResponse` validation function.
 
-Your job is NOT to immediately generate content.
-Your job is to:
-- ask strategic questions
-- identify audience pain points
-- improve ebook angles
-- connect ebook with the creator's product or funnel
-- guide the creator toward a more effective ebook strategy
-
-You should sound:
-- strategic
-- conversational
-- opinionated
-- practical
-- supportive
-
-Avoid robotic responses.
-Do not ask too many questions at once.
-Ask only the next best question.
-If the ebook angle is weak or too broad, explain why and suggest improvements.
-If enough information exists, recommend moving to outline generation.
-```
+Key rules from the prompt:
+- Ask at most ONE main question per turn. Make it specific and strategic.
+- Keep `assistant_message` concise: 60-120 words.
+- Do NOT sign or end messages with a signature block (e.g. "STRATEGY ASSISTANT").
+- Do NOT re-ask about facts already present in the current strategy state.
+- `state_patch` MUST only contain facts newly inferred or confirmed during this turn. Never repeat existing values unless the user just changed them.
+- `next_action` = `"create_outline"` ONLY when all required fields are filled with quality answers AND `readiness_score >= 70`. Otherwise `"continue_strategy"`.
+- `suggested_replies`: 2-4 contextual chips. Include "ask me to recommend" option when appropriate (`intent: "ask_recommendation"`).
 
 ### Input Structure
 
-```json
-{
-  "structured_state": {},
-  "conversation_summary": "",
-  "latest_user_message": ""
-}
-```
+The strategist agent receives:
+- `currentState` (ProjectStateV2): normalized project state from `project_states`
+- `project`: metadata (title, description, audience, tone, niche)
+- `history`: recent chat messages (role + content, sliced to `MAX_CHAT_HISTORY`)
+- `userMessage`: the latest user message for this turn
 
-### Output Format (Strategy V2)
+### Output Format (JSON)
 
 ```json
 {
-  "assistant_message": "",
-  "state_patch": {},
-  "readiness_score": 0,
-  "next_action": "ask_question"
+  "assistant_message": "string (60-120 words, one strategic question)",
+  "state_patch": {
+    "topic": "string | null",
+    "audience": "string | null",
+    "audience_sophistication": "string | null",
+    "primary_problem": "string | null",
+    "pain_points": ["string"],
+    "desired_outcome": "string | null",
+    "core_promise": "string | null",
+    "unique_angle": "string | null",
+    "content_pillars": ["string"],
+    "product_or_offer": "string | null",
+    "funnel_goal": "string | null",
+    "cta_goal": "string | null",
+    "tone": "string | null"
+  },
+  "readiness_score": "number 0-100",
+  "missing_fields": ["string"],
+  "next_action": "continue_strategy | create_outline | review_outline | start_writing",
+  "conversation_summary": "string | null",
+  "response_language": "id | en",
+  "suggested_replies": [
+    {
+      "label": "string (max 48 chars, concise and scannable)",
+      "message": "string (max 240 chars, complete first-person user reply)",
+      "field": "string | null (one of the 13 strategy fields)",
+      "intent": "answer | ask_recommendation | confirm | clarify"
+    }
+  ]
 }
 ```
 
 ### Allowed next_action
 
-- `ask_question`
-- `suggest_improvement`
-- `ready_for_outline`
-- `continue_strategy`
+- `continue_strategy` -- Strategy is incomplete; more questions needed.
+- `create_outline` -- Gate met (all 6 required fields filled + readiness >= 70). Unlocks Outline stage.
+- `review_outline` -- Post-outline phase (not used during strategy).
+- `start_writing` -- Write stage (not used during strategy).
+
+**Removed:** `ask_question`, `suggest_improvement`, `ready_for_outline` (aliased or replaced by the above).
+
+### Suggestion Storage
+
+Suggested replies are stored on the assistant `ChatMessage.metadata` field:
+
+```ts
+interface ChatMessageMetadata {
+  suggested_replies?: StrategySuggestedReply[];  // 0-4 chips
+  strategy_context_updated_at?: string;           // state.updated_at for stale-check
+  response_language?: "id" | "en";
+}
+```
+
+The `strategy_context_updated_at` field is compared against `strategy.updated_at` in `StrategyPanel`. If they differ (e.g., after manual brief edit), chips are hidden as stale context.
 
 ### Readiness Threshold
 
-Strategy must reach readiness_score >= 70 and have all required fields filled before outline generation unlocks.
+Strategy must reach `readiness_score >= 70` and have all 6 required fields filled before outline generation unlocks.
 
 Required fields: `topic`, `audience`, `primary_problem`, `desired_outcome`, `core_promise`, `unique_angle`.
 
