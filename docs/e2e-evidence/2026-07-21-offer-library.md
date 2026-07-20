@@ -43,10 +43,12 @@ Without credentials, Playwright **skips** these suites cleanly (same pattern as 
 | Ephemeral E2E user | created against local Supabase (`OFFERS_TABLE_OK=yes`) |
 | `npm run build` | success |
 | App server | `http://127.0.0.1:3005` (port 3000 occupied by unrelated proxy) |
-| `npx tsc --noEmit` / vitest | clean / 592 pass earlier in branch |
-| Playwright chromium | **11 passed / 0 failed** (21.5s) |
+| `npx tsc --noEmit` / vitest | clean / 592 pass |
+| Playwright chromium offer suite | **11 passed** |
+| Playwright mobile offer suite | **11 passed** |
+| Screenshots desktop+mobile | **8 PNG** in `offer-library-2026-07-21/` |
 
-Command that went green:
+Commands:
 
 ```bash
 # .env.local → local Supabase (127.0.0.1:54321)
@@ -55,9 +57,13 @@ npm run build
 npm run start -- --hostname 127.0.0.1 --port 3005
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3005 \
   npx playwright test e2e/offer-library-journeys.spec.ts e2e/type-aware-project-create.spec.ts --project=chromium
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3005 \
+  npx playwright test e2e/offer-library-journeys.spec.ts e2e/type-aware-project-create.spec.ts --project=mobile
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3005 \
+  npx playwright test e2e/capture-offer-library-screenshots.spec.ts --project=chromium --project=mobile
 ```
 
-Log: `playwright-offer-green.log` (local, gitignored noise ok).
+See also: `2026-07-21-offer-library-mobile-and-cloud.md` (mobile + cloud migration operator notes).
 
 ## Desktop / mobile UI evidence
 
