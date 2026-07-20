@@ -19,7 +19,5 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, '.'),
     },
-    // Prefer CommonJS builds to avoid ESM-only module resolution issues
-    conditions: ['require', 'node', 'default'],
   },
 });
