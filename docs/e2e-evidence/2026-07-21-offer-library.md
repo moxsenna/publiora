@@ -41,7 +41,19 @@ Without credentials, Playwright **skips** these suites cleanly (same pattern as 
 |---|---|
 | `npx tsc --noEmit` | clean |
 | `npm test` (vitest) | 40 files / 592 tests pass |
-| Playwright A–F against live auth | not executed here (no `.env.e2e.local` in worktree) |
+| `npx playwright test … --list` | 11 tests registered (7 journeys + 4 V3 shell) |
+| `npx playwright test e2e/offer-library-journeys.spec.ts e2e/type-aware-project-create.spec.ts --project=chromium` | **11 skipped** — `E2E_EMAIL` / `E2E_PASSWORD` not set in `.env.local` (suite gates with `test.skip`) |
+
+To execute live (after migrations 20260721000001–003 on target Supabase):
+
+```bash
+# add to .env.e2e.local (gitignored)
+# E2E_EMAIL=...
+# E2E_PASSWORD=...
+npm run build
+npx playwright test e2e/offer-library-journeys.spec.ts e2e/type-aware-project-create.spec.ts --project=chromium
+npx playwright test e2e/offer-library-journeys.spec.ts --project=mobile
+```
 
 ## Desktop / mobile UI evidence
 
