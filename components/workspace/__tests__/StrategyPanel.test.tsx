@@ -14,7 +14,7 @@ import * as React from "react";
 Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
 
 // ---------------------------------------------------------------------------
-// Mocks — hoisted by vitest before imports
+// Mocks -- hoisted by vitest before imports
 // ---------------------------------------------------------------------------
 
 const pushToastMock = vi.fn();
@@ -48,6 +48,40 @@ vi.mock("@/lib/api/hooks", () => ({
   useSendMessage: (...args: any[]) => useSendMessageMock(...args),
   usePatchStrategy: (...args: any[]) => usePatchStrategyMock(...args),
 }));
+
+// Mock the centralized strategy copy so tests reference the same values
+vi.mock("@/lib/workflow/strategy-copy", () => {
+  const actual = vi.importActual("@/lib/workflow/strategy-copy");
+  return actual;
+});
+
+// ---------------------------------------------------------------------------
+// Indonesian copy constants (mirrors strategy-copy.ts values for test assertions)
+// ---------------------------------------------------------------------------
+
+const COPY = {
+  assistantName: "Asisten Strategi",
+  emptyTitle: "Mulai susun strategi ebook",
+  composerPlaceholder: "Tulis jawaban atau ceritakan konteks Anda\u2026",
+  sendAriaLabel: "Kirim pesan",
+  sendError: "Pesan gagal dikirim.",
+  sending: "Mengirim pesan\u2026",
+  editBrief: "Edit brief",
+  editorTitle: "Edit Informasi Strategi",
+  editorCancel: "Batal",
+  nextActionContinue: "Lanjutkan menyusun strategi",
+  defaultSuggestions: [
+    "Bantu saya menentukan masalah utama ebook",
+    "Apa janji utama yang cocok untuk audiens ini?",
+    "Sarankan pilar konten berdasarkan topik saya",
+    "Sudut unik apa yang bisa saya gunakan?",
+    "Bantu saya menentukan titik masalah dan hasil yang diinginkan",
+  ],
+  missingFieldPrompts: {
+    primary_problem: "Bantu saya mengidentifikasi masalah utama",
+    desired_outcome: "Hasil apa yang sebaiknya dicapai pembaca?",
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -147,7 +181,7 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// 1. Hook wiring — StrategyPanel calls useMessages, useStrategy, useSendMessage
+// 1. Hook wiring -- StrategyPanel calls useMessages, useStrategy, useSendMessage
 // ---------------------------------------------------------------------------
 
 describe("hook wiring", () => {
@@ -163,20 +197,18 @@ describe("hook wiring", () => {
 
   it("calls useSendMessage (no-arg hook)", () => {
     render(<StrategyPanel projectId="proj-1" />);
-    // useSendMessage is called as a zero-arg hook; vitest records the call
     expect(useSendMessageMock).toHaveBeenCalled();
   });
 
-  it("renders the header label", () => {
+  it("renders the header label in Bahasa Indonesia", () => {
     render(<StrategyPanel projectId="proj-1" />);
-    // "Strategy Assistant" appears in the header AND in each assistant message bubble
-    const labels = screen.getAllByText("Strategy Assistant");
+    const labels = screen.getAllByText(COPY.assistantName);
     expect(labels.length).toBeGreaterThanOrEqual(1);
   });
 });
 
 // ---------------------------------------------------------------------------
-// 2. Starter state — empty messages shows suggestions and can send
+// 2. Starter state -- empty messages shows suggestions and can send
 // ---------------------------------------------------------------------------
 
 describe("starter state (empty messages)", () => {
@@ -198,16 +230,16 @@ describe("starter state (empty messages)", () => {
     );
   });
 
-  it("shows EmptyState when there are no messages", () => {
+  it("shows Indonesian EmptyState when there are no messages", () => {
     render(<StrategyPanel projectId="proj-1" />);
-    expect(screen.getByText("Start a conversation")).toBeInTheDocument();
+    expect(screen.getByText(COPY.emptyTitle)).toBeInTheDocument();
   });
 
   it("shows suggestion chips when empty", () => {
     render(<StrategyPanel projectId="proj-1" />);
     // At least one suggestion should be visible
     const suggestions = screen.getAllByRole("button", {
-      name: /help me define|what should the core|suggest content pillars|what unique angle|help me define pain points/i,
+      name: /bantu saya|apa janji|sarankan pilar|sudut unik|titik masalah/i,
     });
     expect(suggestions.length).toBeGreaterThan(0);
   });
@@ -216,12 +248,12 @@ describe("starter state (empty messages)", () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const chip = screen.getByText(/help me define the primary problem/i);
+    const chip = screen.getByText(/bantu saya menentukan masalah utama ebook/i);
     await user.click(chip);
 
     expect(sendMutateAsyncMock).toHaveBeenCalledWith({
       project_id: "proj-1",
-      content: "Help me define the primary problem for my ebook",
+      content: COPY.defaultSuggestions[0],
     });
   });
 
@@ -229,10 +261,10 @@ describe("starter state (empty messages)", () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText("Type your message");
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder);
     await user.type(textarea, "My custom message");
 
-    const sendBtn = screen.getByLabelText("Send message");
+    const sendBtn = screen.getByLabelText(COPY.sendAriaLabel);
     await user.click(sendBtn);
 
     expect(sendMutateAsyncMock).toHaveBeenCalledWith({
@@ -243,7 +275,7 @@ describe("starter state (empty messages)", () => {
 
   it("disables send button when textarea is empty", () => {
     render(<StrategyPanel projectId="proj-1" />);
-    const sendBtn = screen.getByLabelText("Send message");
+    const sendBtn = screen.getByLabelText(COPY.sendAriaLabel);
     expect(sendBtn).toBeDisabled();
   });
 
@@ -251,10 +283,10 @@ describe("starter state (empty messages)", () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText("Type your message");
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder);
     await user.type(textarea, "Hello");
 
-    const sendBtn = screen.getByLabelText("Send message");
+    const sendBtn = screen.getByLabelText(COPY.sendAriaLabel);
     expect(sendBtn).not.toBeDisabled();
   });
 
@@ -262,9 +294,9 @@ describe("starter state (empty messages)", () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText("Type your message");
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder);
     await user.type(textarea, "Hello");
-    const sendBtn = screen.getByLabelText("Send message");
+    const sendBtn = screen.getByLabelText(COPY.sendAriaLabel);
     await user.click(sendBtn);
 
     await waitFor(() => {
@@ -272,13 +304,13 @@ describe("starter state (empty messages)", () => {
     });
   });
 
-  it("Ctrl+Enter sends message", async () => {
+  it("Enter sends message (no modifier key needed)", async () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText("Type your message");
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder);
     await user.type(textarea, "Shortcut message");
-    await user.keyboard("{Control>}{Enter}{/Control}");
+    await user.keyboard("{Enter}");
 
     expect(sendMutateAsyncMock).toHaveBeenCalledWith({
       project_id: "proj-1",
@@ -286,19 +318,19 @@ describe("starter state (empty messages)", () => {
     });
   });
 
-  it("shows pushToast on send failure", async () => {
+  it("shows Indonesian pushToast on send failure", async () => {
     sendMutateAsyncMock.mockRejectedValueOnce(new Error("Network error"));
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText("Type your message");
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder);
     await user.type(textarea, "Fail me");
-    const sendBtn = screen.getByLabelText("Send message");
+    const sendBtn = screen.getByLabelText(COPY.sendAriaLabel);
     await user.click(sendBtn);
 
     await waitFor(() => {
       expect(pushToastMock).toHaveBeenCalledWith({
-        title: "Message failed to send",
+        title: COPY.sendError,
         variant: "danger",
       });
     });
@@ -311,23 +343,22 @@ describe("starter state (empty messages)", () => {
 
 describe("brief editor", () => {
   beforeEach(() => {
-    // Ensure messages exist and missing fields are present
     useMessagesMock.mockReturnValue(mockMessagesData());
     useStrategyMock.mockReturnValue(mockStrategyData());
   });
 
-  it("shows missing-field CTA with 'edit directly' link when messages exist and fields are missing", () => {
+  it("shows missing-field CTA with Indonesian 'edit langsung' link when messages exist and fields are missing", () => {
     render(<StrategyPanel projectId="proj-1" />);
-    const editLink = screen.getByText("edit directly");
+    const editLink = screen.getByText("edit langsung");
     expect(editLink).toBeInTheDocument();
     expect(editLink.tagName).toBe("BUTTON");
   });
 
-  it("opens StrategyFieldEditor modal when 'edit directly' is clicked", async () => {
+  it("opens StrategyFieldEditor modal when 'edit langsung' is clicked", async () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const editLink = screen.getByText("edit directly");
+    const editLink = screen.getByText("edit langsung");
     await user.click(editLink);
 
     await waitFor(() => {
@@ -335,24 +366,23 @@ describe("brief editor", () => {
     });
   });
 
-  it("StrategyFieldEditor modal title is visible", async () => {
+  it("StrategyFieldEditor modal shows Indonesian title", async () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    await user.click(screen.getByText("edit directly"));
+    await user.click(screen.getByText("edit langsung"));
 
     await waitFor(() => {
-      expect(screen.getByText("Edit Strategy Fields")).toBeInTheDocument();
+      expect(screen.getByText(COPY.editorTitle)).toBeInTheDocument();
     });
   });
 
-  it("'Edit' button on StrategyBriefCard opens the editor", async () => {
+  it("'Edit brief' button on StrategyBriefCard opens the editor", async () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    // There are two "Edit strategy fields" buttons (desktop + mobile).
-    // Click the first one.
-    const editButtons = screen.getAllByLabelText("Edit strategy fields");
+    // There are two "Edit brief" buttons (desktop + mobile).
+    const editButtons = screen.getAllByLabelText(COPY.editBrief);
     expect(editButtons.length).toBe(2); // baseline: desktop + mobile duplicates
     await user.click(editButtons[0]!);
 
@@ -366,14 +396,14 @@ describe("brief editor", () => {
     render(<StrategyPanel projectId="proj-1" />);
 
     // Open editor
-    await user.click(screen.getByText("edit directly"));
+    await user.click(screen.getByText("edit langsung"));
     await waitFor(() => {
       expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
 
-    // Close via Cancel button in footer
+    // Close via Cancel (Batal) button in footer
     const dialog = screen.getByRole("dialog");
-    const cancelBtn = within(dialog).getByText("Cancel");
+    const cancelBtn = within(dialog).getByText(COPY.editorCancel);
     await user.click(cancelBtn);
 
     await waitFor(() => {
@@ -406,9 +436,7 @@ describe("onRequestOutline prop", () => {
     render(
       <StrategyPanel projectId="proj-1" onRequestOutline={onRequestOutline} />,
     );
-    // Header should still be visible — component renders normally
-    // "Strategy Assistant" appears in header + assistant message bubble
-    const labels = screen.getAllByText("Strategy Assistant");
+    const labels = screen.getAllByText(COPY.assistantName);
     expect(labels.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -418,17 +446,14 @@ describe("onRequestOutline prop", () => {
     }).not.toThrow();
   });
 
-  it("StrategyReadinessCard currently does NOT wire onRequestOutline — it only displays next action text", () => {
-    // This test documents the current gap: StrategyReadinessCard receives
-    // readinessScore, missingFields, and nextAction, but NOT onRequestOutline.
-    // The readiness gate CTA will be wired in a future task.
+  it("StrategyReadinessCard shows Indonesian next action label", () => {
     const onRequestOutline = vi.fn();
     render(
       <StrategyPanel projectId="proj-1" onRequestOutline={onRequestOutline} />,
     );
 
-    // The readiness card renders with the next action label (desktop + mobile)
-    const labels = screen.getAllByText("Continue building strategy");
+    // The readiness card renders with Indonesian next action label (desktop + mobile)
+    const labels = screen.getAllByText(COPY.nextActionContinue);
     expect(labels.length).toBeGreaterThanOrEqual(1);
     // onRequestOutline was NOT called during render (it's not wired yet)
     expect(onRequestOutline).not.toHaveBeenCalled();
@@ -451,10 +476,9 @@ describe("messages rendering", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders assistant label on assistant messages", () => {
+  it("renders Indonesian assistant label on assistant messages", () => {
     render(<StrategyPanel projectId="proj-1" />);
-    // Each assistant bubble shows the header label at the bottom
-    const labels = screen.getAllByText("Strategy Assistant");
+    const labels = screen.getAllByText(COPY.assistantName);
     // At least one from header + one from assistant message bubble
     expect(labels.length).toBeGreaterThan(1);
   });
@@ -471,7 +495,6 @@ describe("loading states", () => {
       isLoading: true,
     });
     render(<StrategyPanel projectId="proj-1" />);
-    // Skeleton component uses class "skeleton"
     const skeletons = document.querySelectorAll(".skeleton");
     expect(skeletons.length).toBeGreaterThan(0);
   });
@@ -493,7 +516,7 @@ describe("loading states", () => {
 // ---------------------------------------------------------------------------
 
 describe("missing-field prompts", () => {
-  it("shows context-aware suggestion chips derived from missing fields", () => {
+  it("shows Indonesian context-aware suggestion chips derived from missing fields", () => {
     useMessagesMock.mockReturnValue(mockMessagesData());
     useStrategyMock.mockReturnValue(
       mockStrategyData({
@@ -509,16 +532,16 @@ describe("missing-field prompts", () => {
 
     render(<StrategyPanel projectId="proj-1" />);
 
-    // Should show suggestions based on missing fields
+    // Should show Indonesian suggestions based on missing fields
     expect(
-      screen.getByText("Help me identify the primary problem"),
+      screen.getByText(COPY.missingFieldPrompts.primary_problem),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("What desired outcome should readers achieve?"),
+      screen.getByText(COPY.missingFieldPrompts.desired_outcome),
     ).toBeInTheDocument();
   });
 
-  it("falls back to default SUGGESTIONS when no missing fields", () => {
+  it("falls back to default Indonesian suggestions when no missing fields", () => {
     useMessagesMock.mockReturnValue(mockMessagesData());
     useStrategyMock.mockReturnValue(
       mockStrategyData({
@@ -534,32 +557,77 @@ describe("missing-field prompts", () => {
 
     render(<StrategyPanel projectId="proj-1" />);
 
-    // Should show default suggestions
+    // Should show default Indonesian suggestions
     expect(
-      screen.getByText("Help me define the primary problem for my ebook"),
+      screen.getByText(COPY.defaultSuggestions[0]),
     ).toBeInTheDocument();
   });
 });
 
 // ---------------------------------------------------------------------------
-// 8. Composer — aria-live send status
+// 8. Composer -- aria-live send status
 // ---------------------------------------------------------------------------
 
 describe("composer accessibility", () => {
-  it("announces sending status via aria-live region", () => {
+  it("announces Indonesian sending status via aria-live region", () => {
     useSendMessageMock.mockReturnValue({
       mutateAsync: sendMutateAsyncMock,
       isPending: true,
     });
     render(<StrategyPanel projectId="proj-1" />);
-    expect(screen.getByText("Sending message...")).toBeInTheDocument();
+    expect(screen.getByText(COPY.sending)).toBeInTheDocument();
   });
 
   it("does not announce when not sending", () => {
     useSendMessageMock.mockReturnValue(mockSendHook({ isPending: false }));
     render(<StrategyPanel projectId="proj-1" />);
-    // The sr-only div should not contain "Sending" text when not pending
     const srRegion = document.querySelector('[aria-live="polite"]');
-    expect(srRegion?.textContent).not.toContain("Sending message...");
+    expect(srRegion?.textContent).not.toContain("Mengirim pesan");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. Indonesian copy -- BriefCard progress
+// ---------------------------------------------------------------------------
+
+describe("Indonesian copy: BriefCard progress", () => {
+  it("displays 'X dari 6 informasi inti lengkap'", () => {
+    // Uses default mock data: topic + audience filled (2 of 6 core filled)
+    render(<StrategyPanel projectId="proj-1" />);
+    expect(screen.getAllByText("2 dari 6 informasi inti lengkap").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10. Indonesian copy -- ReadinessCard title
+// ---------------------------------------------------------------------------
+
+describe("Indonesian copy: ReadinessCard title", () => {
+  it("displays 'Kesiapan Strategi' as the card title", () => {
+    render(<StrategyPanel projectId="proj-1" />);
+    expect(screen.getAllByText("Kesiapan Strategi").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 11. Indonesian copy -- FieldEditor title and save button
+// ---------------------------------------------------------------------------
+
+describe("Indonesian copy: FieldEditor title and buttons", () => {
+  it("displays Indonesian editor title and buttons", async () => {
+    const user = userEvent.setup();
+    render(<StrategyPanel projectId="proj-1" />);
+
+    // Open editor via "Edit brief" button
+    const editButtons = screen.getAllByLabelText(COPY.editBrief);
+    await user.click(editButtons[0]!);
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(COPY.editorTitle)).toBeInTheDocument();
+    expect(screen.getByText("Simpan")).toBeInTheDocument();
+    expect(screen.getByText("Batal")).toBeInTheDocument();
   });
 });

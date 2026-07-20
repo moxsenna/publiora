@@ -14,44 +14,17 @@ import { Send, MessageSquare, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/message";
 import type { StrategyNextAction } from "@/types/strategy";
-
-// ---------------------------------------------------------------------------
-// Prompt suggestions
-// ---------------------------------------------------------------------------
-
-const SUGGESTIONS = [
-  "Help me define the primary problem for my ebook",
-  "What should the core promise be for this audience?",
-  "Suggest content pillars based on my topic",
-  "What unique angle could I take?",
-  "Help me define pain points and desired outcome",
-];
-
-// ---------------------------------------------------------------------------
-// Field → plain-language suggestion mapping
-// ---------------------------------------------------------------------------
-
-const MISSING_FIELD_PROMPTS: Record<string, string> = {
-  topic: "I need help defining the ebook topic",
-  audience: "Who should I target as the audience?",
-  primary_problem: "Help me identify the primary problem",
-  desired_outcome: "What desired outcome should readers achieve?",
-  core_promise: "Help me craft the core promise",
-  unique_angle: "What unique angle could I take?",
-  pain_points: "What pain points should I address?",
-  content_pillars: "Suggest content pillars for my ebook",
-  product_or_offer: "How should I position my product/offer?",
-  funnel_goal: "What funnel goal works best?",
-  cta_goal: "Help me decide the CTA goal",
-  tone: "What tone should this ebook use?",
-  audience_sophistication: "What sophistication level fits my audience?",
-};
+import {
+  STRATEGY_COPY_ID,
+  STRATEGY_DEFAULT_SUGGESTIONS,
+  STRATEGY_MISSING_FIELD_PROMPTS,
+} from "@/lib/workflow/strategy-copy";
 
 // ---------------------------------------------------------------------------
 // StrategyPanel
 // ---------------------------------------------------------------------------
 
-const HEADER_LABEL = "Strategy Assistant";
+const HEADER_LABEL = STRATEGY_COPY_ID.assistantName;
 
 interface StrategyPanelProps {
   projectId: string;
@@ -102,7 +75,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
         content: body,
       });
     } catch {
-      pushToast({ title: "Message failed to send", variant: "danger" });
+      pushToast({ title: STRATEGY_COPY_ID.sendError, variant: "danger" });
     }
   };
 
@@ -112,12 +85,12 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const promptSuggestions = React.useMemo(() => {
     if (missingFields.length > 0) {
       const fromMissing = missingFields
-        .map((f) => MISSING_FIELD_PROMPTS[f])
+        .map((f) => STRATEGY_MISSING_FIELD_PROMPTS[f])
         .filter(Boolean)
         .slice(0, 5);
       if (fromMissing.length > 0) return fromMissing;
     }
-    return SUGGESTIONS;
+    return STRATEGY_DEFAULT_SUGGESTIONS;
   }, [missingFields]);
 
   return (
@@ -150,8 +123,8 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
             <div className="max-w-xl mx-auto pt-4">
               <EmptyState
                 icon={<MessageSquare className="h-5 w-5" />}
-                title="Start a conversation"
-                description={`Chat with ${HEADER_LABEL} to build your ebook brief.`}
+                title={STRATEGY_COPY_ID.emptyTitle}
+                description={STRATEGY_COPY_ID.emptyDescription}
               />
               <div className="mt-4 flex flex-wrap gap-2 justify-center">
                 {promptSuggestions.slice(0, 5).map((s) => (
@@ -196,14 +169,13 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
             <div className="flex items-center gap-2 text-xs text-[var(--color-gold)] bg-[var(--color-surface-2)] rounded-lg px-3 py-2">
               <Lightbulb className="h-3.5 w-3.5 shrink-0" />
               <span>
-                {missingFields.length} field{missingFields.length > 1 ? "s" : ""} still needed.
-                Keep chatting or{" "}
+                {STRATEGY_COPY_ID.missingFieldsCta(missingFields.length)}
                 <button
                   type="button"
                   onClick={() => setEditorOpen(true)}
                   className="underline font-medium hover:text-[var(--color-publiora-black)]"
                 >
-                  edit directly
+                  edit langsung
                 </button>
                 .
               </span>
@@ -219,30 +191,35 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   onSend();
                 }
               }}
               rows={1}
-              placeholder={`Message ${HEADER_LABEL}...`}
+              placeholder={STRATEGY_COPY_ID.composerPlaceholder}
               className="flex-1 max-h-32 resize-none rounded-xl border border-[var(--color-publiora-border)] px-3 py-2 text-sm text-[var(--color-deep-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] bg-white"
-              aria-label="Type your message"
+              aria-label={STRATEGY_COPY_ID.composerPlaceholder}
             />
             <Button
               onClick={() => onSend()}
               loading={send.isPending}
               size="icon"
               disabled={!text.trim() || send.isPending}
-              aria-label="Send message"
+              aria-label={STRATEGY_COPY_ID.sendAriaLabel}
             >
               <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
 
-          {/* aria-live for send status */}
+          {/* Composer helper / send status */}
+          <div className="hidden sm:flex items-center justify-between mt-1.5">
+            <p className="text-[10px] text-[var(--color-medium-gray)]">
+              {STRATEGY_COPY_ID.composerHelper}
+            </p>
+          </div>
           <div ref={sendStatusRef} aria-live="polite" className="sr-only">
-            {send.isPending && "Sending message..."}
+            {send.isPending && STRATEGY_COPY_ID.sending}
           </div>
         </div>
       </div>
@@ -269,8 +246,15 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
             />
           </>
         ) : (
-          <div className="text-sm text-[var(--color-medium-gray)] text-center py-6">
-            Strategy state unavailable
+          <div className="text-sm text-[var(--color-medium-gray)] text-center py-6 space-y-3">
+            <p>{STRATEGY_COPY_ID.strategyUnavailable}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              {STRATEGY_COPY_ID.reload}
+            </Button>
           </div>
         )}
       </div>
@@ -295,8 +279,15 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
             />
           </>
         ) : (
-          <div className="text-sm text-[var(--color-medium-gray)] text-center py-4">
-            Strategy state unavailable
+          <div className="text-sm text-[var(--color-medium-gray)] text-center py-4 space-y-3">
+            <p>{STRATEGY_COPY_ID.strategyUnavailable}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              {STRATEGY_COPY_ID.reload}
+            </Button>
           </div>
         )}
       </div>

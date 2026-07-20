@@ -6,11 +6,11 @@ import type { ProjectWorkflowStep, WorkflowStepStatus } from "@/types/workflow";
 import { Check, Lock, AlertTriangle, ChevronDown } from "lucide-react";
 
 const STEP_LABELS: Record<ProjectWorkflowStep, string> = {
-  strategy: "Strategy",
-  outline: "Outline",
-  write: "Write",
-  review: "Review",
-  publish: "Publish",
+  strategy: "Strategi",
+  outline: "Struktur",
+  write: "Tulis",
+  review: "Tinjau",
+  publish: "Terbitkan",
 };
 
 const STEP_ORDER: ProjectWorkflowStep[] = [
@@ -91,7 +91,7 @@ export function WorkspaceStepNav({
       >
         <span className="text-sm font-medium text-[var(--color-publiora-black)]">
           <span className="text-[var(--color-medium-gray)]">
-            Step {currentIndex} of {STEP_ORDER.length}:
+            Tahap {currentIndex} dari {STEP_ORDER.length}:
           </span>{" "}
           {currentLabel}
         </span>
@@ -134,7 +134,7 @@ export function WorkspaceStepNav({
                   {STEP_LABELS[step]}
                   {isActive && (
                     <span className="ml-auto text-xs text-[var(--color-medium-gray)]">
-                      active
+                      aktif
                     </span>
                   )}
                 </button>

@@ -7,6 +7,10 @@ import { Modal } from "@/components/ui/Modal";
 import { Input, Textarea, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import type { EbookStrategy } from "@/types/strategy";
+import {
+  STRATEGY_COPY_ID,
+  STRATEGY_FIELD_LABELS,
+} from "@/lib/workflow/strategy-copy";
 
 // ---------------------------------------------------------------------------
 // Known scalar & array fields (mirrors EbookStrategy type)
@@ -30,22 +34,6 @@ const ARRAY_KEYS: (keyof EbookStrategy)[] = [
   "pain_points",
   "content_pillars",
 ];
-
-const FIELD_LABELS: Record<keyof EbookStrategy, string> = {
-  topic: "Topic",
-  audience: "Audience",
-  audience_sophistication: "Audience sophistication",
-  primary_problem: "Primary problem",
-  pain_points: "Pain points",
-  desired_outcome: "Desired outcome",
-  core_promise: "Core promise",
-  unique_angle: "Unique angle",
-  content_pillars: "Content pillars",
-  product_or_offer: "Product / Offer",
-  funnel_goal: "Funnel goal",
-  cta_goal: "CTA goal",
-  tone: "Tone",
-};
 
 interface StrategyFieldEditorProps {
   open: boolean;
@@ -99,27 +87,34 @@ export function StrategyFieldEditor({
 
     try {
       await patch.mutateAsync({ projectId, strategy_patch });
-      pushToast({ title: "Strategy fields saved", variant: "success" });
+      pushToast({ title: STRATEGY_COPY_ID.editorSaveSuccess, variant: "success" });
       onClose();
     } catch {
-      pushToast({ title: "Failed to save fields", variant: "danger" });
+      pushToast({ title: STRATEGY_COPY_ID.editorSaveError, variant: "danger" });
     }
+  };
+
+  const placeholderFor = (key: keyof EbookStrategy): string => {
+    if (ARRAY_KEYS.includes(key)) {
+      return STRATEGY_COPY_ID.editorArrayPlaceholder;
+    }
+    return `Masukkan ${STRATEGY_FIELD_LABELS[key].toLowerCase()}`;
   };
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Edit Strategy Fields"
-      description="Fill in the details that define your ebook strategy."
+      title={STRATEGY_COPY_ID.editorTitle}
+      description={STRATEGY_COPY_ID.editorDescription}
       size="lg"
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {STRATEGY_COPY_ID.editorCancel}
           </Button>
           <Button onClick={onSave} loading={patch.isPending}>
-            Save
+            {STRATEGY_COPY_ID.editorSave}
           </Button>
         </>
       }
@@ -134,25 +129,25 @@ export function StrategyFieldEditor({
                 : ""
             }
           >
-            <Label htmlFor={`strat-field-${key}`}>{FIELD_LABELS[key]}</Label>
+            <Label htmlFor={`strat-field-${key}`}>{STRATEGY_FIELD_LABELS[key]}</Label>
             <Input
               id={`strat-field-${key}`}
               value={form[key] ?? ""}
               onChange={(e) => setField(key, e.target.value)}
-              placeholder={`Enter ${FIELD_LABELS[key].toLowerCase()}`}
+              placeholder={placeholderFor(key)}
             />
           </div>
         ))}
 
         {ARRAY_KEYS.map((key) => (
           <div key={key} className="sm:col-span-2">
-            <Label htmlFor={`strat-field-${key}`}>{FIELD_LABELS[key]}</Label>
+            <Label htmlFor={`strat-field-${key}`}>{STRATEGY_FIELD_LABELS[key]}</Label>
             <Textarea
               id={`strat-field-${key}`}
               value={form[key] ?? ""}
               onChange={(e) => setField(key, e.target.value)}
               rows={3}
-              placeholder={`Comma-separated values, e.g. item one, item two`}
+              placeholder={placeholderFor(key)}
             />
           </div>
         ))}

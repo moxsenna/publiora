@@ -7,25 +7,29 @@ import { Button } from "@/components/ui/Button";
 import { Edit3, CheckCircle2, Circle } from "lucide-react";
 import type { EbookStrategy } from "@/types/strategy";
 import { REQUIRED_STRATEGY_FIELDS } from "@/types/strategy";
+import {
+  STRATEGY_COPY_ID,
+  STRATEGY_BRIEF_FIELD_LABELS,
+} from "@/lib/workflow/strategy-copy";
 
 // ---------------------------------------------------------------------------
 // Field display helpers
 // ---------------------------------------------------------------------------
 
 const DISPLAY_FIELDS: { key: keyof EbookStrategy; label: string; type: "scalar" | "array" }[] = [
-  { key: "topic", label: "Topic", type: "scalar" },
-  { key: "audience", label: "Audience", type: "scalar" },
-  { key: "audience_sophistication", label: "Sophistication", type: "scalar" },
-  { key: "primary_problem", label: "Primary problem", type: "scalar" },
-  { key: "pain_points", label: "Pain points", type: "array" },
-  { key: "desired_outcome", label: "Desired outcome", type: "scalar" },
-  { key: "core_promise", label: "Core promise", type: "scalar" },
-  { key: "unique_angle", label: "Unique angle", type: "scalar" },
-  { key: "content_pillars", label: "Content pillars", type: "array" },
-  { key: "product_or_offer", label: "Product / Offer", type: "scalar" },
-  { key: "funnel_goal", label: "Funnel goal", type: "scalar" },
-  { key: "cta_goal", label: "CTA goal", type: "scalar" },
-  { key: "tone", label: "Tone", type: "scalar" },
+  { key: "topic", label: STRATEGY_BRIEF_FIELD_LABELS.topic, type: "scalar" },
+  { key: "audience", label: STRATEGY_BRIEF_FIELD_LABELS.audience, type: "scalar" },
+  { key: "audience_sophistication", label: STRATEGY_BRIEF_FIELD_LABELS.audience_sophistication, type: "scalar" },
+  { key: "primary_problem", label: STRATEGY_BRIEF_FIELD_LABELS.primary_problem, type: "scalar" },
+  { key: "pain_points", label: STRATEGY_BRIEF_FIELD_LABELS.pain_points, type: "array" },
+  { key: "desired_outcome", label: STRATEGY_BRIEF_FIELD_LABELS.desired_outcome, type: "scalar" },
+  { key: "core_promise", label: STRATEGY_BRIEF_FIELD_LABELS.core_promise, type: "scalar" },
+  { key: "unique_angle", label: STRATEGY_BRIEF_FIELD_LABELS.unique_angle, type: "scalar" },
+  { key: "content_pillars", label: STRATEGY_BRIEF_FIELD_LABELS.content_pillars, type: "array" },
+  { key: "product_or_offer", label: STRATEGY_BRIEF_FIELD_LABELS.product_or_offer, type: "scalar" },
+  { key: "funnel_goal", label: STRATEGY_BRIEF_FIELD_LABELS.funnel_goal, type: "scalar" },
+  { key: "cta_goal", label: STRATEGY_BRIEF_FIELD_LABELS.cta_goal, type: "scalar" },
+  { key: "tone", label: STRATEGY_BRIEF_FIELD_LABELS.tone, type: "scalar" },
 ];
 
 function fieldValue(strategy: EbookStrategy, key: keyof EbookStrategy): string {
@@ -46,31 +50,34 @@ interface StrategyBriefCardProps {
 }
 
 export function StrategyBriefCard({ strategy, onEdit }: StrategyBriefCardProps) {
-  const filledCount = DISPLAY_FIELDS.filter((f) => {
-    const v = fieldValue(strategy, f.key);
+  // Count only the 6 required/informasi-inti fields per spec
+  const requiredKeys = REQUIRED_STRATEGY_FIELDS;
+  const filledRequiredCount = requiredKeys.filter((key) => {
+    const v = fieldValue(strategy, key);
     return v.length > 0;
   }).length;
-  const total = DISPLAY_FIELDS.length;
+  const requiredTotal = requiredKeys.length; // 6
+  const remaining = requiredTotal - filledRequiredCount;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
-            <CardTitle>Ebook Brief</CardTitle>
+            <CardTitle>{STRATEGY_COPY_ID.briefTitle}</CardTitle>
             <CardDescription>
-              {filledCount} of {total} fields filled
+              {STRATEGY_COPY_ID.briefProgress(filledRequiredCount, requiredTotal)}
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={onEdit} aria-label="Edit strategy fields">
+          <Button variant="outline" size="sm" onClick={onEdit} aria-label={STRATEGY_COPY_ID.editBrief}>
             <Edit3 className="h-3.5 w-3.5" />
-            Edit
+            {STRATEGY_COPY_ID.editBrief}
           </Button>
         </div>
       </CardHeader>
 
       <CardBody>
-        <ul className="space-y-2" aria-label="Strategy brief fields">
+        <ul className="space-y-2" aria-label="Informasi strategi ebook">
           {DISPLAY_FIELDS.map((f) => {
             const val = fieldValue(strategy, f.key);
             const filled = val.length > 0;
@@ -92,7 +99,12 @@ export function StrategyBriefCard({ strategy, onEdit }: StrategyBriefCardProps) 
                   </span>
                   {required && !filled && (
                     <Badge variant="warning" className="ml-1.5 align-middle">
-                      Required
+                      {STRATEGY_COPY_ID.emptyRequiredBadge}
+                    </Badge>
+                  )}
+                  {!required && !filled && (
+                    <Badge variant="outline" className="ml-1.5 align-middle">
+                      {STRATEGY_COPY_ID.emptyOptionalBadge}
                     </Badge>
                   )}
                   {filled && (
@@ -102,7 +114,7 @@ export function StrategyBriefCard({ strategy, onEdit }: StrategyBriefCardProps) 
                   )}
                   {!filled && (
                     <p className="text-xs text-[var(--color-medium-gray)] italic mt-0.5">
-                      Not yet defined
+                      {STRATEGY_COPY_ID.emptyValue}
                     </p>
                   )}
                 </div>
@@ -112,10 +124,10 @@ export function StrategyBriefCard({ strategy, onEdit }: StrategyBriefCardProps) 
         </ul>
       </CardBody>
 
-      {filledCount < total && (
+      {remaining > 0 && (
         <CardFooter>
           <p className="text-xs text-[var(--color-gold)] w-full text-center">
-            Fill all required fields ({REQUIRED_STRATEGY_FIELDS.length}) to unlock the outline stage.
+            {STRATEGY_COPY_ID.footerIncomplete(remaining)}
           </p>
         </CardFooter>
       )}

@@ -23,17 +23,17 @@ test.describe("workflow journey seeded project", () => {
 
   test("Strategy stage shows assistant and brief", async ({ page }) => {
     await page.goto(`/projects/${PROJECT_ID}?step=strategy`);
-    await expect(page.getByText("Strategy Assistant").first()).toBeVisible({
+    await expect(page.getByText("Asisten Strategi").first()).toBeVisible({
       timeout: 20_000,
     });
     // Desktop + mobile may both render brief titles
-    await expect(page.getByText("Ebook Brief").first()).toBeVisible();
-    await expect(page.getByText("Strategy Readiness").first()).toBeVisible();
+    await expect(page.getByText("Brief Ebook").first()).toBeVisible();
+    await expect(page.getByText("Kesiapan Strategi").first()).toBeVisible();
   });
 
   test("Outline stage shows approved flat sections", async ({ page }) => {
     await page.goto(`/projects/${PROJECT_ID}?step=outline`);
-    await expect(page.getByRole("tab", { name: "Outline" }).first()).toHaveAttribute(
+    await expect(page.getByRole("tab", { name: "Struktur" }).first()).toHaveAttribute(
       "aria-selected",
       "true",
       { timeout: 20_000 },
@@ -46,7 +46,7 @@ test.describe("workflow journey seeded project", () => {
 
   test("Write stage lists sections with content", async ({ page }) => {
     await page.goto(`/projects/${PROJECT_ID}?step=write`);
-    await expect(page.getByRole("tab", { name: "Write" }).first()).toHaveAttribute(
+    await expect(page.getByRole("tab", { name: "Tulis" }).first()).toHaveAttribute(
       "aria-selected",
       "true",
       { timeout: 20_000 },
@@ -58,7 +58,7 @@ test.describe("workflow journey seeded project", () => {
 
   test("Review stage shows readiness and checklist", async ({ page }) => {
     await page.goto(`/projects/${PROJECT_ID}?step=review`);
-    await expect(page.getByRole("tab", { name: "Review" }).first()).toHaveAttribute(
+    await expect(page.getByRole("tab", { name: "Tinjau" }).first()).toHaveAttribute(
       "aria-selected",
       "true",
       { timeout: 20_000 },
@@ -75,7 +75,7 @@ test.describe("workflow journey seeded project", () => {
     page,
   }) => {
     await page.goto(`/projects/${PROJECT_ID}?step=publish`);
-    await expect(page.getByRole("tab", { name: "Publish" }).first()).toHaveAttribute(
+    await expect(page.getByRole("tab", { name: "Terbitkan" }).first()).toHaveAttribute(
       "aria-selected",
       "true",
       { timeout: 20_000 },
@@ -96,13 +96,20 @@ test.describe("workflow journey seeded project", () => {
 
   test("walk stages via step nav Strategy→Publish", async ({ page }) => {
     await page.goto(`/projects/${PROJECT_ID}?step=strategy`);
-    await expect(page.getByText("Strategy Assistant").first()).toBeVisible({
+    await expect(page.getByText("Asisten Strategi").first()).toBeVisible({
       timeout: 20_000,
     });
 
-    for (const step of ["Outline", "Write", "Review", "Publish"] as const) {
+    const stepMap: Record<string, string> = {
+      Struktur: "outline",
+      Tulis: "write",
+      Tinjau: "review",
+      Terbitkan: "publish",
+    };
+
+    for (const step of ["Struktur", "Tulis", "Tinjau", "Terbitkan"] as const) {
       await page.getByRole("tab", { name: step }).first().click();
-      await expect(page).toHaveURL(new RegExp(`step=${step.toLowerCase()}`));
+      await expect(page).toHaveURL(new RegExp(`step=${stepMap[step]}`));
       await expect(page.getByRole("tab", { name: step }).first()).toHaveAttribute(
         "aria-selected",
         "true",
