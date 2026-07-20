@@ -8,7 +8,7 @@ import {
 import type { Offer } from "@/types/offer";
 
 const baseOffer: Offer = {
-  id: "11111111-1111-1111-1111-111111111111",
+  id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
   owner_id: "owner-should-not-appear",
   name: "Growth Audit",
   offer_type: "service",
