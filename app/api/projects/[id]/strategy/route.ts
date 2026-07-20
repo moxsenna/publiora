@@ -119,6 +119,8 @@ export async function PATCH(
     readiness_score: 0, // recalculated deterministically below
     missing_fields: [], // recomputed by mergeProjectState
     next_action: currentState.next_action,
+    suggested_replies: [],
+    response_language: "id",
   });
 
   // Manual edits must not leave readiness stuck below the outline gate.

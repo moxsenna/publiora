@@ -286,6 +286,8 @@ describe("mergeProjectState", () => {
     readiness_score: 0,
     missing_fields: [],
     next_action: "continue_strategy",
+    suggested_replies: [],
+    response_language: "id",
   };
 
   it("partial patch does not delete unrelated fields", () => {
@@ -343,6 +345,8 @@ describe("mergeProjectState", () => {
       readiness_score: 80,
       missing_fields: [],
       next_action: "continue_strategy" as const,
+      suggested_replies: [],
+      response_language: "id",
     } as StrategistResult & { state_patch: Record<string, unknown> };
     const merged = mergeProjectState(fullState, result as StrategistResult);
     expect(merged.strategy.tone).toBe("casual");

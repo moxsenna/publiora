@@ -321,9 +321,9 @@ describe("starter state (empty messages)", () => {
   it("does NOT send message when Enter is pressed during IME composition (isComposing=true)", async () => {
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText(COPY.composerPlaceholder);
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder) as HTMLTextAreaElement;
     // Pre-fill the textarea so there is content to preserve
-    textarea.value = "Composing partial text";
+    (textarea as HTMLTextAreaElement).value = "Composing partial text";
     textarea.dispatchEvent(new Event("change", { bubbles: true }));
 
     // Fire keyDown with isComposing: true -- should NOT trigger send
