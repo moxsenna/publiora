@@ -18,3 +18,4 @@ export * from "./api";
 export * from "./workflow";
 export * from "./strategy";
 export * from "./ai-suggestions";
+export * from "./offer";
