@@ -98,6 +98,27 @@ If old code still deployed → template fallback may still appear.
 
 ---
 
+## Database migrations (before app code that needs new RPCs)
+
+Apply Supabase migrations before shipping app code that depends on them.
+
+Type-aware project creation requires:
+
+```text
+supabase/migrations/20260720000002_create_project_with_state.sql
+```
+
+This adds RPC `public.create_project_with_state` used by `POST /api/projects`. Deploy order:
+
+```text
+1. Database migration
+2. Server/API code
+3. Client UI
+4. Smoke tests
+```
+
+API has a temporary non-RPC fallback only if the function is missing; production should apply the migration.
+
 ## Deploy / update Publiora
 
 Canonical steps also in `deploy/VPS.md`. Prefer **git on server** if `/opt/publiora` is a clone; else **rsync from PC**.

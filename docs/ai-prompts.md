@@ -1,6 +1,6 @@
 # ai-prompts.md — Publiora (Workflow-First)
 
-> Revision: 2026-07-19 -- Workflow-first architecture with five-stage workspace, Strategy V2, structured title/CTA generators, and non-destructive enhancement.
+> Revision: 2026-07-20 -- Type-aware project creation seeds Strategy V3; Strategist/Planner/Writer honor ebook purpose.
 
 ## 1. Workflow-First Architecture
 
@@ -26,11 +26,11 @@ Six AI agents map to the five stages:
 - **Title Generator** -- Review stage (suggestions sidebar)
 - **CTA Generator** -- Review stage (CtaComposer)
 
-## 2. Conversation Strategist Agent (Strategy V2)
+## 2. Conversation Strategist Agent (Strategy V3)
 
 ### Purpose
 
-Help user brainstorm ebook positioning, identify audience, and connect ebook to product/funnel. Outputs structured state with readiness scoring. The strategist is an **AI-guided brief builder**, not a generic chatbot.
+Help user brainstorm ebook positioning, identify audience, and connect ebook to product/funnel. Outputs structured state with readiness scoring. The strategist is an **AI-guided brief builder**, not a generic chatbot. Project creation may already seed type-specific context.
 
 ### Key Behaviors
 
@@ -39,7 +39,8 @@ Help user brainstorm ebook positioning, identify audience, and connect ebook to 
 - **Contextual quick replies.** Each turn includes 0-4 `suggested_replies` -- clickable chips with complete first-person user messages. Suggestions are stored on the assistant message `metadata` field (not a separate AI call).
 - **Starter chips only on empty state.** When no messages exist, the UI shows 3 static starter chips ("Cari topik ebook", "Saya sudah punya topik", "Ebook untuk leads"). After the first exchange, chips are replaced by AI-generated contextual replies.
 - **Manual edit invalidates old chips.** If the user manually edits the brief via StrategyFieldEditor, `strategy.updated_at` changes, and the stale-check in StrategyPanel hides outdated `suggested_replies`.
-- **Deterministic outline gate.** When all 6 required fields are non-empty and `readiness_score >= 70`, `next_action` becomes `"create_outline"`, which enables the "Buat struktur ebook" button.
+- **Type-aware outline gate.** Required fields = base 6 + type extras (lead: funnel_goal; bonus: product_or_offer/bonus_role/usage_moment; sellable: sales_positioning). When none missing and `readiness_score >= 70`, `next_action` becomes `"create_outline"`.
+- **Ebook purpose rules.** Lead magnet stays conversion-oriented and concise; bonus supports parent product; sellable needs standalone paid depth. Never change `ebook_type`.
 
 ### System Prompt
 
@@ -57,8 +58,8 @@ Key rules from the prompt:
 ### Input Structure
 
 The strategist agent receives:
-- `currentState` (ProjectStateV2): normalized project state from `project_states`
-- `project`: metadata (title, description, audience, tone, niche)
+- `currentState` (ProjectStateV3): normalized project state from `project_states`
+- `project`: metadata (title, description, audience, tone, niche, ebook_type, cta_goal, cta_url_present, template_id)
 - `history`: recent chat messages (role + content, sliced to `MAX_CHAT_HISTORY`)
 - `userMessage`: the latest user message for this turn
 

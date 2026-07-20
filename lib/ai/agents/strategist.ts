@@ -24,6 +24,11 @@ const strategyFieldEnum = z.enum([
   "funnel_goal",
   "cta_goal",
   "tone",
+  "traffic_source",
+  "bonus_role",
+  "usage_moment",
+  "sales_positioning",
+  "buyer_objections",
 ]);
 
 const suggestedReplySchema = z.object({
@@ -52,6 +57,11 @@ export const aiStrategistResponseSchema = z.object({
       funnel_goal: strategyFieldSchema,
       cta_goal: strategyFieldSchema,
       tone: strategyFieldSchema,
+      traffic_source: strategyFieldSchema,
+      bonus_role: strategyFieldSchema,
+      usage_moment: strategyFieldSchema,
+      sales_positioning: strategyFieldSchema,
+      buyer_objections: z.array(z.string().trim()).optional(),
     })
     .default({}),
   readiness_score: z.number().min(0).max(100).default(50),
@@ -78,6 +88,10 @@ export interface StrategistInput {
     audience: string;
     tone: string;
     niche: string;
+    ebook_type?: "lead_magnet" | "bonus_product" | "sellable_ebook";
+    cta_goal?: string | null;
+    cta_url_present?: boolean;
+    template_id?: string | null;
   };
   /** Recent chat messages (role + content). */
   history: { role: string; content: string }[];
@@ -111,6 +125,10 @@ export function parseStrategistResponse(raw: unknown): StrategistResult {
     "funnel_goal",
     "cta_goal",
     "tone",
+    "traffic_source",
+    "bonus_role",
+    "usage_moment",
+    "sales_positioning",
   ] as const;
   for (const key of scalarKeys) {
     if (key in sp) {
@@ -119,7 +137,11 @@ export function parseStrategistResponse(raw: unknown): StrategistResult {
         v === undefined || v === null ? null : v;
     }
   }
-  const arrayKeys = ["pain_points", "content_pillars"] as const;
+  const arrayKeys = [
+    "pain_points",
+    "content_pillars",
+    "buyer_objections",
+  ] as const;
   for (const key of arrayKeys) {
     if (key in sp) {
       (statePatch as Record<string, unknown>)[key] = sp[key] ?? [];
@@ -176,6 +198,11 @@ export async function runStrategist(
     `  funnel_goal: ${currentState.strategy.funnel_goal ?? "(none)"}`,
     `  cta_goal: ${currentState.strategy.cta_goal ?? "(none)"}`,
     `  tone: ${currentState.strategy.tone ?? "(none)"}`,
+    `  traffic_source: ${currentState.strategy.traffic_source ?? "(none)"}`,
+    `  bonus_role: ${currentState.strategy.bonus_role ?? "(none)"}`,
+    `  usage_moment: ${currentState.strategy.usage_moment ?? "(none)"}`,
+    `  sales_positioning: ${currentState.strategy.sales_positioning ?? "(none)"}`,
+    `  buyer_objections: ${currentState.strategy.buyer_objections?.length ? currentState.strategy.buyer_objections.join(" | ") : "(none)"}`,
     `  missing_fields: ${currentState.missing_fields.length ? currentState.missing_fields.join(", ") : "(none)"}`,
     `  next_action: ${currentState.next_action}`,
     currentState.conversation_summary
@@ -190,6 +217,14 @@ export async function runStrategist(
     .map((m) => `${m.role}: ${m.content}`)
     .join("\n");
 
+  const ebookType = project.ebook_type ?? "lead_magnet";
+  const typeGuidance =
+    ebookType === "lead_magnet"
+      ? "Ebook type: lead_magnet. Ensure one clear quick win, align lead goal with promise, bridge to next offer, keep length conversion-friendly. Do not re-ask known funnel_goal/traffic_source."
+      : ebookType === "bonus_product"
+        ? "Ebook type: bonus_product. Ground advice in parent product (product_or_offer). Bonus must not duplicate entire parent product. Use bonus_role and usage_moment. Deliver narrower outcome."
+        : "Ebook type: sellable_ebook. Ensure standalone paid value, clear differentiation, sufficient depth, address buyer_objections honestly.";
+
   const user = [
     `Project metadata:`,
     `  title: ${project.title}`,
@@ -197,6 +232,12 @@ export async function runStrategist(
     `  audience: ${project.audience}`,
     `  tone: ${project.tone}`,
     `  niche: ${project.niche}`,
+    `  ebook_type: ${ebookType}`,
+    `  cta_goal: ${project.cta_goal ?? "(none)"}`,
+    `  cta_url_present: ${project.cta_url_present ? "yes" : "no"}`,
+    `  template_id: ${project.template_id ?? "(none)"}`,
+    "",
+    typeGuidance,
     "",
     currentStateBlock,
     "",

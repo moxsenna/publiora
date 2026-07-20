@@ -186,7 +186,7 @@ create index idx_projects_status on projects(status);
 
 5\. Project States
 
-Structured strategy state dari chat agent.
+Structured strategy state dari chat agent. Schema version in `state_json.schema_version` is **3** (Strategy V3).
 
 create table project_states (
 
@@ -209,6 +209,24 @@ updated_at timestamptz not null default now()
 Index:
 
 create index idx_project_states_json on project_states using gin(state_json);
+
+Strategy V3 `state_json.strategy` adds type-specific fields on top of V2:
+
+- `traffic_source`, `bonus_role`, `usage_moment`, `sales_positioning`, `buyer_objections[]`
+
+Normalization upgrades V2 lazily on read. Missing fields / readiness are type-aware via `projects.ebook_type`.
+
+Atomic create (migration `20260720000002_create_project_with_state.sql`):
+
+```sql
+public.create_project_with_state(
+  p_project jsonb,
+  p_state jsonb,
+  p_readiness_score integer
+) returns public.projects
+```
+
+Requires `auth.uid()`; rejects forged `owner_id`; inserts project + state in one transaction.
 
 ---
 

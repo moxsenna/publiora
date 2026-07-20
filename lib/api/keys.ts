@@ -24,6 +24,9 @@ export const qk = {
     costs: ["billing", "costs"] as const,
   },
   templates: ["templates"] as const,
+  templatesByType: (ebookType: string) =>
+    ["templates", ebookType] as const,
+  me: ["auth", "me"] as const,
   titles: (projectId: string) => ["projects", projectId, "titles"] as const,
   ctas: (projectId: string) => ["projects", projectId, "ctas"] as const,
 };

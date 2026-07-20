@@ -34,28 +34,37 @@ User navigates to `app.publiora.web.id` and authenticates.
 **2. Dashboard**
 User views existing projects, published ebooks, and a "Create New Ebook" button.
 
-**3. Create New Ebook**
-User clicks "Create New Ebook" and is taken to the workspace at `/projects/[id]`.
+**3. Create New Ebook (type-aware wizard at `/projects/new`)**
+
+Four-step wizard: `Tujuan → Brief → Format → Tinjau`.
+
+1. **Tujuan** — choose purpose: Lead Magnet (`lead_magnet`), Bonus Pembelian (`bonus_product`), Ebook Berbayar (`sellable_ebook`).
+2. **Brief** — common fields (topic, audience, problem, outcome, niche, optional working title, author from profile) plus type-specific business context (lead goal/CTA, parent product/bonus role, sales positioning).
+3. **Format** — deterministic template recommendations (no AI). Selecting a template does not overwrite filled brief fields.
+4. **Tinjau** — review, then create.
+
+Server: `POST /api/projects` accepts Create Project V2 (structured) or legacy flat input. Seeds Strategy V3, validates template compatibility, creates project + `project_states` atomically via RPC `create_project_with_state`. Redirect `/projects/{id}?stage=strategy`.
 
 **4. Stage 1 -- Strategy (AI-Guided Brief Builder)**
 
 The Strategy stage is an AI-guided brief builder, not a generic chatbot. The interface has two panels:
 
 - **Left panel:** Conversation with the AI Strategist. The assistant asks one strategic question per turn in Bahasa Indonesia (default) or English.
-- **Right panel (desktop):** Structured brief (Brief Ebook) showing 6 core + 7 advanced fields, plus a readiness score card (Kesiapan Strategi). On mobile, the brief is accessible via a bottom sheet.
+- **Right panel (desktop):** Structured brief (Brief Ebook) with type-aware labels/fields + readiness score card (Kesiapan Strategi). On mobile, the brief is accessible via a bottom sheet.
 
 Key UX features:
+- **Seeded brief:** Creation already fills known strategy fields so Strategist does not re-ask known facts.
 - **Contextual quick replies:** The latest assistant message shows clickable chip suggestions (2-4 per turn). Each chip sends a complete first-person reply.
 - **Starter chips (empty state):** When the conversation is empty, 3 static starter chips appear ("Cari topik ebook", "Saya sudah punya topik", "Ebook untuk leads").
 - **Indonesian-first UI:** Labels, placeholders, buttons, and helper text are in Bahasa Indonesia. The assistant name is "Asisten Strategi" and the brief is "Brief Ebook".
-- **Manual brief editing:** Users can click "Edit brief" or tap a field to open StrategyFieldEditor (modal on desktop, full-screen on mobile). Manual edits update `strategy.updated_at`, which invalidates old assistant chips as stale context.
-- **Deterministic outline gate:** When all 6 required fields (topic, audience, primary_problem, desired_outcome, core_promise, unique_angle) are filled AND readiness_score >= 70, the "Buat struktur ebook" button becomes active.
-- **Mobile brief sheet:** On screens <lg, a compact trigger ("Lihat brief -- 3/6 -- Kesiapan 50%") opens a bottom sheet with the brief and readiness card.
-- **No raw markdown in assistant bubble:** Assistant messages are rendered through `AssistantMessageContent` which strips markdown artifacts and presents clean text.
+- **Manual brief editing:** Users can click "Edit brief" or tap a field to open StrategyFieldEditor. Manual edits update `strategy.updated_at`, which invalidates old assistant chips as stale context.
+- **Type-aware outline gate:** Required fields = base 6 + type extras. Outline unlocks when readiness_score >= 70 AND no required fields missing.
+- **Mobile brief sheet:** On screens <lg, a compact trigger opens a bottom sheet with the brief and readiness card.
+- **No raw markdown in assistant bubble:** Assistant messages are rendered through `AssistantMessageContent`.
 
-The AI Strategist helps the user define 13 fields total:
+Strategy V3 fields:
 
-Core (required for outline gate):
+Core (base required):
 - Ebook topic (topik)
 - Target audience (target pembaca)
 - Primary problem (masalah utama)
@@ -63,16 +72,18 @@ Core (required for outline gate):
 - Core promise (janji utama)
 - Unique angle (sudut unik)
 
-Advanced (collapsible):
-- Audience sophistication (tingkat pemahaman audiens)
-- Pain points (titik masalah)
-- Content pillars (pilar konten)
-- Product or offer (produk/penawaran)
-- Funnel goal (tujuan funnel)
-- CTA goal (tujuan CTA)
-- Tone (gaya bahasa)
+Type extras (required by type):
+- Lead Magnet: funnel_goal
+- Bonus Pembelian: product_or_offer, bonus_role, usage_moment
+- Ebook Berbayar: sales_positioning
 
-Output: Structured strategy with readiness score. When readiness >= 70 and all required fields are filled, the Outline stage unlocks.
+Advanced / enrichment (type-filtered):
+- Audience sophistication, pain points, content pillars, CTA goal, tone
+- Lead: traffic_source, next offer
+- Bonus: parent product / role / usage moment
+- Sellable: sales positioning, buyer objections
+
+Output: Structured strategy with readiness score. When readiness >= 70 and all type-required fields are filled, the Outline stage unlocks.
 
 **5. Stage 2 -- Outline**
 AI Planner generates a section-structured outline from the approved strategy.

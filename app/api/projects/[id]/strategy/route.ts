@@ -37,7 +37,8 @@ export async function GET(
   const access = await requireOwnedProject(id);
   if ("error" in access && access.error) return access.error;
 
-  const { supabase } = access;
+  const { supabase, project } = access;
+  const ebookType = project.ebook_type ?? "lead_magnet";
 
   const { data: stateRow, error: stateErr } = await supabase
     .from("project_states")
@@ -54,8 +55,8 @@ export async function GET(
   }
 
   const state = stateRow?.state_json
-    ? normalizeProjectState(stateRow.state_json)
-    : createEmptyProjectState();
+    ? normalizeProjectState(stateRow.state_json, ebookType)
+    : createEmptyProjectState(ebookType);
   const readinessScore = clampReadinessScore(stateRow?.readiness_score);
 
   return strategyResponse(state, readinessScore);
@@ -73,7 +74,8 @@ export async function PATCH(
   const access = await requireOwnedProject(id);
   if ("error" in access && access.error) return access.error;
 
-  const { supabase } = access;
+  const { supabase, project } = access;
+  const ebookType = project.ebook_type ?? "lead_magnet";
 
   // Parse request
   let body: unknown;
@@ -109,22 +111,29 @@ export async function PATCH(
   }
 
   const currentState = stateRow?.state_json
-    ? normalizeProjectState(stateRow.state_json)
-    : createEmptyProjectState();
+    ? normalizeProjectState(stateRow.state_json, ebookType)
+    : createEmptyProjectState(ebookType);
 
   // Merge safely: treat patch as a StrategistResult with only state_patch
-  const merged = mergeProjectState(currentState, {
-    assistant_message: "", // not used
-    state_patch: strategy_patch as Partial<EbookStrategy>,
-    readiness_score: 0, // recalculated deterministically below
-    missing_fields: [], // recomputed by mergeProjectState
-    next_action: currentState.next_action,
-    suggested_replies: [],
-    response_language: "id",
-  });
+  const merged = mergeProjectState(
+    currentState,
+    {
+      assistant_message: "", // not used
+      state_patch: strategy_patch as Partial<EbookStrategy>,
+      readiness_score: 0, // recalculated deterministically below
+      missing_fields: [], // recomputed by mergeProjectState
+      next_action: currentState.next_action,
+      suggested_replies: [],
+      response_language: "id",
+    },
+    ebookType,
+  );
 
   // Manual edits must not leave readiness stuck below the outline gate.
-  const readinessScore = computeDeterministicReadinessScore(merged.strategy);
+  const readinessScore = computeDeterministicReadinessScore(
+    merged.strategy,
+    ebookType,
+  );
 
   const { error: upsertErr } = await supabase.from("project_states").upsert(
     {

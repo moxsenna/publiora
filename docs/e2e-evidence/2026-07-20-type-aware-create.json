@@ -1,0 +1,263 @@
+{
+  "at": "2026-07-20T16:58:24.690Z",
+  "base": "http://127.0.0.1:3005",
+  "passed": 51,
+  "failed": 0,
+  "results": [
+    {
+      "n": "server health",
+      "pass": true,
+      "d": "200"
+    },
+    {
+      "n": "create user",
+      "pass": true,
+      "d": "typeaware_1784566696505@gmail.com"
+    },
+    {
+      "n": "sign in",
+      "pass": true,
+      "d": ""
+    },
+    {
+      "n": "reject invalid template",
+      "pass": true,
+      "d": "status=400"
+    },
+    {
+      "n": "reject invalid CTA URL",
+      "pass": true,
+      "d": "status=400"
+    },
+    {
+      "n": "reject type/context mismatch",
+      "pass": true,
+      "d": "status=400"
+    },
+    {
+      "n": "create lead_magnet",
+      "pass": true,
+      "d": "status=201 title=Panduan: Lead Generation B2B"
+    },
+    {
+      "n": "lead_magnet ebook_type",
+      "pass": true,
+      "d": "lead_magnet"
+    },
+    {
+      "n": "lead_magnet title present",
+      "pass": true,
+      "d": "Panduan: Lead Generation B2B"
+    },
+    {
+      "n": "lead cta_goal seeded",
+      "pass": true,
+      "d": ""
+    },
+    {
+      "n": "lead cta_url seeded",
+      "pass": true,
+      "d": ""
+    },
+    {
+      "n": "lead_magnet strategy load",
+      "pass": true,
+      "d": "200"
+    },
+    {
+      "n": "lead_magnet schema v3",
+      "pass": true,
+      "d": "3"
+    },
+    {
+      "n": "lead_magnet topic seeded",
+      "pass": true,
+      "d": "Lead Generation B2B"
+    },
+    {
+      "n": "lead_magnet audience seeded",
+      "pass": true,
+      "d": "Founder SaaS tahap awal"
+    },
+    {
+      "n": "lead_magnet no fabricated core_promise",
+      "pass": true,
+      "d": "null"
+    },
+    {
+      "n": "lead_magnet no fabricated unique_angle",
+      "pass": true,
+      "d": "null"
+    },
+    {
+      "n": "lead funnel_goal seeded",
+      "pass": true,
+      "d": "Mengumpulkan email"
+    },
+    {
+      "n": "lead traffic_source seeded",
+      "pass": true,
+      "d": "Konten organik"
+    },
+    {
+      "n": "lead next_offer mapped",
+      "pass": true,
+      "d": "Audit marketing gratis"
+    },
+    {
+      "n": "lead_magnet readiness partial",
+      "pass": true,
+      "d": "71"
+    },
+    {
+      "n": "lead_magnet missing core_promise",
+      "pass": true,
+      "d": "[\"core_promise\",\"unique_angle\"]"
+    },
+    {
+      "n": "create bonus_product",
+      "pass": true,
+      "d": "status=201 title=Panduan: Pilih produk TikTok Affiliate"
+    },
+    {
+      "n": "bonus_product ebook_type",
+      "pass": true,
+      "d": "bonus_product"
+    },
+    {
+      "n": "bonus_product title present",
+      "pass": true,
+      "d": "Panduan: Pilih produk TikTok Affiliate"
+    },
+    {
+      "n": "bonus_product strategy load",
+      "pass": true,
+      "d": "200"
+    },
+    {
+      "n": "bonus_product schema v3",
+      "pass": true,
+      "d": "3"
+    },
+    {
+      "n": "bonus_product topic seeded",
+      "pass": true,
+      "d": "Pilih produk TikTok Affiliate"
+    },
+    {
+      "n": "bonus_product audience seeded",
+      "pass": true,
+      "d": "Founder SaaS tahap awal"
+    },
+    {
+      "n": "bonus_product no fabricated core_promise",
+      "pass": true,
+      "d": "null"
+    },
+    {
+      "n": "bonus_product no fabricated unique_angle",
+      "pass": true,
+      "d": "null"
+    },
+    {
+      "n": "bonus parent product seeded",
+      "pass": true,
+      "d": "Kelas TikTok Affiliate untuk Pemula"
+    },
+    {
+      "n": "bonus role seeded",
+      "pass": true,
+      "d": "implementation_aid"
+    },
+    {
+      "n": "bonus usage_moment seeded",
+      "pass": true,
+      "d": "Setelah modul riset produk"
+    },
+    {
+      "n": "bonus_product readiness partial",
+      "pass": true,
+      "d": "68"
+    },
+    {
+      "n": "bonus_product missing core_promise",
+      "pass": true,
+      "d": "[\"core_promise\",\"unique_angle\"]"
+    },
+    {
+      "n": "create sellable_ebook",
+      "pass": true,
+      "d": "status=201 title=Panduan: Framework content engine premium"
+    },
+    {
+      "n": "sellable_ebook ebook_type",
+      "pass": true,
+      "d": "sellable_ebook"
+    },
+    {
+      "n": "sellable_ebook title present",
+      "pass": true,
+      "d": "Panduan: Framework content engine premium"
+    },
+    {
+      "n": "sellable_ebook strategy load",
+      "pass": true,
+      "d": "200"
+    },
+    {
+      "n": "sellable_ebook schema v3",
+      "pass": true,
+      "d": "3"
+    },
+    {
+      "n": "sellable_ebook topic seeded",
+      "pass": true,
+      "d": "Framework content engine premium"
+    },
+    {
+      "n": "sellable_ebook audience seeded",
+      "pass": true,
+      "d": "Founder SaaS tahap awal"
+    },
+    {
+      "n": "sellable_ebook no fabricated core_promise",
+      "pass": true,
+      "d": "null"
+    },
+    {
+      "n": "sellable_ebook no fabricated unique_angle",
+      "pass": true,
+      "d": "null"
+    },
+    {
+      "n": "sellable positioning seeded",
+      "pass": true,
+      "d": "premium_authority"
+    },
+    {
+      "n": "sellable objections seeded",
+      "pass": true,
+      "d": "[\"Pembeli merasa informasi serupa tersedia gratis\",\"Pembeli ragu ebook cukup praktis\"]"
+    },
+    {
+      "n": "sellable_ebook readiness partial",
+      "pass": true,
+      "d": "69"
+    },
+    {
+      "n": "sellable_ebook missing core_promise",
+      "pass": true,
+      "d": "[\"core_promise\",\"unique_angle\"]"
+    },
+    {
+      "n": "legacy create still works",
+      "pass": true,
+      "d": "status=201"
+    },
+    {
+      "n": "cleanup",
+      "pass": true,
+      "d": "4 projects + user"
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { StrategyBriefCard } from "@/components/workspace/StrategyBriefCard";
 import { StrategyReadinessCard } from "@/components/workspace/StrategyReadinessCard";
 import type { EbookStrategy, StrategyNextAction } from "@/types/strategy";
+import type { EbookType } from "@/types/project";
 
 // ---------------------------------------------------------------------------
 // StrategyBriefSheet
@@ -28,6 +29,7 @@ interface StrategyBriefSheetProps {
   open: boolean;
   onClose: () => void;
   strategy: EbookStrategy;
+  ebookType?: EbookType | null;
   readinessScore: number;
   missingFields: string[];
   nextAction: StrategyNextAction;
@@ -40,6 +42,7 @@ export function StrategyBriefSheet({
   open,
   onClose,
   strategy,
+  ebookType,
   readinessScore,
   missingFields,
   nextAction,
@@ -152,6 +155,7 @@ export function StrategyBriefSheet({
         <div className="flex-1 overflow-y-auto overscroll-contain p-3 space-y-3">
           <StrategyBriefCard
             strategy={strategy}
+            ebookType={ebookType}
             onEdit={onEdit}
             onEditField={onEditField}
           />

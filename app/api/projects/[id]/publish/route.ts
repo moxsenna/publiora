@@ -134,8 +134,11 @@ export async function POST(
     }
 
     const strategyState = stateRow?.state_json
-      ? normalizeProjectState(stateRow.state_json)
-      : createEmptyProjectState();
+      ? normalizeProjectState(
+          stateRow.state_json,
+          project.ebook_type ?? "lead_magnet",
+        )
+      : createEmptyProjectState(project.ebook_type ?? "lead_magnet");
     const readinessScore = clampReadinessScore(stateRow?.readiness_score);
 
     const { data: outlineRow, error: outlineErr } = await supabase

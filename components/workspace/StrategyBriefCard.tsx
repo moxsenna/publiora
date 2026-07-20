@@ -6,10 +6,14 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Edit3, CheckCircle2, Circle, ChevronRight } from "lucide-react";
 import type { EbookStrategy } from "@/types/strategy";
-import { REQUIRED_STRATEGY_FIELDS } from "@/types/strategy";
+import {
+  getRequiredStrategyFields,
+  REQUIRED_STRATEGY_FIELDS,
+} from "@/types/strategy";
+import type { EbookType } from "@/types/project";
 import {
   STRATEGY_COPY_ID,
-  STRATEGY_BRIEF_FIELD_LABELS,
+  strategyBriefFieldLabel,
 } from "@/lib/workflow/strategy-copy";
 
 // ---------------------------------------------------------------------------
@@ -18,29 +22,33 @@ import {
 
 interface DisplayField {
   key: keyof EbookStrategy;
-  label: string;
   type: "scalar" | "array";
 }
 
 /** Six core (informasi inti) fields shown first. */
 const CORE_FIELDS: DisplayField[] = [
-  { key: "topic", label: STRATEGY_BRIEF_FIELD_LABELS.topic, type: "scalar" },
-  { key: "audience", label: STRATEGY_BRIEF_FIELD_LABELS.audience, type: "scalar" },
-  { key: "primary_problem", label: STRATEGY_BRIEF_FIELD_LABELS.primary_problem, type: "scalar" },
-  { key: "desired_outcome", label: STRATEGY_BRIEF_FIELD_LABELS.desired_outcome, type: "scalar" },
-  { key: "core_promise", label: STRATEGY_BRIEF_FIELD_LABELS.core_promise, type: "scalar" },
-  { key: "unique_angle", label: STRATEGY_BRIEF_FIELD_LABELS.unique_angle, type: "scalar" },
+  { key: "topic", type: "scalar" },
+  { key: "audience", type: "scalar" },
+  { key: "primary_problem", type: "scalar" },
+  { key: "desired_outcome", type: "scalar" },
+  { key: "core_promise", type: "scalar" },
+  { key: "unique_angle", type: "scalar" },
 ];
 
-/** Seven advanced context fields hidden behind a collapsible section. */
+/** Advanced context fields hidden behind a collapsible section. */
 const ADVANCED_FIELDS: DisplayField[] = [
-  { key: "audience_sophistication", label: STRATEGY_BRIEF_FIELD_LABELS.audience_sophistication, type: "scalar" },
-  { key: "pain_points", label: STRATEGY_BRIEF_FIELD_LABELS.pain_points, type: "array" },
-  { key: "content_pillars", label: STRATEGY_BRIEF_FIELD_LABELS.content_pillars, type: "array" },
-  { key: "product_or_offer", label: STRATEGY_BRIEF_FIELD_LABELS.product_or_offer, type: "scalar" },
-  { key: "funnel_goal", label: STRATEGY_BRIEF_FIELD_LABELS.funnel_goal, type: "scalar" },
-  { key: "cta_goal", label: STRATEGY_BRIEF_FIELD_LABELS.cta_goal, type: "scalar" },
-  { key: "tone", label: STRATEGY_BRIEF_FIELD_LABELS.tone, type: "scalar" },
+  { key: "audience_sophistication", type: "scalar" },
+  { key: "pain_points", type: "array" },
+  { key: "content_pillars", type: "array" },
+  { key: "product_or_offer", type: "scalar" },
+  { key: "funnel_goal", type: "scalar" },
+  { key: "cta_goal", type: "scalar" },
+  { key: "tone", type: "scalar" },
+  { key: "traffic_source", type: "scalar" },
+  { key: "bonus_role", type: "scalar" },
+  { key: "usage_moment", type: "scalar" },
+  { key: "sales_positioning", type: "scalar" },
+  { key: "buyer_objections", type: "array" },
 ];
 
 function fieldValue(strategy: EbookStrategy, key: keyof EbookStrategy): string {
@@ -51,8 +59,34 @@ function fieldValue(strategy: EbookStrategy, key: keyof EbookStrategy): string {
   return (v as string)?.trim() ?? "";
 }
 
-function isRequiredField(key: keyof EbookStrategy): boolean {
-  return (REQUIRED_STRATEGY_FIELDS as string[]).includes(key);
+function isRequiredField(
+  key: keyof EbookStrategy,
+  ebookType?: EbookType | null,
+): boolean {
+  const required = ebookType
+    ? getRequiredStrategyFields(ebookType)
+    : REQUIRED_STRATEGY_FIELDS;
+  return (required as string[]).includes(key);
+}
+
+function advancedFieldsForType(ebookType?: EbookType | null): DisplayField[] {
+  return ADVANCED_FIELDS.filter((f) => {
+    if (f.key === "funnel_goal" && ebookType === "bonus_product") return false;
+    if (f.key === "traffic_source" && ebookType !== "lead_magnet") return false;
+    if (
+      (f.key === "bonus_role" || f.key === "usage_moment") &&
+      ebookType !== "bonus_product"
+    ) {
+      return false;
+    }
+    if (
+      (f.key === "sales_positioning" || f.key === "buyer_objections") &&
+      ebookType !== "sellable_ebook"
+    ) {
+      return false;
+    }
+    return true;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -62,13 +96,15 @@ function isRequiredField(key: keyof EbookStrategy): boolean {
 interface FieldRowProps {
   field: DisplayField;
   strategy: EbookStrategy;
+  ebookType?: EbookType | null;
   onClick?: (key: keyof EbookStrategy) => void;
 }
 
-function FieldRow({ field, strategy, onClick }: FieldRowProps) {
+function FieldRow({ field, strategy, ebookType, onClick }: FieldRowProps) {
   const val = fieldValue(strategy, field.key);
   const filled = val.length > 0;
-  const required = isRequiredField(field.key);
+  const required = isRequiredField(field.key, ebookType);
+  const label = strategyBriefFieldLabel(field.key, ebookType);
 
   const handleClick = onClick ? () => onClick(field.key) : undefined;
 
@@ -96,7 +132,7 @@ function FieldRow({ field, strategy, onClick }: FieldRowProps) {
       )}
       <div className="min-w-0 flex-1">
         <span className="font-medium text-[var(--color-deep-gray)]">
-          {field.label}
+          {label}
         </span>
         {required && !filled && (
           <Badge variant="warning" className="ml-1.5 align-middle">
@@ -133,19 +169,27 @@ function FieldRow({ field, strategy, onClick }: FieldRowProps) {
 interface StrategyBriefCardProps {
   strategy: EbookStrategy;
   onEdit: () => void;
+  ebookType?: EbookType | null;
   /** Called when a field row is clicked, so the parent can open the editor focused on that field. */
   onEditField?: (key: keyof EbookStrategy) => void;
 }
 
-export function StrategyBriefCard({ strategy, onEdit, onEditField }: StrategyBriefCardProps) {
-  // Count only the 6 required/informasi-inti fields per spec
-  const requiredKeys = REQUIRED_STRATEGY_FIELDS;
+export function StrategyBriefCard({
+  strategy,
+  onEdit,
+  onEditField,
+  ebookType,
+}: StrategyBriefCardProps) {
+  const requiredKeys = ebookType
+    ? getRequiredStrategyFields(ebookType)
+    : REQUIRED_STRATEGY_FIELDS;
   const filledRequiredCount = requiredKeys.filter((key) => {
     const v = fieldValue(strategy, key);
     return v.length > 0;
   }).length;
-  const requiredTotal = requiredKeys.length; // 6
+  const requiredTotal = requiredKeys.length;
   const remaining = requiredTotal - filledRequiredCount;
+  const advanced = advancedFieldsForType(ebookType);
 
   return (
     <Card>
@@ -168,7 +212,13 @@ export function StrategyBriefCard({ strategy, onEdit, onEditField }: StrategyBri
         {/* Core fields (always visible) */}
         <ul className="space-y-2" aria-label="Informasi inti strategi ebook">
           {CORE_FIELDS.map((f) => (
-            <FieldRow key={f.key} field={f} strategy={strategy} onClick={onEditField} />
+            <FieldRow
+              key={f.key}
+              field={f}
+              strategy={strategy}
+              ebookType={ebookType}
+              onClick={onEditField}
+            />
           ))}
         </ul>
 
@@ -179,8 +229,14 @@ export function StrategyBriefCard({ strategy, onEdit, onEditField }: StrategyBri
             {STRATEGY_COPY_ID.advancedContext}
           </summary>
           <ul className="space-y-2 mt-2 pl-1" aria-label="Konteks tambahan strategi ebook">
-            {ADVANCED_FIELDS.map((f) => (
-              <FieldRow key={f.key} field={f} strategy={strategy} onClick={onEditField} />
+            {advanced.map((f) => (
+              <FieldRow
+                key={f.key}
+                field={f}
+                strategy={strategy}
+                ebookType={ebookType}
+                onClick={onEditField}
+              />
             ))}
           </ul>
         </details>

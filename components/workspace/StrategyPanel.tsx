@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { useMessages, useSendMessage, useStrategy } from "@/lib/api/hooks";
+import {
+  useMessages,
+  useProject,
+  useSendMessage,
+  useStrategy,
+} from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -41,6 +46,8 @@ interface StrategyPanelProps {
 export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProps) {
   const { data: messages, isLoading: msgsLoading } = useMessages(projectId);
   const { data: strategyData, isLoading: strategyLoading } = useStrategy(projectId);
+  const { data: project } = useProject(projectId);
+  const ebookType = project?.ebook_type ?? "lead_magnet";
   const send = useSendMessage();
   const pushToast = useUiStore((s) => s.pushToast);
 
@@ -328,6 +335,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           <>
             <StrategyBriefCard
               strategy={strategy}
+              ebookType={ebookType}
               onEdit={() => {
                 setEditorInitialField(null);
                 setEditorOpen(true);
@@ -368,6 +376,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           }}
           projectId={projectId}
           strategy={strategy}
+          ebookType={ebookType}
           initialField={editorInitialField}
         />
       )}
@@ -378,6 +387,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           open={briefSheetOpen}
           onClose={() => setBriefSheetOpen(false)}
           strategy={strategy}
+          ebookType={ebookType}
           readinessScore={readinessScore}
           missingFields={missingFields}
           nextAction={nextAction}

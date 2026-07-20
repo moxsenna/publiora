@@ -63,6 +63,11 @@ function makeStrategy(overrides: Partial<EbookStrategy> = {}): EbookStrategy {
     funnel_goal: null,
     cta_goal: null,
     tone: null,
+  traffic_source: null,
+  bonus_role: null,
+  usage_moment: null,
+  sales_positioning: null,
+  buyer_objections: [],
     ...overrides,
   };
 }

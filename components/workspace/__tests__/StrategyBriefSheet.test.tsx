@@ -38,12 +38,14 @@ const useMessagesMock = vi.fn();
 const useStrategyMock = vi.fn();
 const useSendMessageMock = vi.fn();
 const usePatchStrategyMock = vi.fn();
+const useProjectMock = vi.fn();
 
 vi.mock("@/lib/api/hooks", () => ({
   useMessages: (...args: any[]) => useMessagesMock(...args),
   useStrategy: (...args: any[]) => useStrategyMock(...args),
   useSendMessage: (...args: any[]) => useSendMessageMock(...args),
   usePatchStrategy: (...args: any[]) => usePatchStrategyMock(...args),
+  useProject: (...args: any[]) => useProjectMock(...args),
 }));
 
 vi.mock("@/lib/workflow/strategy-copy", () => {
@@ -139,6 +141,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   useMessagesMock.mockReturnValue(mockMessagesData());
   useStrategyMock.mockReturnValue(mockStrategyData());
+  useProjectMock.mockReturnValue({
+    data: { id: "proj-1", ebook_type: "lead_magnet" },
+    isLoading: false,
+  });
   useSendMessageMock.mockReturnValue({
     mutateAsync: vi.fn(),
     isPending: false,

@@ -62,10 +62,13 @@ export function useProject(id: string) {
   });
 }
 
+/** V2 structured create body or legacy flat ProjectInput. */
+export type CreateProjectBody = ProjectInput | { version: 2; [key: string]: unknown };
+
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: ProjectInput) =>
+    mutationFn: (input: CreateProjectBody) =>
       apiFetch<Project>("/api/projects", {
         method: "POST",
         body: JSON.stringify(input),
@@ -571,11 +574,28 @@ export function usePurchaseCreditPack() {
   });
 }
 
-// Templates
-export function useTemplates() {
+// Auth / profile
+export function useMe() {
   return useQuery({
-    queryKey: qk.templates,
-    queryFn: () => apiFetch<Template[]>("/api/templates"),
+    queryKey: qk.me,
+    queryFn: () =>
+      apiFetch<{
+        user: { id: string; email: string | null };
+        profile: import("@/types/auth").Profile;
+      }>("/api/auth/me"),
+  });
+}
+
+// Templates
+export function useTemplates(ebookType?: string) {
+  return useQuery({
+    queryKey: ebookType ? qk.templatesByType(ebookType) : qk.templates,
+    queryFn: () =>
+      apiFetch<Template[]>(
+        ebookType
+          ? `/api/templates?ebook_type=${encodeURIComponent(ebookType)}`
+          : "/api/templates",
+      ),
   });
 }
 

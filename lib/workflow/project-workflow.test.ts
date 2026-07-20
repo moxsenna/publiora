@@ -97,6 +97,11 @@ function makeFullStrategy(): EbookStrategy {
     funnel_goal: null,
     cta_goal: null,
     tone: "authoritative",
+  traffic_source: null,
+  bonus_role: null,
+  usage_moment: null,
+  sales_positioning: null,
+  buyer_objections: [],
   };
 }
 
@@ -104,7 +109,7 @@ function makeStrategyState(
   overrides: Partial<EbookStrategy> = {},
 ): ProjectStateV2 {
   return {
-    schema_version: 2,
+    schema_version: 3,
     strategy: { ...makeFullStrategy(), ...overrides },
     missing_fields: [],
     next_action: "create_outline",

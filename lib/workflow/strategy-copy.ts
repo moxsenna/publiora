@@ -94,6 +94,7 @@ export const STRATEGY_STARTER_REPLIES_ID = [
 // ---------------------------------------------------------------------------
 
 import type { EbookStrategy } from "@/types/strategy";
+// EbookType imported near type-aware helpers below
 
 /** Full editor labels (plan §5.9 table). */
 export const STRATEGY_FIELD_LABELS: Record<keyof EbookStrategy, string> = {
@@ -110,6 +111,11 @@ export const STRATEGY_FIELD_LABELS: Record<keyof EbookStrategy, string> = {
   funnel_goal: "Tujuan funnel",
   cta_goal: "Tujuan CTA",
   tone: "Gaya bahasa",
+  traffic_source: "Sumber traffic",
+  bonus_role: "Fungsi bonus",
+  usage_moment: "Waktu penggunaan bonus",
+  sales_positioning: "Posisi produk",
+  buyer_objections: "Keberatan pembeli",
 };
 
 /** Short display labels used in the brief card list (16-char budget). */
@@ -127,7 +133,47 @@ export const STRATEGY_BRIEF_FIELD_LABELS: Record<keyof EbookStrategy, string> = 
   funnel_goal: "Tujuan funnel",
   cta_goal: "Tujuan CTA",
   tone: "Gaya bahasa",
+  traffic_source: "Sumber traffic",
+  bonus_role: "Fungsi bonus",
+  usage_moment: "Waktu penggunaan",
+  sales_positioning: "Posisi produk",
+  buyer_objections: "Keberatan pembeli",
 };
+
+import type { EbookType } from "@/types/project";
+
+/** Type-aware field label overrides for brief/editor. */
+export function strategyFieldLabel(
+  key: keyof EbookStrategy,
+  ebookType?: EbookType | null,
+): string {
+  if (key === "product_or_offer") {
+    if (ebookType === "lead_magnet") return "Produk/layanan lanjutan";
+    if (ebookType === "bonus_product") return "Produk utama";
+    if (ebookType === "sellable_ebook") return "Offer atau bundle terkait";
+  }
+  if (key === "funnel_goal") {
+    if (ebookType === "lead_magnet") return "Tujuan lead magnet";
+    if (ebookType === "sellable_ebook") return "Tujuan penjualan";
+  }
+  return STRATEGY_FIELD_LABELS[key];
+}
+
+export function strategyBriefFieldLabel(
+  key: keyof EbookStrategy,
+  ebookType?: EbookType | null,
+): string {
+  if (key === "product_or_offer") {
+    if (ebookType === "lead_magnet") return "Offer lanjutan";
+    if (ebookType === "bonus_product") return "Produk utama";
+    if (ebookType === "sellable_ebook") return "Offer terkait";
+  }
+  if (key === "funnel_goal") {
+    if (ebookType === "lead_magnet") return "Tujuan lead";
+    if (ebookType === "sellable_ebook") return "Tujuan jual";
+  }
+  return STRATEGY_BRIEF_FIELD_LABELS[key];
+}
 
 // ---------------------------------------------------------------------------
 // Missing-field prompt suggestions — shown when the assistant identifies
@@ -147,6 +193,11 @@ export const STRATEGY_MISSING_FIELD_PROMPTS: Record<string, string> = {
   funnel_goal: "Tujuan funnel apa yang paling cocok?",
   cta_goal: "Bantu saya menentukan tujuan CTA",
   tone: "Gaya bahasa apa yang cocok untuk ebook ini?",
+  traffic_source: "Dari mana traffic lead magnet ini datang?",
+  bonus_role: "Apa fungsi utama bonus ini?",
+  usage_moment: "Kapan bonus ini sebaiknya digunakan?",
+  sales_positioning: "Di mana posisi ebook ini dalam penawaran saya?",
+  buyer_objections: "Keberatan apa yang sering muncul dari pembeli?",
   audience_sophistication:
     "Tingkat pemahaman seperti apa yang sesuai dengan audiens?",
 };

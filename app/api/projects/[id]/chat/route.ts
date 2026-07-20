@@ -69,7 +69,11 @@ export async function POST(
         "db_error",
       );
     }
-    currentState = normalizeProjectState(stateRow?.state_json ?? null);
+    const ebookType = project.ebook_type ?? "lead_magnet";
+    currentState = normalizeProjectState(
+      stateRow?.state_json ?? null,
+      ebookType,
+    );
   }
 
   // 4. Load true recent N messages (newest first), reverse to chronological
@@ -99,6 +103,10 @@ export async function POST(
         audience: project.audience,
         tone: project.tone,
         niche: project.niche,
+        ebook_type: project.ebook_type,
+        cta_goal: project.cta_goal,
+        cta_url_present: Boolean(project.cta_url),
+        template_id: project.template_id,
       },
       history: historyRows,
       userMessage: content,
@@ -119,7 +127,12 @@ export async function POST(
   }
 
   // 6. Merge state
-  const mergedState = mergeProjectState(currentState, strategistResult);
+  const ebookType = project.ebook_type ?? "lead_magnet";
+  const mergedState = mergeProjectState(
+    currentState,
+    strategistResult,
+    ebookType,
+  );
   const readiness = clampReadinessScore(strategistResult.readiness_score);
 
   // 7. Persist only after AI success: user message, then state, then assistant

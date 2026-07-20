@@ -34,6 +34,11 @@ export const strategyPatchSchema = z.object({
       funnel_goal: z.string().trim().nullable().optional(),
       cta_goal: z.string().trim().nullable().optional(),
       tone: z.string().trim().nullable().optional(),
+      traffic_source: z.string().trim().nullable().optional(),
+      bonus_role: z.string().trim().nullable().optional(),
+      usage_moment: z.string().trim().nullable().optional(),
+      sales_positioning: z.string().trim().nullable().optional(),
+      buyer_objections: z.array(z.string().trim()).optional(),
     })
     .strict(),
 });

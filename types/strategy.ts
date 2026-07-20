@@ -1,6 +1,8 @@
 // Project strategy — AI-guided ebook planning domain.
 
-export const PROJECT_STATE_SCHEMA_VERSION = 2 as const;
+import type { EbookType } from "@/types/project";
+
+export const PROJECT_STATE_SCHEMA_VERSION = 3 as const;
 
 export type StrategyNextAction =
   | "continue_strategy"
@@ -22,10 +24,16 @@ export interface EbookStrategy {
   funnel_goal: string | null;
   cta_goal: string | null;
   tone: string | null;
+  // V3 type-specific context
+  traffic_source: string | null;
+  bonus_role: string | null;
+  usage_moment: string | null;
+  sales_positioning: string | null;
+  buyer_objections: string[];
 }
 
-/** The set of required strategy fields that must be non-empty for readiness. */
-export const REQUIRED_STRATEGY_FIELDS: (keyof EbookStrategy)[] = [
+/** Base required strategy fields for all ebook types. */
+export const BASE_REQUIRED_STRATEGY_FIELDS: (keyof EbookStrategy)[] = [
   "topic",
   "audience",
   "primary_problem",
@@ -34,7 +42,29 @@ export const REQUIRED_STRATEGY_FIELDS: (keyof EbookStrategy)[] = [
   "unique_angle",
 ];
 
-export interface ProjectStateV2 {
+/**
+ * @deprecated Prefer getRequiredStrategyFields(ebookType).
+ * Kept for callers that have not yet adopted type-aware readiness.
+ */
+export const REQUIRED_STRATEGY_FIELDS = BASE_REQUIRED_STRATEGY_FIELDS;
+
+export function getRequiredStrategyFields(
+  ebookType: EbookType,
+): (keyof EbookStrategy)[] {
+  const base = [...BASE_REQUIRED_STRATEGY_FIELDS];
+  switch (ebookType) {
+    case "lead_magnet":
+      return [...base, "funnel_goal"];
+    case "bonus_product":
+      return [...base, "product_or_offer", "bonus_role", "usage_moment"];
+    case "sellable_ebook":
+      return [...base, "sales_positioning"];
+    default:
+      return base;
+  }
+}
+
+export interface ProjectStateV3 {
   schema_version: typeof PROJECT_STATE_SCHEMA_VERSION;
   strategy: EbookStrategy;
   missing_fields: string[];
@@ -42,6 +72,9 @@ export interface ProjectStateV2 {
   conversation_summary: string | null;
   updated_at: string;
 }
+
+/** @deprecated Alias for ProjectStateV3 during migration. */
+export type ProjectStateV2 = ProjectStateV3;
 
 export type StrategySuggestedReplyIntent =
   | "answer"
