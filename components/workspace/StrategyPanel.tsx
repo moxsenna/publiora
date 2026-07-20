@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AssistantMessageContent } from "@/components/workspace/AssistantMessageContent";
 import { StrategyBriefCard } from "@/components/workspace/StrategyBriefCard";
 import { StrategyReadinessCard } from "@/components/workspace/StrategyReadinessCard";
 import { StrategyFieldEditor } from "@/components/workspace/StrategyFieldEditor";
@@ -335,11 +336,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             : "bg-white border border-[var(--color-publiora-border)] text-[var(--color-deep-gray)] rounded-tl-sm"
         )}
       >
-        {message.content}
-        {message.role === "assistant" && (
-          <div className="mt-2 text-xs uppercase tracking-wide text-[var(--color-medium-gray)]">
-            {HEADER_LABEL}
-          </div>
+        {message.role === "assistant" ? (
+          <AssistantMessageContent content={message.content} />
+        ) : (
+          message.content
         )}
       </div>
       {message.role === "user" && (

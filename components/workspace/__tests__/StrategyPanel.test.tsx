@@ -497,11 +497,11 @@ describe("messages rendering", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Indonesian assistant label on assistant messages", () => {
+  it("renders Indonesian assistant label in header", () => {
     render(<StrategyPanel projectId="proj-1" />);
     const labels = screen.getAllByText(COPY.assistantName);
-    // At least one from header + one from assistant message bubble
-    expect(labels.length).toBeGreaterThan(1);
+    // Header label only (STRATEGY ASSISTANT footer removed per S09)
+    expect(labels.length).toBeGreaterThanOrEqual(1);
   });
 });
 
