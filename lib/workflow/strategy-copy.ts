@@ -58,6 +58,11 @@ export const STRATEGY_COPY_ID = {
   mobileStepOf: (current: number, total: number) =>
     `Tahap ${current} dari ${total}`,
   mobileActive: "aktif",
+
+  // Compact brief trigger (tablet + mobile, <lg)
+  viewBrief: "Lihat brief",
+  briefCompactSummary: (filled: number, total: number, score: number) =>
+    `Lihat brief \u00b7 ${filled}/${total} \u00b7 Kesiapan ${score}%`,
 } as const;
 
 // ---------------------------------------------------------------------------

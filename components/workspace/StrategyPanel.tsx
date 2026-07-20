@@ -12,10 +12,12 @@ import { ContextualQuickReplies } from "@/components/workspace/ContextualQuickRe
 import { StrategyBriefCard } from "@/components/workspace/StrategyBriefCard";
 import { StrategyReadinessCard } from "@/components/workspace/StrategyReadinessCard";
 import { StrategyFieldEditor } from "@/components/workspace/StrategyFieldEditor";
+import { StrategyBriefSheet } from "@/components/workspace/StrategyBriefSheet";
 import { Send, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/message";
 import type { EbookStrategy, StrategyNextAction } from "@/types/strategy";
+import { REQUIRED_STRATEGY_FIELDS } from "@/types/strategy";
 import {
   STRATEGY_COPY_ID,
   STRATEGY_STARTER_REPLIES_ID,
@@ -42,6 +44,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const [pendingText, setPendingText] = React.useState<string | null>(null);
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editorInitialField, setEditorInitialField] = React.useState<keyof EbookStrategy | null>(null);
+  const [briefSheetOpen, setBriefSheetOpen] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const taRef = React.useRef<HTMLTextAreaElement>(null);
   const sendStatusRef = React.useRef<HTMLDivElement>(null);
@@ -51,6 +54,16 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const missingFields = strategyData?.state.missing_fields ?? [];
   const nextAction: StrategyNextAction =
     strategyData?.state.next_action ?? "continue_strategy";
+
+  // Core filled count for compact trigger
+  const coreFilled = React.useMemo(() => {
+    if (!strategy) return 0;
+    return REQUIRED_STRATEGY_FIELDS.filter((key) => {
+      const v = strategy[key];
+      if (Array.isArray(v)) return v.filter(Boolean).length > 0;
+      return (v as string)?.trim().length > 0;
+    }).length;
+  }, [strategy]);
 
   // Auto-scroll to bottom on new messages
   React.useEffect(() => {
@@ -110,11 +123,11 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const showSkeleton = send.isPending && latestAssistant !== null;
 
   return (
-    <div className="flex flex-col sm:flex-row h-full bg-[var(--color-surface-2)]">
+    <div className="flex flex-col lg:flex-row h-full bg-[var(--color-surface-2)]">
       {/* ------------------------------------------------------------------ */}
       {/* Left: Conversation */}
       {/* ------------------------------------------------------------------ */}
-      <div className="flex flex-col flex-1 min-h-0 min-w-0 border-r border-[var(--color-publiora-border)]">
+      <div className="flex flex-col flex-1 min-h-0 min-w-0 lg:border-r border-[var(--color-publiora-border)]">
         {/* Header */}
         <div className="shrink-0 px-3 py-2.5 border-b border-[var(--color-publiora-border)] bg-white">
           <div className="flex items-center gap-2">
@@ -230,6 +243,17 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           )}
         </div>
 
+        {/* Compact brief trigger (tablet + mobile, <lg) */}
+        {strategy && (
+          <button
+            type="button"
+            onClick={() => setBriefSheetOpen(true)}
+            className="lg:hidden shrink-0 border-t border-[var(--color-publiora-border)] bg-white px-3 py-2 text-sm font-medium text-[var(--color-publiora-black)] hover:bg-[var(--color-surface-2)] transition-colors text-left"
+          >
+            {STRATEGY_COPY_ID.briefCompactSummary(coreFilled, REQUIRED_STRATEGY_FIELDS.length, readinessScore)}
+          </button>
+        )}
+
         {/* Composer */}
         <div className="border-t border-[var(--color-publiora-border)] bg-white p-2.5">
           <div className="flex items-end gap-2">
@@ -275,9 +299,9 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Right: Brief + Readiness (desktop side panel) */}
+      {/* Right: Brief + Readiness (desktop side panel, lg+) */}
       {/* ------------------------------------------------------------------ */}
-      <div className="hidden sm:flex sm:flex-col sm:w-80 lg:w-96 shrink-0 overflow-y-auto p-3 gap-3 bg-[var(--color-surface-2)]">
+      <div className="hidden lg:flex lg:flex-col lg:w-[340px] xl:w-96 shrink-0 overflow-y-auto p-3 gap-3 bg-[var(--color-surface-2)]">
         {strategyLoading ? (
           <>
             <Skeleton className="h-48" />
@@ -317,47 +341,6 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
         )}
       </div>
 
-      {/* Mobile: collapsible brief section below messages */}
-      <div className="sm:hidden border-t border-[var(--color-publiora-border)] bg-white px-3 py-3 space-y-3 overflow-y-auto max-h-[40vh]">
-        {strategyLoading ? (
-          <>
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-          </>
-        ) : strategy ? (
-          <>
-            <StrategyBriefCard
-              strategy={strategy}
-              onEdit={() => {
-                setEditorInitialField(null);
-                setEditorOpen(true);
-              }}
-              onEditField={(key) => {
-                setEditorInitialField(key);
-                setEditorOpen(true);
-              }}
-            />
-            <StrategyReadinessCard
-              readinessScore={readinessScore}
-              missingFields={missingFields}
-              nextAction={nextAction}
-              onRequestOutline={onRequestOutline}
-            />
-          </>
-        ) : (
-          <div className="text-sm text-[var(--color-medium-gray)] text-center py-4 space-y-3">
-            <p>{STRATEGY_COPY_ID.strategyUnavailable}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.reload()}
-            >
-              {STRATEGY_COPY_ID.reload}
-            </Button>
-          </div>
-        )}
-      </div>
-
       {/* Field editor modal */}
       {strategy && (
         <StrategyFieldEditor
@@ -369,6 +352,29 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
           projectId={projectId}
           strategy={strategy}
           initialField={editorInitialField}
+        />
+      )}
+
+      {/* Brief sheet (tablet + mobile, <lg) */}
+      {strategy && (
+        <StrategyBriefSheet
+          open={briefSheetOpen}
+          onClose={() => setBriefSheetOpen(false)}
+          strategy={strategy}
+          readinessScore={readinessScore}
+          missingFields={missingFields}
+          nextAction={nextAction}
+          onEdit={() => {
+            setBriefSheetOpen(false);
+            setEditorInitialField(null);
+            setEditorOpen(true);
+          }}
+          onEditField={(key) => {
+            setBriefSheetOpen(false);
+            setEditorInitialField(key);
+            setEditorOpen(true);
+          }}
+          onRequestOutline={onRequestOutline}
         />
       )}
     </div>

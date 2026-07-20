@@ -833,9 +833,9 @@ describe("brief editor", () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    // There are two "Edit brief" buttons (desktop + mobile).
+    // There is one "Edit brief" button (desktop right panel, hidden on <lg but in DOM)
     const editButtons = screen.getAllByLabelText(COPY.editBrief);
-    expect(editButtons.length).toBe(2); // baseline: desktop + mobile duplicates
+    expect(editButtons.length).toBe(1);
     await user.click(editButtons[0]!);
 
     await waitFor(() => {
