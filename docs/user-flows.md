@@ -34,16 +34,27 @@ User navigates to `app.publiora.web.id` and authenticates.
 **2. Dashboard**
 User views existing projects, published ebooks, and a "Create New Ebook" button.
 
-**3. Create New Ebook (type-aware wizard at `/projects/new`)**
+**3. Create New Ebook (offer-aware wizard at `/projects/new`)**
 
-Four-step wizard: `Tujuan → Brief → Format → Tinjau`.
+Three-step wizard: `Tujuan → Ide & Produk → Format`.
 
 1. **Tujuan** — choose purpose: Lead Magnet (`lead_magnet`), Bonus Pembelian (`bonus_product`), Ebook Berbayar (`sellable_ebook`).
-2. **Brief** — common fields (topic, audience, problem, outcome, niche, optional working title, author from profile) plus type-specific business context (lead goal/CTA, parent product/bonus role, sales positioning).
-3. **Format** — deterministic template recommendations (no AI). Selecting a template does not overwrite filled brief fields.
-4. **Tinjau** — review, then create.
+2. **Ide & Produk** — idea + Offer picker / quick create / no-offer (Lead only); type-specific context (lead goal, bonus intent chips, sellable role modes). Selecting an offer prefills audience/niche/CTA without overwriting user-edited fields.
+3. **Format** — template recommendations + compact summary + **Buat Proyek**.
 
-Server: `POST /api/projects` accepts Create Project V2 (structured) or legacy flat input. Seeds Strategy V3, validates template compatibility, creates project + `project_states` atomically via RPC `create_project_with_state`. Redirect `/projects/{id}?stage=strategy`.
+Offer rules:
+
+- Lead Magnet: primary offer optional (`Belum ada produk`).
+- Bonus Pembelian: saved or quick-created offer required (`bonus_for`).
+- Ebook Berbayar: standalone (no offer) \| bundle (`bundle_component`) \| entry (`upsells_to`).
+
+Server: `POST /api/projects` prefers **Create Project V3** (offer_context + atomic RPC `create_project_with_context_v3`). V2 and legacy flat still accepted. Redirect `/projects/{id}?stage=strategy`.
+
+**3b. Produk & Penawaran library (`/offers`)**
+
+Sidebar: **Produk & Penawaran**. List/search/filter, create/edit/archive, linked projects, shortcuts “Buat Lead Magnet / Bonus” with `?ebook_type=&offer_id=` preselection.
+
+When an offer changes, linked projects show **Produk telah diperbarui**. User opens sync dialog, picks fields, applies explicitly — Strategy/CTA may update; generated sections and published ebooks do not.
 
 **4. Stage 1 -- Strategy (AI-Guided Brief Builder)**
 

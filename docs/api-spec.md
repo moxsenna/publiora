@@ -219,9 +219,67 @@ POST /projects
 
 Create new ebook project.
 
-Accepts **Create Project V2** (preferred) or **legacy flat** `ProjectInput` (compatibility window; deprecated).
+Accepts **Create Project V3** (preferred, offer-aware), **V2**, or **legacy flat** `ProjectInput` (compatibility window).
 
-V2 request (discriminated `business_context`):
+### V3 request (preferred)
+
+Discriminated `offer_context` + `business_context`. Client never submits `owner_id`, snapshots, or readiness.
+
+```json
+{
+  "version": 3,
+  "ebook_type": "lead_magnet",
+  "template_id": "tpl_checklist",
+  "common": {
+    "idea_text": "Checklist growth audit 7 hari",
+    "topic": null,
+    "audience": null,
+    "primary_problem": null,
+    "desired_outcome": null,
+    "niche": null,
+    "tone": null,
+    "working_title": null,
+    "author": "Bima",
+    "additional_notes": null
+  },
+  "offer_context": {
+    "mode": "existing",
+    "offer_id": "uuid",
+    "relationship": "promotes"
+  },
+  "business_context": {
+    "type": "lead_magnet",
+    "lead_goal": "visit_offer",
+    "traffic_source": null,
+    "post_read_action": null,
+    "cta_url": null
+  }
+}
+```
+
+`offer_context.mode`:
+
+| mode | meaning |
+|---|---|
+| `none` | No linked offer (Lead Magnet / sellable standalone) |
+| `existing` | Link owned `offer_id` + relationship |
+| `quick_create` | Create offer in same transaction, then link |
+
+Type rules:
+
+- Lead Magnet: offer optional; relationship `promotes` \| `upsells_to`
+- Bonus Pembelian: offer required; relationship `bonus_for`; `bonus_intent` required
+- Ebook Berbayar: `standalone` → no offer; `bundle_component` → `bundle_component`; `entry_to_offer` → `upsells_to`
+
+Server behavior (V3):
+
+- Auth required; server sets offer/project owner from `auth.uid()`
+- Loads existing offer or builds quick-create payload
+- Prefills strategy/CTA from offer when fields empty
+- Atomic RPC `create_project_with_context_v3` (project + state + optional offer + primary link + server-built snapshot)
+- Fallback non-atomic path only if RPC missing (dev); best-effort cleanup
+
+### V2 request (still supported)
 
 ```json
 {
@@ -250,15 +308,17 @@ V2 request (discriminated `business_context`):
 }
 ```
 
-Server behavior:
+Server behavior (V2):
+
 - Strict Zod validation (type/context must match; CTA URL when required).
 - Deterministic working title + description if omitted.
 - Seeds Strategy V3 into `project_states` (no fabricated core_promise/unique_angle).
 - Validates template compatibility for `ebook_type`.
 - Atomic insert via RPC `create_project_with_state` (project + state).
 - Lead Magnet may set `projects.cta_goal` / `cta_url`.
+- Free-text `next_offer` / `parent_product` are **not** auto-converted to Offer rows.
 
-Response `201`:
+Response `201` (V2/V3):
 
 ```json
 {
@@ -270,6 +330,38 @@ Response `201`:
 ```
 
 Legacy flat body (`title`, `author`, `description`, `audience`, `tone`, `niche`, optional `ebook_type`/`template_id`) still works for one release.
+
+---
+
+### Offer Library
+
+Authenticated, owner-scoped. Full design: `docs/offers.md`.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/offers?status=active\|archived\|all&search=&limit=&cursor=` | Default `status=active`. Items include `linked_project_count`. |
+| POST | `/offers` | Full create or quick-create schema. Server sets `owner_id`. |
+| GET | `/offers/:offerId` | Offer + `linked_projects` (own projects only). |
+| PATCH | `/offers/:offerId` | Partial strict patch. Returns `{ offer, stale_project_count }`. Does not mutate project snapshots. |
+| DELETE | `/offers/:offerId` | Archives (`status=archived`), not hard delete. |
+| GET | `/offers/:offerId/projects` | Linked project summaries. |
+| GET | `/projects/:id/offers` | Links + offer + `source_is_newer`. |
+| POST | `/projects/:id/offers` | Link offer. Body: `{ offer_id, relationship, is_primary?, replace_primary? }`. Server builds snapshot. |
+| DELETE | `/projects/:id/offers?link_id=` | Detach. Rejected for Bonus primary `bonus_for` without replacement. |
+| POST | `/projects/:id/offers/sync` | Explicit field-selective sync. Never edits generated sections. No credit charge. |
+
+Sync body:
+
+```json
+{
+  "link_id": "uuid",
+  "fields": ["target_audience", "destination_url"],
+  "apply_to_strategy": true,
+  "apply_to_project_cta": true
+}
+```
+
+Publish (`POST /projects/:id/publish`) stores immutable `published_ebooks.offer_context` from the accepted link snapshot. Bonus without primary link is blocked. Reader must not query live Offer Library.
 
 ---
 

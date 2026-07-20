@@ -216,7 +216,7 @@ Strategy V3 `state_json.strategy` adds type-specific fields on top of V2:
 
 Normalization upgrades V2 lazily on read. Missing fields / readiness are type-aware via `projects.ebook_type`.
 
-Atomic create (migration `20260720000002_create_project_with_state.sql`):
+Atomic create V2 (migration `20260720000002_create_project_with_state.sql`):
 
 ```sql
 public.create_project_with_state(
@@ -227,6 +227,90 @@ public.create_project_with_state(
 ```
 
 Requires `auth.uid()`; rejects forged `owner_id`; inserts project + state in one transaction.
+
+---
+
+### Offers + project links (migration `20260721000001_offers_and_project_links.sql`)
+
+Reusable product / penawaran library.
+
+```sql
+create table public.offers (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.profiles(id) on delete cascade,
+  name text not null,
+  offer_type text not null, -- digital_product|course|service|saas|membership|webinar|physical_product|affiliate_product|other
+  ownership text not null,  -- owned|affiliate|client
+  status text not null default 'active', -- active|archived
+  short_description text,
+  target_audience text,
+  primary_problem text,
+  primary_outcome text,
+  niche text,
+  destination_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.project_offer_links (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  offer_id uuid not null references public.offers(id) on delete restrict,
+  relationship text not null, -- promotes|bonus_for|bundle_component|upsells_to|cross_sells_to
+  is_primary boolean not null default false,
+  context_snapshot jsonb not null, -- OfferContextSnapshot v1 (server-built)
+  source_offer_updated_at timestamptz not null,
+  synced_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (project_id, offer_id, relationship)
+);
+
+-- one primary link per project
+create unique index project_offer_one_primary_idx
+  on public.project_offer_links(project_id) where is_primary = true;
+```
+
+RLS: offers owner-only; links require **both** project.owner_id and offer.owner_id = `auth.uid()`.
+
+Snapshot contract (`context_snapshot`):
+
+```ts
+{
+  version: 1,
+  offer_id, name, offer_type, ownership,
+  short_description, target_audience, primary_problem,
+  primary_outcome, niche, destination_url
+}
+```
+
+No owner_id, secrets, or analytics in snapshot.
+
+Atomic create V3 (migration `20260721000002_create_project_context_v3.sql`):
+
+```sql
+public.create_project_with_context_v3(
+  p_project jsonb,
+  p_state jsonb,
+  p_readiness_score integer,
+  p_existing_offer_id uuid default null,
+  p_new_offer jsonb default null,
+  p_relationship text default null
+) returns jsonb -- { project, offer_id, link_id }
+```
+
+Transaction: optional quick offer insert → validate existing offer owner → project → state → primary link with server-built snapshot. Any failure rolls back (no orphan quick offer / project without required bonus link).
+
+Publication (migration `20260721000003_published_offer_context.sql`):
+
+```sql
+alter table public.published_ebooks
+  add column if not exists offer_context jsonb;
+```
+
+Immutable offer snapshot at publish time. Public reader uses this column only — never live `offers`.
+
+Deploy order: `offers_and_project_links` → APIs → UI → `create_project_context_v3` → wizard V3 → agent injection → `published_offer_context`.
 
 ---
 
