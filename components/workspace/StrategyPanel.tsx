@@ -29,6 +29,10 @@ import {
 
 const HEADER_LABEL = STRATEGY_COPY_ID.assistantName;
 
+type PendingSend =
+  | { status: "sending"; content: string }
+  | { status: "failed"; content: string };
+
 interface StrategyPanelProps {
   projectId: string;
   onRequestOutline?: () => void;
@@ -41,13 +45,14 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const pushToast = useUiStore((s) => s.pushToast);
 
   const [text, setText] = React.useState("");
-  const [pendingText, setPendingText] = React.useState<string | null>(null);
+  const [pendingSend, setPendingSend] = React.useState<PendingSend | null>(null);
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editorInitialField, setEditorInitialField] = React.useState<keyof EbookStrategy | null>(null);
   const [briefSheetOpen, setBriefSheetOpen] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const taRef = React.useRef<HTMLTextAreaElement>(null);
   const sendStatusRef = React.useRef<HTMLDivElement>(null);
+  const isSending = pendingSend?.status === "sending" || send.isPending;
 
   const strategy = strategyData?.state.strategy;
   const readinessScore = strategyData?.readiness_score ?? 0;
@@ -71,7 +76,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages, pendingText]);
+  }, [messages, pendingSend]);
 
   // Auto-grow textarea
   React.useEffect(() => {
@@ -83,19 +88,25 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
 
   const onSend = async (content?: string) => {
     const body = (content ?? text).trim();
-    if (!body || send.isPending) return;
+    if (!body || isSending) return;
     setText("");
-    setPendingText(body);
+    setPendingSend({ status: "sending", content: body });
     try {
       await send.mutateAsync({
         project_id: projectId,
         content: body,
       });
+      setPendingSend(null);
     } catch {
+      setPendingSend({ status: "failed", content: body });
+      setText(body);
       pushToast({ title: STRATEGY_COPY_ID.sendError, variant: "danger" });
-    } finally {
-      setPendingText(null);
     }
+  };
+
+  const onRetry = () => {
+    if (!pendingSend || pendingSend.status !== "failed") return;
+    void onSend(pendingSend.content);
   };
 
   const empty = !messages || messages.length === 0;
@@ -120,7 +131,8 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   }, [latestAssistant, strategyData?.state]);
 
   // Skeleton: show only when waiting for next assistant reply after first
-  const showSkeleton = send.isPending && latestAssistant !== null;
+  const showSkeleton =
+    pendingSend?.status === "sending" && latestAssistant !== null;
 
   return (
     <div className="flex flex-col lg:flex-row h-full bg-[var(--color-surface-2)]">
@@ -149,30 +161,32 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
               ))}
             </div>
           ) : empty ? (
-            send.isPending || pendingText !== null ? (
-              // Empty state with pending first message
+            pendingSend ? (
+              // Empty state with pending/failed first message
               <>
-                {pendingText && (
-                  <MessageBubble
-                    message={{
-                      id: "pending",
-                      project_id: projectId,
-                      role: "user",
-                      content: pendingText,
-                      agent: null,
-                      metadata: {},
-                      created_at: new Date().toISOString(),
-                    }}
-                    pending
-                  />
+                <MessageBubble
+                  message={{
+                    id: "pending",
+                    project_id: projectId,
+                    role: "user",
+                    content: pendingSend.content,
+                    agent: null,
+                    metadata: {},
+                    created_at: new Date().toISOString(),
+                  }}
+                  pending={pendingSend.status === "sending"}
+                  failed={pendingSend.status === "failed"}
+                  onRetry={pendingSend.status === "failed" ? onRetry : undefined}
+                />
+                {pendingSend.status === "sending" && (
+                  <div
+                    className="text-sm text-[var(--color-medium-gray)] text-center py-4"
+                    aria-live="polite"
+                    aria-busy="true"
+                  >
+                    Asisten menyiapkan balasan…
+                  </div>
                 )}
-                <div
-                  className="text-sm text-[var(--color-medium-gray)] text-center py-4"
-                  aria-live="polite"
-                  aria-busy="true"
-                >
-                  Asisten menyiapkan balasan…
-                </div>
               </>
             ) : (
               <div className="max-w-xl mx-auto pt-4">
@@ -187,7 +201,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
                       key={s.label}
                       type="button"
                       onClick={() => onSend(s.message)}
-                      disabled={send.isPending}
+                      disabled={isSending}
                       className="px-3 py-2 rounded-xl border border-[var(--color-publiora-border)] bg-white text-xs text-[var(--color-deep-gray)] hover:bg-[var(--color-surface-2)] transition-colors text-left max-w-xs"
                     >
                       {s.label}
@@ -206,26 +220,28 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
                     latestSuggestions.length > 0 && (
                       <ContextualQuickReplies
                         suggestions={latestSuggestions}
-                        disabled={send.isPending}
+                        disabled={isSending}
                         onSelect={(s) => onSend(s.message)}
                       />
                     )}
                 </React.Fragment>
               ))}
 
-              {/* Optimistic user bubble */}
-              {pendingText && (
+              {/* Optimistic / failed user bubble */}
+              {pendingSend && (
                 <MessageBubble
                   message={{
                     id: "pending",
                     project_id: projectId,
                     role: "user",
-                    content: pendingText,
+                    content: pendingSend.content,
                     agent: null,
                     metadata: {},
                     created_at: new Date().toISOString(),
                   }}
-                  pending
+                  pending={pendingSend.status === "sending"}
+                  failed={pendingSend.status === "failed"}
+                  onRetry={pendingSend.status === "failed" ? onRetry : undefined}
                 />
               )}
 
@@ -277,9 +293,9 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
             />
             <Button
               onClick={() => onSend()}
-              loading={send.isPending}
+              loading={isSending}
               size="icon"
-              disabled={!text.trim() || send.isPending}
+              disabled={!text.trim() || isSending}
               aria-label={STRATEGY_COPY_ID.sendAriaLabel}
             >
               <Send className="h-3.5 w-3.5" />
@@ -293,7 +309,8 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
             </p>
           </div>
           <div ref={sendStatusRef} aria-live="polite" className="sr-only">
-            {send.isPending && STRATEGY_COPY_ID.sending}
+            {pendingSend?.status === "sending" && STRATEGY_COPY_ID.sending}
+            {pendingSend?.status === "failed" && STRATEGY_COPY_ID.sendError}
           </div>
         </div>
       </div>
@@ -388,9 +405,13 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
 function MessageBubble({
   message,
   pending = false,
+  failed = false,
+  onRetry,
 }: {
   message: ChatMessage;
   pending?: boolean;
+  failed?: boolean;
+  onRetry?: () => void;
 }) {
   return (
     <div
@@ -411,7 +432,9 @@ function MessageBubble({
         className={cn(
           "px-3 py-2.5 rounded-xl max-w-xl text-sm whitespace-pre-wrap",
           message.role === "user"
-            ? "bg-[var(--color-publiora-black)] text-white rounded-tr-sm"
+            ? failed
+              ? "bg-[var(--color-publiora-black)] text-white rounded-tr-sm ring-2 ring-[var(--color-danger,#dc2626)]"
+              : "bg-[var(--color-publiora-black)] text-white rounded-tr-sm"
             : "bg-white border border-[var(--color-publiora-border)] text-[var(--color-deep-gray)] rounded-tl-sm"
         )}
       >
@@ -421,19 +444,30 @@ function MessageBubble({
           <>
             {message.content}
             {pending && (
-              <span className="ml-2 text-[10px] text-[var(--color-medium-gray)] italic">
-                Mengirim…
+              <span className="ml-2 text-[10px] text-white/70 italic">
+                {STRATEGY_COPY_ID.sendingInline}
               </span>
+            )}
+            {failed && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[10px] text-red-200">
+                  {STRATEGY_COPY_ID.sendError}
+                </span>
+                {onRetry && (
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className="text-[11px] font-medium underline text-white hover:text-white/90"
+                  >
+                    {STRATEGY_COPY_ID.retrySend}
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}
       </div>
-      {message.role === "user" && !pending && (
-        <div className="shrink-0">
-          <Avatar name="You" size="sm" />
-        </div>
-      )}
-      {pending && (
+      {message.role === "user" && (
         <div className="shrink-0">
           <Avatar name="You" size="sm" />
         </div>

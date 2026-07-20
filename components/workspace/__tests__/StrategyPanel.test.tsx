@@ -400,8 +400,8 @@ describe("starter state (empty messages)", () => {
       expect(screen.getByText(COPY.starterReplies[0].message)).toBeInTheDocument();
     });
 
-    // The pending indicator should also be visible
-    expect(screen.getByText(/Mengirim/)).toBeInTheDocument();
+    // The pending indicator should also be visible (bubble + aria-live may both match)
+    expect(screen.getAllByText(/Mengirim/).length).toBeGreaterThan(0);
 
     // Resolve the promise to clean up
     resolve({});
@@ -668,40 +668,7 @@ describe("latest-only behavior", () => {
 // ---------------------------------------------------------------------------
 
 describe("optimistic user bubble and skeleton", () => {
-  it("shows optimistic user bubble with 'Mengirim…' when send is pending", async () => {
-    // Pre-set isPending to true so the hook reflects pending state
-    let resolve: (v: unknown) => void = () => {};
-    sendMutateAsyncMock.mockImplementation(
-      () => new Promise((r) => { resolve = r; })
-    );
-    useSendMessageMock.mockReturnValue({
-      mutateAsync: sendMutateAsyncMock,
-      isPending: true,
-    });
-
-    // Must have messages so latestAssistant exists
-    useMessagesMock.mockReturnValue(mockMessagesData());
-
-    render(<StrategyPanel projectId="proj-1" />);
-
-    // Since isPending is true, the pendingText is not set — we need to manually
-    // set it via the component. But that's internal state.
-    // Instead, we verify that the skeleton appears (since isPending=true and latestAssistant exists).
-    // The skeleton "Menyiapkan pilihan berikutnya…" should appear.
-    await waitFor(() => {
-      expect(screen.getByText(/Menyiapkan pilihan berikutnya/)).toBeInTheDocument();
-    });
-
-    // Send button should be disabled due to isPending
-    const sendBtn = screen.getByLabelText(COPY.sendAriaLabel);
-    expect(sendBtn).toBeDisabled();
-
-    resolve({});
-  });
-
   it("shows optimistic user bubble with pending text when send is in progress", async () => {
-    // Simulate the exact scenario: user types and clicks send, then we
-    // verify the pending bubble appears before mutation resolves.
     let resolve: (v: unknown) => void = () => {};
     sendMutateAsyncMock.mockImplementation(
       () => new Promise((r) => { resolve = r; })
@@ -717,36 +684,14 @@ describe("optimistic user bubble and skeleton", () => {
     const sendBtn = screen.getByLabelText(COPY.sendAriaLabel);
     await user.click(sendBtn);
 
-    // After clicking, pendingText is set inside component before mutateAsync resolves.
-    // The optimistic bubble shows the sent content.
     await waitFor(() => {
       expect(screen.getByText("My pending message")).toBeInTheDocument();
     });
 
-    // "Mengirim…" indicator should appear inside the pending bubble
-    expect(screen.getByText(/Mengirim/)).toBeInTheDocument();
-
-    resolve({});
-  });
-
-  it("shows skeleton 'Menyiapkan pilihan berikutnya…' when waiting for next assistant reply", async () => {
-    // Mock isPending: true since we are testing the pending state rendering.
-    // (In a real TanStack hook, isPending auto-updates; our mock is static.)
-    useSendMessageMock.mockReturnValue({
-      mutateAsync: sendMutateAsyncMock,
-      isPending: true,
-    });
-
-    useMessagesMock.mockReturnValue(mockMessagesData());
-
-    render(<StrategyPanel projectId="proj-1" />);
-
-    // Skeleton should appear (since isPending=true and latestAssistant exists)
+    expect(screen.getAllByText(/Mengirim/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Menyiapkan pilihan berikutnya/)).toBeInTheDocument();
 
-    // Send button should be disabled due to isPending
-    const sendBtn = screen.getByLabelText(COPY.sendAriaLabel);
-    expect(sendBtn).toBeDisabled();
+    resolve({});
   });
 
   it("shows 'Asisten menyiapkan balasan…' when sending from empty state", async () => {
@@ -764,12 +709,52 @@ describe("optimistic user bubble and skeleton", () => {
     const user = userEvent.setup();
     await user.click(chip);
 
-    // The empty-state skeleton should appear
     await waitFor(() => {
       expect(screen.getByText(/Asisten menyiapkan balasan/)).toBeInTheDocument();
     });
 
     resolve({});
+  });
+
+  it("marks failed send, restores composer, and supports retry", async () => {
+    sendMutateAsyncMock
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce({});
+
+    useMessagesMock.mockReturnValue(mockMessagesData());
+    useSendMessageMock.mockReturnValue(mockSendHook({ isPending: false }));
+
+    const user = userEvent.setup();
+    render(<StrategyPanel projectId="proj-1" />);
+
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder) as HTMLTextAreaElement;
+    await user.type(textarea, "Pesan gagal dulu");
+    await user.click(screen.getByLabelText(COPY.sendAriaLabel));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Kirim ulang" })).toBeInTheDocument();
+    });
+    // Bubble + aria-live both surface the error copy
+    expect(screen.getAllByText(COPY.sendError).length).toBeGreaterThan(0);
+
+    // Composer restored with the failed content
+    expect(textarea.value).toBe("Pesan gagal dulu");
+    // Skeleton should NOT appear on failed state
+    expect(screen.queryByText(/Menyiapkan pilihan berikutnya/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Kirim ulang" }));
+
+    await waitFor(() => {
+      expect(sendMutateAsyncMock).toHaveBeenCalledTimes(2);
+    });
+    expect(sendMutateAsyncMock).toHaveBeenLastCalledWith({
+      project_id: "proj-1",
+      content: "Pesan gagal dulu",
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Kirim ulang" })).not.toBeInTheDocument();
+    });
   });
 });
 
@@ -978,20 +963,34 @@ describe("loading states", () => {
 // ---------------------------------------------------------------------------
 
 describe("composer accessibility", () => {
-  it("announces Indonesian sending status via aria-live region", () => {
-    useSendMessageMock.mockReturnValue({
-      mutateAsync: sendMutateAsyncMock,
-      isPending: true,
-    });
+  it("announces Indonesian sending status via aria-live region while pendingSend is active", async () => {
+    let resolve: (v: unknown) => void = () => {};
+    sendMutateAsyncMock.mockImplementation(
+      () => new Promise((r) => { resolve = r; })
+    );
+    useMessagesMock.mockReturnValue(mockMessagesData());
+    useSendMessageMock.mockReturnValue(mockSendHook({ isPending: false }));
+
+    const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
-    expect(screen.getByText(COPY.sending)).toBeInTheDocument();
+
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder);
+    await user.type(textarea, "Status live");
+    await user.click(screen.getByLabelText(COPY.sendAriaLabel));
+
+    await waitFor(() => {
+      const srRegion = document.querySelector('[aria-live="polite"].sr-only');
+      expect(srRegion?.textContent ?? "").toMatch(/Mengirim pesan/);
+    });
+
+    resolve({});
   });
 
   it("does not announce when not sending", () => {
     useSendMessageMock.mockReturnValue(mockSendHook({ isPending: false }));
     render(<StrategyPanel projectId="proj-1" />);
-    const srRegion = document.querySelector('[aria-live="polite"]');
-    expect(srRegion?.textContent).not.toContain("Mengirim pesan");
+    const srRegion = document.querySelector('[aria-live="polite"].sr-only');
+    expect(srRegion?.textContent ?? "").not.toContain("Mengirim pesan");
   });
 });
 

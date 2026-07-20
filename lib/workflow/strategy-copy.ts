@@ -15,6 +15,8 @@ export const STRATEGY_COPY_ID = {
   sendAriaLabel: "Kirim pesan",
   sendError: "Pesan gagal dikirim.",
   sending: "Mengirim pesan…",
+  retrySend: "Kirim ulang",
+  sendingInline: "Mengirim…",
   briefTitle: "Brief Ebook",
   briefProgress: (filled: number, total: number) =>
     `${filled} dari ${total} informasi inti lengkap`,
