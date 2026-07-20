@@ -1,6 +1,6 @@
 # ai-prompts.md — Publiora (Workflow-First)
 
-> Revision: 2026-07-20 -- Type-aware project creation seeds Strategy V3; Strategist/Planner/Writer honor ebook purpose.
+> Revision: 2026-07-21 -- Offer Library: agents receive accepted project–offer snapshots; ownership-safe wording; V3 create seeds links.
 
 ## 1. Workflow-First Architecture
 
@@ -41,6 +41,19 @@ Help user brainstorm ebook positioning, identify audience, and connect ebook to 
 - **Manual edit invalidates old chips.** If the user manually edits the brief via StrategyFieldEditor, `strategy.updated_at` changes, and the stale-check in StrategyPanel hides outdated `suggested_replies`.
 - **Type-aware outline gate.** Required fields = base 6 + type extras (lead: funnel_goal; bonus: product_or_offer/bonus_role/usage_moment; sellable: sales_positioning). When none missing and `readiness_score >= 70`, `next_action` becomes `"create_outline"`.
 - **Ebook purpose rules.** Lead magnet stays conversion-oriented and concise; bonus supports parent product; sellable needs standalone paid depth. Never change `ebook_type`.
+- **Linked offer snapshot.** Server injects `loadPrimaryProjectOfferContext` — the **accepted** link snapshot only (not live Offer Library edits). If `source_is_newer`, treat as informational; do not silently use newer live offer data.
+- **Ownership-safe language.** `owned` may use direct product language; `affiliate` must not claim ownership or invent commission/price/features; `client` uses neutral brand/client wording.
+- **No invention.** Do not fabricate product capabilities, URLs, testimonials, or features missing from the snapshot. Lead without offer is allowed (do not block).
+
+### Offer context input
+
+`runStrategist` / `runPlanner` / `runWriter` / `runCtaGenerator` accept optional `offer_context: ProjectOfferContext | null`:
+
+- `relationship` (`promotes` | `bonus_for` | `bundle_component` | `upsells_to` | `cross_sells_to`)
+- `snapshot` (`OfferContextSnapshot` v1)
+- `source_is_newer` boolean
+
+Patterns: Lead with offer → quick win bridge to offer; Bonus → complement parent; Sellable upsell → paid value first, bridge near end.
 
 ### System Prompt
 
@@ -132,7 +145,13 @@ Required fields: `topic`, `audience`, `primary_problem`, `desired_outcome`, `cor
 
 ### Purpose
 
-Generate section-structured outline from approved strategy.
+Generate section-structured outline from approved strategy and optional linked offer relationship.
+
+Outline patterns by type/relationship (from accepted snapshot only):
+
+- Lead magnet: problem framing → insight → actions → quick win → bridge to offer → CTA
+- Bonus: when to use → setup → implementation → checklist/assets → return to parent product
+- Sellable + upsell: full paid value first; upsell bridge near the end only
 
 ### System Prompt
 
@@ -298,7 +317,14 @@ Avoid generic titles like:
 
 ### Purpose
 
-Generate contextual call-to-action suggestions based on goal, placement, and ebook strategy.
+Generate contextual call-to-action suggestions based on goal, placement, ebook strategy, and accepted offer snapshot (name, relationship, ownership, primary outcome, destination URL presence).
+
+Rules:
+
+- Prefer project-accepted CTA URL; may fall back to snapshot destination URL for generation context only
+- Do not invent a URL when missing
+- Affiliate/client ownership must not imply the logged-in user owns the product
+- Applying a CTA still requires explicit user action in Review
 
 ### System Prompt
 
