@@ -191,7 +191,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
                   e.preventDefault();
                   onSend();
                 }

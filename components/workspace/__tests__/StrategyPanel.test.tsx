@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import * as React from "react";
@@ -316,6 +316,27 @@ describe("starter state (empty messages)", () => {
       project_id: "proj-1",
       content: "Shortcut message",
     });
+  });
+
+  it("does NOT send message when Enter is pressed during IME composition (isComposing=true)", async () => {
+    render(<StrategyPanel projectId="proj-1" />);
+
+    const textarea = screen.getByLabelText(COPY.composerPlaceholder);
+    // Pre-fill the textarea so there is content to preserve
+    textarea.value = "Composing partial text";
+    textarea.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // Fire keyDown with isComposing: true -- should NOT trigger send
+    fireEvent.keyDown(textarea, {
+      key: "Enter",
+      shiftKey: false,
+      isComposing: true,
+    });
+
+    // Send should NOT have been called
+    expect(sendMutateAsyncMock).not.toHaveBeenCalled();
+    // Textarea content should be preserved (not cleared)
+    expect(textarea).toHaveValue("Composing partial text");
   });
 
   it("shows Indonesian pushToast on send failure", async () => {
