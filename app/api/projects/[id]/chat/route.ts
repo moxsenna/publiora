@@ -12,6 +12,7 @@ import {
   buildChatHistoryForStrategist,
   shouldPersistAfterStrategist,
 } from "@/lib/project-state/chat-flow";
+import { buildAssistantMetadata } from "@/lib/api/chat-metadata";
 import { chatBodySchema } from "@/lib/validations/strategy";
 import type { ChatMessage } from "@/types/message";
 import type { ProjectStateV2 } from "@/types/strategy";
@@ -163,6 +164,7 @@ export async function POST(
         role: "assistant",
         content: strategistResult.assistant_message,
         agent: "strategist",
+        metadata: buildAssistantMetadata(strategistResult, mergedState),
       })
       .select("*")
       .single();
