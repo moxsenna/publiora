@@ -300,6 +300,7 @@ export async function sendMessage(input: SendMessageInput): Promise<ChatMessage>
     role: "user",
     content: input.content,
     agent: null,
+    metadata: {},
     created_at: nowIso(),
   };
   db.messages.push(userMsg);
@@ -316,6 +317,7 @@ export async function sendMessage(input: SendMessageInput): Promise<ChatMessage>
     role: "assistant",
     agent: "strategist",
     content: reply,
+    metadata: {},
     created_at: nowIso(),
   };
   db.messages.push(aiMsg);

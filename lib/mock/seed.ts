@@ -473,6 +473,7 @@ export const seedMessages: ChatMessage[] = [
     agent: "strategist",
     content:
       "Halo. Berdasarkan brief 'B2B SaaS Content Engine', saya sarankan pillar 3: Production, Multiplexing, Measurement. Tiap pillar punya cluster sub-topik. Apakah sudah mau aku susun outline lengkap?",
+    metadata: {},
     created_at: "2026-06-12T10:05:00.000Z",
   },
   {
@@ -481,6 +482,7 @@ export const seedMessages: ChatMessage[] = [
     role: "user",
     agent: null,
     content: "Ya, susun outline lengkap tapi tetap padat dan actionable.",
+    metadata: {},
     created_at: "2026-06-12T10:10:00.000Z",
   },
   {
@@ -490,6 +492,7 @@ export const seedMessages: ChatMessage[] = [
     agent: "planner",
     content:
       "Outline 6 bab siap. Section 1: 'Mengapa content engine, bukan kampanye'. Section 2: 'Strategi topik berbasis pillar'. Section 3: 'Production loop mingguan'. Section 4: 'Multiplex content'. Section 5: 'Distribution stack'. Section 6: 'Mengukur compounding'. Bisa approve untuk mulai generate.",
+    metadata: {},
     created_at: "2026-06-12T10:20:00.000Z",
   },
   {
@@ -499,6 +502,7 @@ export const seedMessages: ChatMessage[] = [
     agent: "strategist",
     content:
       "Lead magnet '12 format' agak lebar. Saran: fokus ke 5 format tertinggi konversi + 1 review kasus. Mau pakai angle ini?",
+    metadata: {},
     created_at: "2026-07-02T15:05:00.000Z",
   },
   {
@@ -507,6 +511,7 @@ export const seedMessages: ChatMessage[] = [
     role: "user",
     agent: null,
     content: "Oke pakai sudut 5 format.",
+    metadata: {},
     created_at: "2026-07-02T15:10:00.000Z",
   },
   {
@@ -516,6 +521,7 @@ export const seedMessages: ChatMessage[] = [
     agent: "strategist",
     content:
       "Saya sudah serap brief produk AI. Pasar butuh framework ringan yang langsung pakai. Aku usul 4 bagian: decision tree, bias audit, accountability, starter playbook. Import: 'setop feature kalau mitigation belum jelas'. Sudut dramatis tapi taktis. Approve outline draft?",
+    metadata: {},
     created_at: "2026-07-10T12:20:00.000Z",
   },
 ];

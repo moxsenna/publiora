@@ -2,12 +2,38 @@ import { z } from "zod";
 import { completeJson } from "@/lib/ai/provider";
 import { STRATEGIST_SYSTEM } from "@/lib/ai/prompts";
 import type { EbookStrategy, ProjectStateV2, StrategistResult } from "@/types/strategy";
+import { normalizeStrategySuggestedReplies } from "@/lib/ai/strategy-suggestions";
 
 // ---------------------------------------------------------------------------
 // Zod schema for the raw AI JSON response. Matches StrategistResult domain type.
 // ---------------------------------------------------------------------------
 
 const strategyFieldSchema = z.string().trim().nullable().optional();
+
+const strategyFieldEnum = z.enum([
+  "topic",
+  "audience",
+  "audience_sophistication",
+  "primary_problem",
+  "pain_points",
+  "desired_outcome",
+  "core_promise",
+  "unique_angle",
+  "content_pillars",
+  "product_or_offer",
+  "funnel_goal",
+  "cta_goal",
+  "tone",
+]);
+
+const suggestedReplySchema = z.object({
+  label: z.string().trim().min(1).max(48),
+  message: z.string().trim().min(1).max(240),
+  field: strategyFieldEnum.nullable().optional(),
+  intent: z
+    .enum(["answer", "ask_recommendation", "confirm", "clarify"])
+    .default("answer"),
+});
 
 export const aiStrategistResponseSchema = z.object({
   assistant_message: z.string().trim().min(1, "assistant_message must be non-empty"),
@@ -34,6 +60,8 @@ export const aiStrategistResponseSchema = z.object({
     .enum(["continue_strategy", "create_outline", "review_outline", "start_writing"])
     .default("continue_strategy"),
   conversation_summary: z.string().nullable().optional(),
+  suggested_replies: z.array(suggestedReplySchema).max(4).default([]),
+  response_language: z.enum(["id", "en"]).default("id"),
 });
 
 // ---------------------------------------------------------------------------
@@ -105,6 +133,11 @@ export function parseStrategistResponse(raw: unknown): StrategistResult {
     missing_fields: parsed.missing_fields,
     next_action: parsed.next_action,
     conversation_summary: parsed.conversation_summary ?? undefined,
+    suggested_replies: normalizeStrategySuggestedReplies(
+      parsed.suggested_replies,
+      parsed.missing_fields,
+    ),
+    response_language: parsed.response_language,
   };
 }
 

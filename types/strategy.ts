@@ -43,6 +43,19 @@ export interface ProjectStateV2 {
   updated_at: string;
 }
 
+export type StrategySuggestedReplyIntent =
+  | "answer"
+  | "ask_recommendation"
+  | "confirm"
+  | "clarify";
+
+export interface StrategySuggestedReply {
+  label: string;
+  message: string;
+  field?: keyof EbookStrategy | null;
+  intent: StrategySuggestedReplyIntent;
+}
+
 export interface StrategistResult {
   assistant_message: string;
   state_patch: Partial<EbookStrategy>;
@@ -50,4 +63,6 @@ export interface StrategistResult {
   missing_fields: string[];
   next_action: StrategyNextAction;
   conversation_summary?: string;
+  suggested_replies: StrategySuggestedReply[];
+  response_language: "id" | "en";
 }

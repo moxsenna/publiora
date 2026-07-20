@@ -181,6 +181,7 @@ export async function POST(
       role: assistantRow.role as "assistant",
       content: assistantRow.content as string,
       agent: assistantRow.agent as "strategist" | null,
+      metadata: (assistantRow.metadata as ChatMessage["metadata"]) ?? {},
       created_at: assistantRow.created_at as string,
     };
   } catch (err) {
