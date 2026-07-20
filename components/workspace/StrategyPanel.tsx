@@ -8,17 +8,17 @@ import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AssistantMessageContent } from "@/components/workspace/AssistantMessageContent";
+import { ContextualQuickReplies } from "@/components/workspace/ContextualQuickReplies";
 import { StrategyBriefCard } from "@/components/workspace/StrategyBriefCard";
 import { StrategyReadinessCard } from "@/components/workspace/StrategyReadinessCard";
 import { StrategyFieldEditor } from "@/components/workspace/StrategyFieldEditor";
-import { Send, MessageSquare, Lightbulb } from "lucide-react";
+import { Send, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/message";
 import type { StrategyNextAction } from "@/types/strategy";
 import {
   STRATEGY_COPY_ID,
-  STRATEGY_DEFAULT_SUGGESTIONS,
-  STRATEGY_MISSING_FIELD_PROMPTS,
+  STRATEGY_STARTER_REPLIES_ID,
 } from "@/lib/workflow/strategy-copy";
 
 // ---------------------------------------------------------------------------
@@ -39,6 +39,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
   const pushToast = useUiStore((s) => s.pushToast);
 
   const [text, setText] = React.useState("");
+  const [pendingText, setPendingText] = React.useState<string | null>(null);
   const [editorOpen, setEditorOpen] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const taRef = React.useRef<HTMLTextAreaElement>(null);
@@ -56,7 +57,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages]);
+  }, [messages, pendingText]);
 
   // Auto-grow textarea
   React.useEffect(() => {
@@ -68,8 +69,9 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
 
   const onSend = async (content?: string) => {
     const body = (content ?? text).trim();
-    if (!body) return;
+    if (!body || send.isPending) return;
     setText("");
+    setPendingText(body);
     try {
       await send.mutateAsync({
         project_id: projectId,
@@ -77,22 +79,34 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
       });
     } catch {
       pushToast({ title: STRATEGY_COPY_ID.sendError, variant: "danger" });
+    } finally {
+      setPendingText(null);
     }
   };
 
   const empty = !messages || messages.length === 0;
 
-  // Derive prompt suggestions: prioritize missing-field prompts, then fall back
-  const promptSuggestions = React.useMemo(() => {
-    if (missingFields.length > 0) {
-      const fromMissing = missingFields
-        .map((f) => STRATEGY_MISSING_FIELD_PROMPTS[f])
-        .filter(Boolean)
-        .slice(0, 5);
-      if (fromMissing.length > 0) return fromMissing;
+  // Find latest assistant message
+  const latestAssistant = React.useMemo(() => {
+    if (!messages || messages.length === 0) return null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") return messages[i];
     }
-    return STRATEGY_DEFAULT_SUGGESTIONS;
-  }, [missingFields]);
+    return null;
+  }, [messages]);
+
+  // Contextual suggestions from latest assistant metadata
+  const latestSuggestions = React.useMemo(() => {
+    if (!latestAssistant || !strategyData?.state) return [];
+    const meta = latestAssistant.metadata;
+    if (!meta?.suggested_replies || meta.suggested_replies.length === 0) return [];
+    // Stale check: only show if strategy_context_updated_at matches state.updated_at
+    if (meta.strategy_context_updated_at !== strategyData.state.updated_at) return [];
+    return meta.suggested_replies;
+  }, [latestAssistant, strategyData?.state]);
+
+  // Skeleton: show only when waiting for next assistant reply after first
+  const showSkeleton = send.isPending && latestAssistant !== null;
 
   return (
     <div className="flex flex-col sm:flex-row h-full bg-[var(--color-surface-2)]">
@@ -121,68 +135,99 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
               ))}
             </div>
           ) : empty ? (
-            <div className="max-w-xl mx-auto pt-4">
-              <EmptyState
-                icon={<MessageSquare className="h-5 w-5" />}
-                title={STRATEGY_COPY_ID.emptyTitle}
-                description={STRATEGY_COPY_ID.emptyDescription}
-              />
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                {promptSuggestions.slice(0, 5).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => onSend(s)}
-                    disabled={send.isPending}
-                    className="px-3 py-2 rounded-xl border border-[var(--color-publiora-border)] bg-white text-xs text-[var(--color-deep-gray)] hover:bg-[var(--color-surface-2)] transition-colors text-left max-w-xs"
-                  >
-                    {s}
-                  </button>
-                ))}
+            send.isPending || pendingText !== null ? (
+              // Empty state with pending first message
+              <>
+                {pendingText && (
+                  <MessageBubble
+                    message={{
+                      id: "pending",
+                      project_id: projectId,
+                      role: "user",
+                      content: pendingText,
+                      agent: null,
+                      metadata: {},
+                      created_at: new Date().toISOString(),
+                    }}
+                    pending
+                  />
+                )}
+                <div
+                  className="text-sm text-[var(--color-medium-gray)] text-center py-4"
+                  aria-live="polite"
+                  aria-busy="true"
+                >
+                  Asisten menyiapkan balasan…
+                </div>
+              </>
+            ) : (
+              <div className="max-w-xl mx-auto pt-4">
+                <EmptyState
+                  icon={<MessageSquare className="h-5 w-5" />}
+                  title={STRATEGY_COPY_ID.emptyTitle}
+                  description={STRATEGY_COPY_ID.emptyDescription}
+                />
+                <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                  {STRATEGY_STARTER_REPLIES_ID.map((s) => (
+                    <button
+                      key={s.label}
+                      type="button"
+                      onClick={() => onSend(s.message)}
+                      disabled={send.isPending}
+                      className="px-3 py-2 rounded-xl border border-[var(--color-publiora-border)] bg-white text-xs text-[var(--color-deep-gray)] hover:bg-[var(--color-surface-2)] transition-colors text-left max-w-xs"
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )
           ) : (
-            messages.map((m) => (
-              <MessageBubble key={m.id} message={m} />
-            ))
+            <>
+              {messages.map((m) => (
+                <React.Fragment key={m.id}>
+                  <MessageBubble message={m} />
+                  {m.role === "assistant" &&
+                    m.id === latestAssistant?.id &&
+                    latestSuggestions.length > 0 && (
+                      <ContextualQuickReplies
+                        suggestions={latestSuggestions}
+                        disabled={send.isPending}
+                        onSelect={(s) => onSend(s.message)}
+                      />
+                    )}
+                </React.Fragment>
+              ))}
+
+              {/* Optimistic user bubble */}
+              {pendingText && (
+                <MessageBubble
+                  message={{
+                    id: "pending",
+                    project_id: projectId,
+                    role: "user",
+                    content: pendingText,
+                    agent: null,
+                    metadata: {},
+                    created_at: new Date().toISOString(),
+                  }}
+                  pending
+                />
+              )}
+
+              {/* Skeleton while waiting for next assistant reply */}
+              {showSkeleton && (
+                <div
+                  className="text-sm text-[var(--color-medium-gray)] text-center py-2"
+                  aria-live="polite"
+                  aria-busy="true"
+                >
+                  Menyiapkan pilihan berikutnya…
+                </div>
+              )}
+            </>
           )}
         </div>
-
-        {/* Prompt suggestions bar (visible when there are messages) */}
-        {!empty && promptSuggestions.length > 0 && (
-          <div className="px-4 pb-1 flex flex-wrap gap-1.5">
-            {promptSuggestions.slice(0, 3).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setText(s)}
-                className="px-2.5 py-1.5 rounded-full border border-[var(--color-publiora-border)] bg-white text-xs text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] hover:bg-[var(--color-surface-2)]"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Missing-field CTA */}
-        {!empty && missingFields.length > 0 && (
-          <div className="px-3 pb-1">
-            <div className="flex items-center gap-2 text-xs text-[var(--color-gold)] bg-[var(--color-surface-2)] rounded-lg px-3 py-2">
-              <Lightbulb className="h-3.5 w-3.5 shrink-0" />
-              <span>
-                {STRATEGY_COPY_ID.missingFieldsCta(missingFields.length)}
-                <button
-                  type="button"
-                  onClick={() => setEditorOpen(true)}
-                  className="underline font-medium hover:text-[var(--color-publiora-black)]"
-                >
-                  edit langsung
-                </button>
-                .
-              </span>
-            </div>
-          </div>
-        )}
 
         {/* Composer */}
         <div className="border-t border-[var(--color-publiora-border)] bg-white p-2.5">
@@ -313,12 +358,19 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
 // Message bubble
 // ---------------------------------------------------------------------------
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  pending = false,
+}: {
+  message: ChatMessage;
+  pending?: boolean;
+}) {
   return (
     <div
       className={cn(
         "flex gap-3 max-w-2xl animate-fade-in",
-        message.role === "user" && "ml-auto justify-end"
+        message.role === "user" && "ml-auto justify-end",
+        pending && "opacity-70"
       )}
     >
       {message.role === "assistant" && (
@@ -339,10 +391,22 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         {message.role === "assistant" ? (
           <AssistantMessageContent content={message.content} />
         ) : (
-          message.content
+          <>
+            {message.content}
+            {pending && (
+              <span className="ml-2 text-[10px] text-[var(--color-medium-gray)] italic">
+                Mengirim…
+              </span>
+            )}
+          </>
         )}
       </div>
-      {message.role === "user" && (
+      {message.role === "user" && !pending && (
+        <div className="shrink-0">
+          <Avatar name="You" size="sm" />
+        </div>
+      )}
+      {pending && (
         <div className="shrink-0">
           <Avatar name="You" size="sm" />
         </div>
