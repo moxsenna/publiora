@@ -1,5 +1,6 @@
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
+import { isChatMessageMetadata } from "@/types/message";
 
 export async function GET(
   _req: Request,
@@ -19,14 +20,14 @@ export async function GET(
 
     if (error) return jsonError(error.message, 500, "db_error");
 
-    // Map to ChatMessage shape — metadata defaults to {} for DB rows that lack it
+    // Map to ChatMessage shape — validate metadata shape; invalid → {}
     const messages = (data ?? []).map((m) => ({
       id: m.id,
       project_id: m.project_id,
       role: m.role,
       content: m.content,
       agent: m.agent ?? null,
-      metadata: m.metadata ?? {},
+      metadata: isChatMessageMetadata(m.metadata) ? m.metadata : {},
       created_at: m.created_at,
     }));
 

@@ -23,7 +23,7 @@ export interface ChatMessageMetadata {
  * `suggested_replies` (if present) is an array.
  */
 export function isChatMessageMetadata(value: unknown): value is ChatMessageMetadata {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const m = value as Record<string, unknown>;
   if ("suggested_replies" in m && m.suggested_replies !== undefined) {
     if (!Array.isArray(m.suggested_replies)) return false;
