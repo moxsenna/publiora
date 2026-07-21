@@ -43,25 +43,31 @@ Captured by `e2e/capture-offer-library-screenshots.spec.ts`:
 Cloud project used by production container: `qluqhyfwpdknngxolsvi.supabase.co`  
 (`docker exec publiora-web printenv NEXT_PUBLIC_SUPABASE_URL`)
 
-### Re-probe after user said migration done (2026-07-21 later)
+### Final cloud schema verification (after migration confirmed)
 
-Service role + authenticated production API still report schema missing:
+Service role probe on `qluqhyfwpdknngxolsvi.supabase.co`:
 
 | Object | Status |
 |---|---|
-| `public.offers` | **missing** (`PGRST205`) |
-| `public.project_offer_links` | **missing** |
-| `published_ebooks.offer_context` | **column missing** (`42703`) |
-| `create_project_with_context_v3` | **missing RPC** (`PGRST202`) |
+| `public.offers` | **ok** |
+| `public.project_offer_links` | **ok** |
+| `published_ebooks.offer_context` | **ok** |
+| `create_project_with_context_v3` | **present** (returns `not_authenticated` without session — expected) |
+| OpenAPI paths | includes `/offers` and `project_offer_links` |
 
-Authenticated production smoke:
+Authenticated production smoke (ephemeral user, cleaned up):
 
 ```text
-POST/GET https://publiora.appvibe.biz.id/api/offers
-→ 500 {"error":{"message":"Could not find the table 'public.offers' in the schema cache","code":"db_error"}}
+POST /api/offers → 201
+POST /api/projects (V3 lead + existing offer) → 201
+GET  /api/projects/:id/offers → 200
+  links_count=1
+  relationship=promotes
+  snapshot_name set
+  source_is_newer=false
 ```
 
-Conclusion: UI/API are deployed, but **DB schema for Offer Library is not on this Supabase project**.
+Conclusion: **Offer Library is fully live on production DB + VPS app.**
 
 ### VPS app deploy status
 
