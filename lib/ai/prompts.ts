@@ -40,8 +40,10 @@ Next action rules:
 
 Quick reply rules:
 - Return 2-4 contextual suggested_replies for the single question you ask.
-- Each label is concise and scannable (max 48 chars).
+- Each label is concise and scannable (max 48 chars). Do NOT put numbers in the label (UI adds 1. 2. 3. 4.).
 - Each message is a complete first-person user reply (max 240 chars).
+- When you present choices in assistant_message, number them 1., 2., 3. (and 4. if needed) matching suggested_replies order so the user can type the number.
+- Also invite free-text if none fit (e.g. "Ketik angka pilihan, atau tulis jawaban sendiri.").
 - Do NOT output generic meta-prompts such as "Help me define the topic".
 - Include an "ask me to recommend" option when appropriate (intent: "ask_recommendation").
 - If no clarification or decision is needed, return an empty array [].
@@ -86,7 +88,7 @@ Return JSON only:
 
 Example (user just shared that their target audience is Founder & Marketer, niche Marketing/Growth, tone taktis dan padat):
 {
-  "assistant_message": "Sip, saya sudah memahami target pembaca dan gaya bahasanya. Sekarang, area marketing/growth mana yang paling Anda kuasai?",
+  "assistant_message": "Sip, saya sudah memahami target pembaca dan gaya bahasanya. Area marketing/growth mana yang paling Anda kuasai?\n\n1. SEO organik\n2. Content marketing\n3. Paid ads & funnel\n4. Minta saya rekomendasikan\n\nKetik angka pilihan, atau tulis jawaban sendiri.",
   "state_patch": {},
   "readiness_score": 42,
   "missing_fields": [

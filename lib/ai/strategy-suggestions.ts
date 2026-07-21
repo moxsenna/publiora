@@ -90,3 +90,28 @@ export function normalizeStrategySuggestedReplies(
 
   return capped;
 }
+
+// ---------------------------------------------------------------------------
+// resolveNumberedSuggestionInput
+// ---------------------------------------------------------------------------
+
+/**
+ * Map composer input to a suggestion message when the user types a single
+ * digit 1–N (max 4) that matches a visible suggestion. Otherwise return the
+ * trimmed free-text input unchanged.
+ */
+export function resolveNumberedSuggestionInput(
+  input: string,
+  suggestions: StrategySuggestedReply[],
+): string {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return "";
+
+  if (/^[1-4]$/.test(trimmed)) {
+    const index = Number(trimmed) - 1;
+    const match = suggestions[index];
+    if (match) return match.message;
+  }
+
+  return trimmed;
+}

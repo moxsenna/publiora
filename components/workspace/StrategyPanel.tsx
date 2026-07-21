@@ -21,6 +21,7 @@ import { StrategyFieldEditor } from "@/components/workspace/StrategyFieldEditor"
 import { StrategyBriefSheet } from "@/components/workspace/StrategyBriefSheet";
 import { OfferSyncDialog } from "@/components/offers/OfferSyncDialog";
 import { LegacyOfferConversionCard } from "@/components/offers/LegacyOfferConversionCard";
+import { resolveNumberedSuggestionInput } from "@/lib/ai/strategy-suggestions";
 import { Send, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/message";
@@ -103,31 +104,6 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
     el.style.height = Math.min(el.scrollHeight, 128) + "px";
   }, [text]);
 
-  const onSend = async (content?: string) => {
-    const body = (content ?? text).trim();
-    if (!body || isSending) return;
-    setText("");
-    setPendingSend({ status: "sending", content: body });
-    try {
-      await send.mutateAsync({
-        project_id: projectId,
-        content: body,
-      });
-      setPendingSend(null);
-    } catch {
-      setPendingSend({ status: "failed", content: body });
-      setText(body);
-      pushToast({ title: STRATEGY_COPY_ID.sendError, variant: "danger" });
-    }
-  };
-
-  const onRetry = () => {
-    if (!pendingSend || pendingSend.status !== "failed") return;
-    void onSend(pendingSend.content);
-  };
-
-  const empty = !messages || messages.length === 0;
-
   // Find latest assistant message
   const latestAssistant = React.useMemo(() => {
     if (!messages || messages.length === 0) return null;
@@ -146,6 +122,37 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
     if (meta.strategy_context_updated_at !== strategyData.state.updated_at) return [];
     return meta.suggested_replies;
   }, [latestAssistant, strategyData?.state]);
+
+  const onSend = async (content?: string) => {
+    // Composer digit 1–4 maps to visible suggestion message; free text otherwise.
+    // Explicit chip/starter content also passes through the same resolver (no-op unless digit).
+    const body = resolveNumberedSuggestionInput(
+      content ?? text,
+      latestSuggestions,
+    );
+    if (!body || isSending) return;
+    setText("");
+    setPendingSend({ status: "sending", content: body });
+    try {
+      await send.mutateAsync({
+        project_id: projectId,
+        content: body,
+      });
+      setPendingSend(null);
+    } catch {
+      setPendingSend({ status: "failed", content: body });
+      setText(body);
+      pushToast({ title: STRATEGY_COPY_ID.sendError, variant: "danger" });
+    }
+  };
+
+  const onRetry = () => {
+    if (!pendingSend || pendingSend.status !== "failed") return;
+    // Retry the already-resolved body as free text (do not re-map digits).
+    void onSend(pendingSend.content);
+  };
+
+  const empty = !messages || messages.length === 0;
 
   // Skeleton: show only when waiting for next assistant reply after first
   const showSkeleton =

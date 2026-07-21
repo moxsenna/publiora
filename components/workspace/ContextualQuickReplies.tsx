@@ -54,7 +54,9 @@ export function ContextualQuickReplies({
     >
       {visible.map((suggestion, index) => {
         // Defensively truncate label (Zod caps at 48, but belt-and-suspenders).
-        const label = suggestion.label.slice(0, 48);
+        // Number prefix helps keyboard users type 1–4 instead of clicking.
+        const n = index + 1;
+        const label = `${n}. ${suggestion.label.slice(0, 48)}`;
 
         return (
           <button

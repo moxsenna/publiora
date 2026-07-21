@@ -10,8 +10,9 @@ export const STRATEGY_COPY_ID = {
   emptyTitle: "Mulai susun strategi ebook",
   emptyDescription:
     "Ceritakan ide awal Anda. Asisten akan membantu melengkapi target pembaca, masalah, hasil, janji, dan sudut unik.",
-  composerPlaceholder: "Tulis jawaban atau ceritakan konteks Anda…",
-  composerHelper: "Enter untuk mengirim \u00b7 Shift+Enter untuk baris baru",
+  composerPlaceholder: "Ketik angka pilihan atau tulis bebas…",
+  composerHelper:
+    "Ketik 1–4 untuk pilih opsi \u00b7 atau tulis bebas \u00b7 Enter kirim \u00b7 Shift+Enter baris baru",
   sendAriaLabel: "Kirim pesan",
   sendError: "Pesan gagal dikirim.",
   sending: "Mengirim pesan…",

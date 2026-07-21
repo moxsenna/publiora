@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { normalizeStrategySuggestedReplies } from "@/lib/ai/strategy-suggestions";
+import {
+  normalizeStrategySuggestedReplies,
+  resolveNumberedSuggestionInput,
+} from "@/lib/ai/strategy-suggestions";
 import type { StrategySuggestedReply } from "@/types/strategy";
 
 // ---------------------------------------------------------------------------
@@ -207,5 +210,57 @@ describe("normalizeStrategySuggestedReplies", () => {
     const result = normalizeStrategySuggestedReplies(input, []);
     expect(result).toHaveLength(1);
     expect(result[0].label).toBe("Ok");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveNumberedSuggestionInput
+// ---------------------------------------------------------------------------
+
+describe("resolveNumberedSuggestionInput", () => {
+  const suggestions: StrategySuggestedReply[] = [
+    reply({ label: "A", message: "Pilih opsi A lengkap." }),
+    reply({ label: "B", message: "Pilih opsi B lengkap." }),
+    reply({ label: "C", message: "Pilih opsi C lengkap." }),
+  ];
+
+  it("maps 1-based digit to suggestion message", () => {
+    expect(resolveNumberedSuggestionInput("1", suggestions)).toBe(
+      "Pilih opsi A lengkap.",
+    );
+    expect(resolveNumberedSuggestionInput("2", suggestions)).toBe(
+      "Pilih opsi B lengkap.",
+    );
+    expect(resolveNumberedSuggestionInput("3", suggestions)).toBe(
+      "Pilih opsi C lengkap.",
+    );
+  });
+
+  it("trims whitespace before matching digit", () => {
+    expect(resolveNumberedSuggestionInput("  2  ", suggestions)).toBe(
+      "Pilih opsi B lengkap.",
+    );
+  });
+
+  it("returns free text when input is not a single digit 1-4", () => {
+    expect(resolveNumberedSuggestionInput("SEO organik", suggestions)).toBe(
+      "SEO organik",
+    );
+    expect(resolveNumberedSuggestionInput("12", suggestions)).toBe("12");
+    expect(resolveNumberedSuggestionInput("0", suggestions)).toBe("0");
+    expect(resolveNumberedSuggestionInput("5", suggestions)).toBe("5");
+  });
+
+  it("returns free text when digit exceeds suggestion count", () => {
+    expect(resolveNumberedSuggestionInput("4", suggestions)).toBe("4");
+  });
+
+  it("returns empty string for empty/whitespace input", () => {
+    expect(resolveNumberedSuggestionInput("   ", suggestions)).toBe("");
+    expect(resolveNumberedSuggestionInput("", suggestions)).toBe("");
+  });
+
+  it("returns free text digit when suggestions empty", () => {
+    expect(resolveNumberedSuggestionInput("1", [])).toBe("1");
   });
 });
