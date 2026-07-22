@@ -39,6 +39,7 @@ import type { EnhancementAction, EnhancementSuggestion } from "@/types/ai-sugges
 import { cn } from "@/lib/utils";
 import { sectionHasReplaceableContent } from "@/lib/section-revisions";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
+import { sectionStatusLabelsId } from "@/lib/i18n/id/common";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
   const { data: outline } = useOutline(projectId);
@@ -430,11 +431,11 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                       {s.word_count}w
                     </Badge>
                     <span className="text-[11px] text-[var(--color-medium-gray)]">
-                      {s.status}
+                      {sectionStatusLabelsId[s.status] ?? s.status}
                     </span>
                   </>
                 ) : (
-                  <Badge variant="default">pending</Badge>
+                  <Badge variant="default">{sectionStatusLabelsId.pending}</Badge>
                 )}
               </div>
               {!s && (
@@ -477,7 +478,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             disabled={batchBusy}
           >
             <Play className="h-3.5 w-3.5" />
-            {batchBusy ? "Menulis…" : "Generate all"}
+            {batchBusy ? "Menulis…" : "Tulis semua"}
           </Button>
         </div>
         {sectionList}

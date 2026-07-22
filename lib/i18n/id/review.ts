@@ -1,0 +1,15 @@
+export const reviewId = {
+  title: "Review kualitas",
+  strategy: "Strategi",
+  structure: "Struktur",
+  content: "Kualitas Isi",
+  offerCta: "Produk & CTA",
+  ready: "Siap Terbit",
+  openSection: "Buka section",
+  fix: "Perbaiki",
+  freeChecks: "Pemeriksaan otomatis (gratis)",
+  aiReview: (cost: number) => `Periksa kualitas dengan AI · ${cost} kredit`,
+  noIssues: "Tidak ada masalah penghalang. Siap ditinjau untuk terbit.",
+  warningsOnly: "Ada peringatan — tidak wajib diperbaiki sebelum terbit.",
+  blockers: "Ada penghalang — perbaiki dulu sebelum terbit.",
+} as const;

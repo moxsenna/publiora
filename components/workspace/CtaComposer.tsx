@@ -111,7 +111,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
         },
       });
       setSuggestions(res.suggestions);
-      pushToast({ title: "CTA suggestions generated", variant: "success" });
+      pushToast({ title: "Saran CTA dibuat", variant: "success" });
     } catch (err) {
       const e = err as { code?: string; message?: string };
       if (e?.code === "insufficient_credits") {
@@ -122,7 +122,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
         });
         return;
       }
-      pushToast({ title: "Failed to generate CTA suggestions", variant: "danger" });
+      pushToast({ title: "Gagal membuat saran CTA", variant: "danger" });
     }
   };
 
@@ -247,7 +247,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
       {/* Placement selector (for generation) */}
       <div>
         <label className="block text-xs font-medium text-[var(--color-deep-gray)] mb-1.5">
-          Placement (for suggestions)
+          Penempatan (untuk saran)
         </label>
         <div className="flex gap-1.5">
           {(
@@ -282,7 +282,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
           disabled={generateCtas.isPending || urlError}
         >
           <Sparkles className="h-3.5 w-3.5" />
-          Generate Suggestions
+          Buat saran
         </Button>
         <Button
           size="sm"
@@ -342,8 +342,8 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
                   </div>
                   <p className="text-xs text-[var(--color-medium-gray)]">
                     {s.placement !== "both"
-                      ? `Placement: ${s.placement}`
-                      : "Placement: end of ebook + claim page"}
+                      ? `Penempatan: ${s.placement}`
+                      : "Penempatan: akhir ebook + halaman klaim"}
                     {" \u2022 "}
                     {s.rationale}
                   </p>
@@ -355,7 +355,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
                       loading={updateProject.isPending}
                     >
                       <Check className="h-3.5 w-3.5" />
-                      Apply
+                      Gunakan
                     </Button>
                     <CopyButton value={s.text} label="Copy" />
                   </div>

@@ -25,19 +25,19 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
       const res = await generate.mutateAsync(projectId);
       setSuggestions(res.suggestions);
       setSelectedTitle(null);
-      pushToast({ title: "Title suggestions generated", variant: "success" });
+      pushToast({ title: "Saran judul dibuat", variant: "success" });
     } catch (err) {
       const e = err as { code?: string; message?: string };
       if (e?.code === "insufficient_credits") {
         pushToast({
-          title: "Not enough credits",
-          description: "Open Billing to top up or upgrade your plan.",
+          title: "Kredit tidak cukup",
+          description: "Buka Billing untuk top-up atau upgrade paket.",
           variant: "danger",
         });
         return;
       }
       pushToast({
-        title: "Failed to generate titles",
+        title: "Gagal membuat saran judul",
         variant: "danger",
       });
     }
@@ -47,9 +47,9 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
     try {
       await updateProject.mutateAsync({ id: projectId, patch: { title } });
       setSelectedTitle(title);
-      pushToast({ title: "Title applied to project", variant: "success" });
+      pushToast({ title: "Judul diterapkan ke project", variant: "success" });
     } catch {
-      pushToast({ title: "Failed to save title", variant: "danger" });
+      pushToast({ title: "Gagal menyimpan judul", variant: "danger" });
     }
   };
 
@@ -76,12 +76,12 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
         <div className="flex items-center gap-2">
           <Heading className="h-4 w-4 text-[var(--color-publiora-black)]" />
           <h3 className="text-sm font-semibold text-[var(--color-publiora-black)]">
-            Title Suggestions
+            Saran judul
           </h3>
         </div>
         <Button size="sm" variant="outline" onClick={onGenerate} loading={generate.isPending} disabled={generate.isPending}>
           <Sparkles className="h-3.5 w-3.5" />
-          Generate
+          Buat saran
         </Button>
       </div>
 

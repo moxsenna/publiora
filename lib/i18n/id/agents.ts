@@ -1,0 +1,15 @@
+export const agentsId = {
+  titleSuggestions: "Saran judul",
+  generateSuggestions: "Buat saran",
+  applyTitle: "Gunakan judul",
+  titleGenerated: "Saran judul dibuat",
+  ctaComposer: "CTA",
+  placement: "Penempatan",
+  generateCta: "Buat CTA",
+  applyCta: "Gunakan CTA",
+  enhance: "Perbaiki",
+  expand: "Perpanjang",
+  shorten: "Persingkat",
+  addChecklist: "Tambah checklist",
+  addExamples: "Tambah contoh",
+} as const;

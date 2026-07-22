@@ -170,7 +170,7 @@ export function ReviewPanel({
             </section>
           )}
 
-          {/* 5. Continue to Publish */}
+          {/* 5. Lanjut ke Terbit */}
           {onContinueToPublish && (
             <section className="pt-2">
               <Button
@@ -188,7 +188,7 @@ export function ReviewPanel({
                 <Rocket className="h-4 w-4" />
                 {blockerCount > 0
                   ? `Resolve ${blockerCount} Blocker(s)`
-                  : "Continue to Publish"}
+                  : "Lanjut ke Terbit"}
               </Button>
               {blockerCount > 0 && (
                 <p className="text-xs text-[var(--color-danger)] mt-1.5 text-center">
