@@ -1,9 +1,12 @@
+import { z } from "zod";
 import { completeJson } from "@/lib/ai/provider";
 import { WRITER_SYSTEM } from "@/lib/ai/prompts";
 import type { EbookStrategy } from "@/types/strategy";
 import type { OutlineSection } from "@/types/outline";
 import type { ProjectOfferContext } from "@/types/offer";
 import type { FormatContext } from "@/types/template";
+import type { WriterGenerationMeta } from "@/types/quality";
+import { countWords } from "@/lib/quality/text-analysis";
 
 export type WriterNeighbor = {
   title: string;
@@ -44,7 +47,48 @@ export type WriterResult = {
   title: string;
   content_html: string;
   word_count: number;
+  section_summary: string;
+  generation_meta: WriterGenerationMeta;
 };
+
+const stringListSchema = z
+  .array(z.string().trim().max(300))
+  .max(12)
+  .optional()
+  .default([]);
+
+const writerRawSchema = z.object({
+  title: z.string().optional(),
+  content_html: z.string().optional(),
+  word_count: z.number().optional(),
+  section_summary: z.string().optional(),
+  generation_meta: z
+    .object({
+      terms_defined: stringListSchema,
+      examples_used: stringListSchema,
+      frameworks_used: stringListSchema,
+      claims_or_numbers: stringListSchema,
+      offer_mention_count: z.number().int().min(0).max(100).optional(),
+      contains_cta: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+function normalizeMeta(
+  raw: z.infer<typeof writerRawSchema>["generation_meta"],
+): WriterGenerationMeta {
+  return {
+    terms_defined: (raw?.terms_defined ?? []).slice(0, 12),
+    examples_used: (raw?.examples_used ?? []).slice(0, 12),
+    frameworks_used: (raw?.frameworks_used ?? []).slice(0, 12),
+    claims_or_numbers: (raw?.claims_or_numbers ?? []).slice(0, 12),
+    offer_mention_count: Math.max(
+      0,
+      Math.min(100, Math.round(raw?.offer_mention_count ?? 0)),
+    ),
+    contains_cta: Boolean(raw?.contains_cta),
+  };
+}
 
 function line(label: string, value: string | null | undefined): string {
   return `  ${label}: ${value && String(value).trim() ? value : "(none)"}`;
@@ -206,20 +250,38 @@ export function buildWriterUserPrompt(input: WriterInput): string {
 
 export async function runWriter(input: WriterInput): Promise<WriterResult> {
   const user = buildWriterUserPrompt(input);
-  const result = await completeJson<WriterResult>({
+  const raw = await completeJson<unknown>({
     system: WRITER_SYSTEM,
     user,
   });
-  if (!result.content_html?.trim()) {
+  const parsed = writerRawSchema.parse(raw);
+  if (!parsed.content_html?.trim()) {
     throw new Error("Writer returned empty content_html");
   }
-  const word_count =
-    result.word_count ||
-    result.content_html.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean)
-      .length;
+  // Never trust model word_count; recalculate from HTML text.
+  const word_count = countWords(parsed.content_html);
+  const summaryRaw = (parsed.section_summary ?? "").trim();
+  const section_summary =
+    summaryRaw.length >= 30
+      ? summaryRaw.slice(0, 700)
+      : stripToSummary(parsed.content_html, input.section.summary);
+
   return {
-    title: result.title || input.section.title,
-    content_html: result.content_html,
+    title: (parsed.title ?? "").trim() || input.section.title,
+    content_html: parsed.content_html,
     word_count,
+    section_summary,
+    generation_meta: normalizeMeta(parsed.generation_meta),
   };
+}
+
+function stripToSummary(html: string, fallback: string): string {
+  const plain = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (plain.length >= 30) return plain.slice(0, 700);
+  const fb = (fallback ?? "").trim();
+  if (fb.length >= 30) return fb.slice(0, 700);
+  return (plain || fb || "Section content generated.").slice(0, 700);
 }

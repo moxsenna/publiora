@@ -195,7 +195,16 @@ Return JSON only:
 {
   "title": string,
   "content_html": string,
-  "word_count": number
+  "word_count": number,
+  "section_summary": string,
+  "generation_meta": {
+    "terms_defined": string[],
+    "examples_used": string[],
+    "frameworks_used": string[],
+    "claims_or_numbers": string[],
+    "offer_mention_count": number,
+    "contains_cta": boolean
+  }
 }`;
 
 export const TITLE_SYSTEM = `You are Publiora Title, a marketing ebook title specialist.

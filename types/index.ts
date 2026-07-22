@@ -19,3 +19,4 @@ export * from "./workflow";
 export * from "./strategy";
 export * from "./ai-suggestions";
 export * from "./offer";
+export * from "./quality";
