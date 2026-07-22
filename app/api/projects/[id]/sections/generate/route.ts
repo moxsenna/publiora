@@ -19,6 +19,11 @@ import { resolveFormatContext } from "@/lib/templates/format-context";
 import type { FormatContext } from "@/types/template";
 import { validateSectionContent } from "@/lib/quality/section-validator";
 import { countWords } from "@/lib/quality/text-analysis";
+import {
+  loadProjectGenerationMemory,
+  upsertProjectGenerationMemory,
+} from "@/lib/generation-memory/store";
+import { mergeWriterMetaIntoMemory } from "@/lib/generation-memory/merge";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -401,6 +406,11 @@ async function generateOne(opts: {
       ownerId: userId,
     });
 
+    const generation_memory = await loadProjectGenerationMemory(
+      supabase,
+      project.id,
+    );
+
     const targetWords =
       outlineSection.estimated_words ||
       format_context.default_target_words ||
@@ -433,6 +443,7 @@ async function generateOne(opts: {
           strategy,
           offer_context,
           format_context,
+          generation_memory,
           outlineSections: outlineSections.map((s) => ({
             id: s.id,
             title: s.title,
@@ -527,6 +538,7 @@ async function generateOne(opts: {
           word_count: written.word_count,
           status: "generated",
           position: outlineSection.position,
+          generation_meta: written.generation_meta,
           updated_at: now,
         })
         .eq("id", existing.id)
@@ -534,7 +546,7 @@ async function generateOne(opts: {
         .single();
       if (error) {
         await restoreAfterFailure();
-      await refundLocalCharge("Refund section generate DB failure");
+        await refundLocalCharge("Refund section generate DB failure");
         return { error: jsonError(error.message, 500, "db_error") };
       }
       row = data;
@@ -549,16 +561,36 @@ async function generateOne(opts: {
           content_html: written.content_html,
           word_count: written.word_count,
           status: "generated",
+          generation_meta: written.generation_meta,
           updated_at: now,
         })
         .select("*")
         .single();
       if (error) {
         await restoreAfterFailure();
-      await refundLocalCharge("Refund section generate DB failure");
+        await refundLocalCharge("Refund section generate DB failure");
         return { error: jsonError(error.message, 500, "db_error") };
       }
       row = data;
+    }
+
+    // Memory upsert is non-fatal after successful section persistence.
+    const nextMemory = mergeWriterMetaIntoMemory({
+      memory: generation_memory,
+      section_id: outlineSection.id,
+      section_summary: written.section_summary,
+      meta: qualityPass.result.generation_meta,
+    });
+    const memResult = await upsertProjectGenerationMemory(
+      supabase,
+      project.id,
+      nextMemory,
+    );
+    if (!memResult.ok) {
+      console.error(
+        "[sections/generate] generation memory upsert failed",
+        memResult.error,
+      );
     }
 
     {

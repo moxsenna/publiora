@@ -6,7 +6,9 @@ import type { OutlineSection } from "@/types/outline";
 import type { ProjectOfferContext } from "@/types/offer";
 import type { FormatContext } from "@/types/template";
 import type { WriterGenerationMeta } from "@/types/quality";
+import type { EbookGenerationMemory } from "@/types/generation-memory";
 import { countWords } from "@/lib/quality/text-analysis";
+import { formatMemoryForPrompt } from "@/lib/generation-memory/merge";
 
 export type WriterNeighbor = {
   title: string;
@@ -41,6 +43,8 @@ export type WriterInput = {
   offer_context?: ProjectOfferContext | null;
   /** Resolved template/format rules controlling section shape. */
   format_context: FormatContext;
+  /** Compact project memory for continuity (optional). */
+  generation_memory?: EbookGenerationMemory | null;
 };
 
 export type WriterResult = {
@@ -226,6 +230,8 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     offerBlock,
     "",
     formatBlock,
+    "",
+    formatMemoryForPrompt(input.generation_memory),
     "",
     outlineBlock,
     outlineBlock ? "" : null,
