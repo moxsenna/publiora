@@ -248,12 +248,7 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     .join("\n");
 }
 
-export async function runWriter(input: WriterInput): Promise<WriterResult> {
-  const user = buildWriterUserPrompt(input);
-  const raw = await completeJson<unknown>({
-    system: WRITER_SYSTEM,
-    user,
-  });
+function parseWriterRaw(raw: unknown, input: WriterInput): WriterResult {
   const parsed = writerRawSchema.parse(raw);
   if (!parsed.content_html?.trim()) {
     throw new Error("Writer returned empty content_html");
@@ -272,6 +267,143 @@ export async function runWriter(input: WriterInput): Promise<WriterResult> {
     word_count,
     section_summary,
     generation_meta: normalizeMeta(parsed.generation_meta),
+  };
+}
+
+export async function runWriter(input: WriterInput): Promise<WriterResult> {
+  const user = buildWriterUserPrompt(input);
+  const raw = await completeJson<unknown>({
+    system: WRITER_SYSTEM,
+    user,
+  });
+  return parseWriterRaw(raw, input);
+}
+
+export async function runWriterRepair(
+  input: WriterInput,
+  issues: Array<{ code: string; message: string; repair_instruction?: string }>,
+): Promise<WriterResult> {
+  const base = buildWriterUserPrompt(input);
+  const issueLines = issues
+    .map((issue, i) => {
+      const fix = issue.repair_instruction
+        ? ` Fix: ${issue.repair_instruction}`
+        : "";
+      return `${i + 1}. (${issue.code}) ${issue.message}.${fix}`;
+    })
+    .join("\n");
+
+  const user = [
+    base,
+    "",
+    "Your previous section failed quality validation. Rewrite the SAME section only.",
+    "Fix these issues exactly:",
+    issueLines,
+    "",
+    "Return full JSON again (title, content_html, word_count, section_summary, generation_meta).",
+  ].join("\n");
+
+  const raw = await completeJson<unknown>({
+    system: WRITER_SYSTEM,
+    user,
+  });
+  return parseWriterRaw(raw, input);
+}
+
+export type WriterQualityPassResult = {
+  result: WriterResult;
+  /** Sanitized HTML ready to persist. */
+  content_html: string;
+  word_count: number;
+  quality: import("@/types/quality").SectionQualityResult;
+  repaired: boolean;
+};
+
+/**
+ * Writer → sanitize → deterministic quality gate → optional one repair.
+ * Repair does not charge extra credits (caller owns billing).
+ */
+export async function runWriterWithQualityGate(opts: {
+  input: WriterInput;
+  sanitize: (html: string) => string;
+  validate: (args: {
+    content_html: string;
+    pre_sanitize_html: string;
+    generation_meta: WriterGenerationMeta;
+  }) => import("@/types/quality").SectionQualityResult;
+}): Promise<WriterQualityPassResult> {
+  const first = await runWriter(opts.input);
+  const firstSanitized = opts.sanitize(first.content_html);
+  const firstQuality = opts.validate({
+    content_html: firstSanitized,
+    pre_sanitize_html: first.content_html,
+    generation_meta: first.generation_meta,
+  });
+
+  if (firstQuality.passed) {
+    return {
+      result: {
+        ...first,
+        content_html: firstSanitized,
+        word_count: countWords(firstSanitized),
+      },
+      content_html: firstSanitized,
+      word_count: countWords(firstSanitized),
+      quality: firstQuality,
+      repaired: false,
+    };
+  }
+
+  const blockers = firstQuality.issues.filter((i) => i.severity === "blocker");
+  if (blockers.length === 0) {
+    // Warnings only — persist first result.
+    return {
+      result: {
+        ...first,
+        content_html: firstSanitized,
+        word_count: countWords(firstSanitized),
+      },
+      content_html: firstSanitized,
+      word_count: countWords(firstSanitized),
+      quality: firstQuality,
+      repaired: false,
+    };
+  }
+
+  const repaired = await runWriterRepair(opts.input, blockers);
+  const repairedSanitized = opts.sanitize(repaired.content_html);
+  const secondQuality = opts.validate({
+    content_html: repairedSanitized,
+    pre_sanitize_html: repaired.content_html,
+    generation_meta: repaired.generation_meta,
+  });
+
+  if (!secondQuality.passed) {
+    const stillBlocking = secondQuality.issues.filter(
+      (i) => i.severity === "blocker",
+    );
+    const msg = stillBlocking.map((i) => i.message).join("; ");
+    const err = new Error(
+      msg || "Writer section failed quality validation after repair",
+    ) as Error & {
+      code?: string;
+      quality?: import("@/types/quality").SectionQualityResult;
+    };
+    err.code = "section_quality_failed";
+    err.quality = secondQuality;
+    throw err;
+  }
+
+  return {
+    result: {
+      ...repaired,
+      content_html: repairedSanitized,
+      word_count: countWords(repairedSanitized),
+    },
+    content_html: repairedSanitized,
+    word_count: countWords(repairedSanitized),
+    quality: secondQuality,
+    repaired: true,
   };
 }
 

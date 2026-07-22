@@ -1,6 +1,6 @@
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
-import { runWriter } from "@/lib/ai/agents/writer";
+import { runWriterWithQualityGate } from "@/lib/ai/agents/writer";
 import { chargeGeneration, grantCredits } from "@/lib/credits";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 import type { Outline, OutlineSection } from "@/types/outline";
@@ -17,6 +17,8 @@ import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-conte
 import { planGenerationRestore } from "@/lib/outline/generation-recovery";
 import { resolveFormatContext } from "@/lib/templates/format-context";
 import type { FormatContext } from "@/types/template";
+import { validateSectionContent } from "@/lib/quality/section-validator";
+import { countWords } from "@/lib/quality/text-analysis";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -399,48 +401,101 @@ async function generateOne(opts: {
       ownerId: userId,
     });
 
-    const writtenRaw = await runWriter({
-      project: {
-        title: project.title,
-        audience: project.audience,
-        tone: project.tone,
-        niche: project.niche,
-        ebook_type: project.ebook_type,
-      },
-      strategy,
-      offer_context,
-      format_context,
-      outlineSections: outlineSections.map((s) => ({
-        id: s.id,
-        title: s.title,
-        summary: s.summary,
-        position: s.position,
-      })),
-      section: {
-        id: outlineSection.id,
-        title: outlineSection.title,
-        summary: outlineSection.summary,
-        key_points: outlineSection.key_points,
-        estimated_words: outlineSection.estimated_words,
-        position: outlineSection.position,
-      },
-      previousSection: prevOs
-        ? { title: prevOs.title, summary: prevOs.summary }
-        : null,
-      nextSection: nextOs
-        ? { title: nextOs.title, summary: nextOs.summary }
-        : null,
-      previousSectionBodySummary,
-    });
+    const targetWords =
+      outlineSection.estimated_words ||
+      format_context.default_target_words ||
+      700;
+    const isFinalSection = sectionIndex >= outlineSections.length - 1;
+    let previousContentHtml: string | null = null;
+    if (prevOs) {
+      const { data: prevFull } = await supabase
+        .from("ebook_sections")
+        .select("content_html")
+        .eq("project_id", project.id)
+        .eq("outline_section_id", prevOs.id)
+        .maybeSingle();
+      previousContentHtml = prevFull?.content_html
+        ? String(prevFull.content_html)
+        : null;
+    }
 
-    const sanitized = sanitizeHtml(writtenRaw.content_html);
+    let qualityPass;
+    try {
+      qualityPass = await runWriterWithQualityGate({
+        input: {
+          project: {
+            title: project.title,
+            audience: project.audience,
+            tone: project.tone,
+            niche: project.niche,
+            ebook_type: project.ebook_type,
+          },
+          strategy,
+          offer_context,
+          format_context,
+          outlineSections: outlineSections.map((s) => ({
+            id: s.id,
+            title: s.title,
+            summary: s.summary,
+            position: s.position,
+          })),
+          section: {
+            id: outlineSection.id,
+            title: outlineSection.title,
+            summary: outlineSection.summary,
+            key_points: outlineSection.key_points,
+            estimated_words: outlineSection.estimated_words,
+            position: outlineSection.position,
+          },
+          previousSection: prevOs
+            ? { title: prevOs.title, summary: prevOs.summary }
+            : null,
+          nextSection: nextOs
+            ? { title: nextOs.title, summary: nextOs.summary }
+            : null,
+          previousSectionBodySummary,
+        },
+        sanitize: sanitizeHtml,
+        validate: ({ content_html, pre_sanitize_html, generation_meta }) =>
+          validateSectionContent({
+            section_id: outlineSection.id,
+            content_html,
+            pre_sanitize_html,
+            target_words: targetWords,
+            key_points: outlineSection.key_points ?? [],
+            format_context,
+            previous_content_html: previousContentHtml,
+            offer_name: offer_context?.snapshot.name ?? null,
+            is_final_section: isFinalSection,
+            generation_meta,
+          }),
+      });
+    } catch (writerErr) {
+      await restoreAfterFailure();
+      await refundLocalCharge("Refund section generate quality failure");
+      const e = writerErr as Error & { code?: string };
+      if (e.code === "section_quality_failed") {
+        return {
+          error: jsonError(
+            e.message || "Section failed quality validation",
+            422,
+            "section_quality_failed",
+          ),
+        };
+      }
+      throw writerErr;
+    }
+
     const written = {
-      ...writtenRaw,
-      content_html: sanitized,
-      word_count: sanitized
-        .replace(/<[^>]+>/g, " ")
-        .split(/\s+/)
-        .filter(Boolean).length,
+      title: qualityPass.result.title,
+      content_html: qualityPass.content_html,
+      word_count: qualityPass.word_count || countWords(qualityPass.content_html),
+      section_summary: qualityPass.result.section_summary,
+      generation_meta: {
+        ...qualityPass.result.generation_meta,
+        quality_issues: qualityPass.quality.issues,
+        repaired: qualityPass.repaired,
+      },
     };
 
     const now = new Date().toISOString();
