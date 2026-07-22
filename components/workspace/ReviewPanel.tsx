@@ -11,6 +11,7 @@ import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ReviewChecklist } from "@/components/workspace/ReviewChecklist";
+import { AiQualityReview } from "@/components/workspace/AiQualityReview";
 import { CtaComposer } from "@/components/workspace/CtaComposer";
 import { TitleSuggestions } from "@/components/workspace/TitleSuggestions";
 import { PreviewPanel } from "@/components/workspace/PreviewPanel";
@@ -114,6 +115,10 @@ export function ReviewPanel({
               checks={checks}
               onNavigateCheck={onNavigate}
             />
+          </section>
+
+          <section>
+            <AiQualityReview projectId={projectId} />
           </section>
 
           {/* 3. Final title & subtitle */}

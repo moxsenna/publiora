@@ -22,3 +22,4 @@ export * from "./offer";
 export * from "./quality";
 export * from "./generation-memory";
 export * from "./section-revision";
+export * from "./quality-review";
