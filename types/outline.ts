@@ -51,4 +51,6 @@ export interface OutlineUpdateInput {
   title?: string;
   description?: string;
   sections?: OutlineSection[];
+  /** Optimistic concurrency token (outline.updated_at). */
+  expected_updated_at?: string;
 }

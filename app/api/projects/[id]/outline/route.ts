@@ -70,14 +70,36 @@ export async function PATCH(
         .eq("id", project.id);
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("outlines")
       .update(patch)
-      .eq("project_id", id)
-      .select("*")
-      .single();
+      .eq("project_id", id);
+
+    if (body.expected_updated_at) {
+      query = query.eq("updated_at", body.expected_updated_at);
+    }
+
+    const { data, error } = await query.select("*").maybeSingle();
 
     if (error) return jsonError(error.message, 500, "db_error");
+    if (!data) {
+      if (body.expected_updated_at) {
+        const { data: existing } = await supabase
+          .from("outlines")
+          .select("id, updated_at")
+          .eq("project_id", id)
+          .maybeSingle();
+        if (existing) {
+          return jsonError(
+            "Outline was modified elsewhere",
+            409,
+            "outline_conflict",
+            { server_updated_at: existing.updated_at },
+          );
+        }
+      }
+      return jsonError("Outline not found", 404, "not_found");
+    }
     return Response.json(mapOutline(data));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Server error";
