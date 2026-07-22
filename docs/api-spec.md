@@ -1144,3 +1144,26 @@ Payment APIs
 Affiliate tracking APIs
 
 Public SDK
+
+## Generation quality endpoints (2026-07)
+
+### POST /api/projects/:id/sections/generate
+- Single section: may return `409 section_replace_confirmation_required` unless `confirm_replace_existing: true`.
+- Uses FormatContext + quality gate + optional free repair.
+- Writes `generation_meta` and updates generation memory (non-fatal).
+
+### PATCH /api/projects/:id/sections/:sectionId
+- Supports `expected_updated_at` optimistic concurrency (`409 section_conflict`).
+
+### GET/POST /api/projects/:id/sections/:sectionId/revisions
+- List / create revision snapshots.
+
+### POST /api/projects/:id/sections/:sectionId/revisions/:revisionId/restore
+- Restores snapshot; no AI credit charge.
+
+### POST /api/projects/:id/quality-review
+- Optional AI semantic review; charges `quality_review` credits; refunds on failure.
+
+### POST /api/projects/:id/publish
+- Builds trusted snapshot server-side and calls `publish_project_atomic_v1`.
+

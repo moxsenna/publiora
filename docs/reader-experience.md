@@ -731,3 +731,9 @@ ecosystem grows
 creators become stickier
 
 future marketplace becomes easier
+
+## Publication stability (2026-07)
+
+Republish updates the existing `published_ebooks` row in place.
+Stable publication IDs keep claim links, reader entitlements, and public URLs valid after content updates.
+

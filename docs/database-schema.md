@@ -864,3 +864,22 @@ affiliate tracking
 webhook integrations
 
 advanced analytics
+
+## Generation quality tables (2026-07)
+
+### ebook_sections.generation_meta
+jsonb metadata from Writer quality gate (warnings, generation_meta, repair flag).
+
+### project_generation_memory
+- `project_id` PK
+- `memory_json` continuity memory for Writer
+- RLS: project owner
+
+### ebook_section_revisions
+Snapshots before regenerate / enhancement accept / manual restore.
+Sources: `before_regenerate`, `before_enhancement_accept`, `manual_version`.
+
+### publish_project_atomic_v1
+RPC upserts one `published_ebooks` row per project and updates project status in one transaction.
+Unique index on `published_ebooks(project_id)`.
+

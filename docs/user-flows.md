@@ -289,3 +289,23 @@ Publiora should make creators feel:
 
 And readers feel:
 > "Bonus saya langsung rapi dan mudah dibaca."
+
+## 12. Generation Quality & Safe Authoring (2026-07)
+
+### Write safety
+- Section editor autosaves with debounce and flush-on-switch.
+- Concurrent edits return `409 section_conflict`.
+- Regenerate existing content requires confirmation and creates a revision.
+
+### Generate All
+- Client sequential orchestration (not opaque `{ all: true }` primary UI).
+- Shows credit estimate, progress, stop-after-current, retry/skip/resume.
+
+### Review
+- Free deterministic checks grouped by category.
+- Optional paid AI quality review is explicit and non-mutating.
+
+### Publish
+- Atomic RPC `publish_project_atomic_v1` keeps stable publication ID on republish.
+- Claim links remain valid across republish.
+
