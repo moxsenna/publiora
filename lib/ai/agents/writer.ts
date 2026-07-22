@@ -3,6 +3,7 @@ import { WRITER_SYSTEM } from "@/lib/ai/prompts";
 import type { EbookStrategy } from "@/types/strategy";
 import type { OutlineSection } from "@/types/outline";
 import type { ProjectOfferContext } from "@/types/offer";
+import type { FormatContext } from "@/types/template";
 
 export type WriterNeighbor = {
   title: string;
@@ -35,6 +36,8 @@ export type WriterInput = {
   previousSectionBodySummary?: string | null;
   /** Safe offer snapshot fields only. */
   offer_context?: ProjectOfferContext | null;
+  /** Resolved template/format rules controlling section shape. */
+  format_context: FormatContext;
 };
 
 export type WriterResult = {
@@ -135,7 +138,36 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     .filter(Boolean)
     .join("\n");
 
-  const targetWords = input.section.estimated_words ?? 700;
+  const fc = input.format_context;
+  const targetWords =
+    input.section.estimated_words ?? fc.default_target_words ?? 700;
+
+  const formatBlock = [
+    "Selected format (FormatContext — mandatory):",
+    line("template_id", fc.template_id),
+    line("format", fc.format),
+    line("depth", fc.depth),
+    line(
+      "section_range",
+      `min=${fc.section_range.min} preferred=${fc.section_range.preferred} max=${fc.section_range.max}`,
+    ),
+    line("default_target_words", String(fc.default_target_words)),
+    line(
+      "target_words_range",
+      `min=${fc.target_words_range.min} max=${fc.target_words_range.max}`,
+    ),
+    "  structural_rules:",
+    ...fc.structural_rules.map((r) => `    - ${r}`),
+    "  section_output_expectations:",
+    ...fc.section_output_expectations.map((r) => `    - ${r}`),
+    "  quality_rules:",
+    `    requires_action_steps: ${fc.quality_rules.requires_action_steps}`,
+    `    requires_checklist_items: ${fc.quality_rules.requires_checklist_items}`,
+    `    requires_reflection_prompts: ${fc.quality_rules.requires_reflection_prompts}`,
+    `    requires_framework_components: ${fc.quality_rules.requires_framework_components}`,
+    `    requires_phase_structure: ${fc.quality_rules.requires_phase_structure}`,
+    `    theory_ratio_max: ${fc.quality_rules.theory_ratio_max ?? "null"}`,
+  ].join("\n");
 
   return [
     "Project:",
@@ -149,6 +181,8 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     "",
     offerBlock,
     "",
+    formatBlock,
+    "",
     outlineBlock,
     outlineBlock ? "" : null,
     neighbors,
@@ -158,8 +192,12 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     line("summary", input.section.summary),
     line("key_points", JSON.stringify(input.section.key_points ?? [])),
     line("target_words", String(targetWords)),
-    line("position", input.section.position != null ? String(input.section.position) : null),
+    line(
+      "position",
+      input.section.position != null ? String(input.section.position) : null,
+    ),
     "",
+    `Shape this section for format "${fc.format}". Follow structural_rules and section_output_expectations above.`,
     "Rules reminder: do not re-introduce the whole ebook; continue from previous section; match tone and promise; never fabricate product capabilities.",
   ]
     .filter((x) => x !== null)

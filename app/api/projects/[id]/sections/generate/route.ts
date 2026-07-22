@@ -15,6 +15,8 @@ import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 import { setOutlineSectionStatus } from "@/lib/outline/section-status";
 import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 import { planGenerationRestore } from "@/lib/outline/generation-recovery";
+import { resolveFormatContext } from "@/lib/templates/format-context";
+import type { FormatContext } from "@/types/template";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -120,6 +122,11 @@ export async function POST(
       total_sections: Number(project.total_sections ?? mutableOutlineSections.length),
     };
 
+    const format_context = resolveFormatContext({
+      ebookType,
+      templateId: (project.template_id as string | null) ?? null,
+    });
+
     // Generate all: sequential with shared mutable outline state
     if (body?.all) {
       const results: Section[] = [];
@@ -132,6 +139,7 @@ export async function POST(
           outlineSection: os,
           outlineSections: mutableOutlineSections,
           strategy,
+          format_context,
           sectionIndex: i,
         });
         if ("error" in one) return one.error;
@@ -171,6 +179,7 @@ export async function POST(
       outlineSection: os,
       outlineSections: mutableOutlineSections,
       strategy,
+      format_context,
       sectionIndex,
       alreadyCharged: true,
     });
@@ -218,14 +227,22 @@ async function generateOne(opts: {
   /** Current mutable outline sections (statuses must accumulate across generate-all). */
   outlineSections: OutlineSection[];
   strategy: EbookStrategy;
+  format_context: FormatContext;
   sectionIndex: number;
   alreadyCharged?: boolean;
 }): Promise<
   | { section: Section; outlineSections: OutlineSection[] }
   | { error: Response }
 > {
-  const { supabase, userId, project, outlineSection, strategy, sectionIndex } =
-    opts;
+  const {
+    supabase,
+    userId,
+    project,
+    outlineSection,
+    strategy,
+    format_context,
+    sectionIndex,
+  } = opts;
   let outlineSections = [...opts.outlineSections];
   let chargedHere = false;
   const previousSectionStatus = outlineSection.status ?? "pending";
@@ -392,6 +409,7 @@ async function generateOne(opts: {
       },
       strategy,
       offer_context,
+      format_context,
       outlineSections: outlineSections.map((s) => ({
         id: s.id,
         title: s.title,
