@@ -16,6 +16,12 @@ import type {
   ProjectWorkflowState,
 } from "@/types/workflow";
 import { CTA_URL_REQUIRED_GOALS, type CtaGoal } from "@/types/ai-suggestions";
+import { resolveFormatContext } from "@/lib/templates/format-context";
+import {
+  buildSemanticReviewChecks,
+  mergeWorkflowChecks,
+} from "@/lib/quality/project-review";
+import type { ProjectOfferContext } from "@/types/offer";
 
 // ---------------------------------------------------------------------------
 // Input type
@@ -27,6 +33,7 @@ export interface DeriveProjectWorkflowInput {
   readinessScore: number;
   outline: Outline | null;
   sections: Section[];
+  offer_context?: ProjectOfferContext | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -172,15 +179,44 @@ export function deriveProjectWorkflow(
         )
       : 0;
 
+  const ebookType =
+    project.ebook_type === "bonus_product" ||
+    project.ebook_type === "sellable_ebook" ||
+    project.ebook_type === "lead_magnet"
+      ? project.ebook_type
+      : "lead_magnet";
+  const format_context = resolveFormatContext({
+    ebookType,
+    templateId: project.template_id ?? null,
+  });
+  const semanticChecks = buildSemanticReviewChecks({
+    project,
+    strategy: strategyState.strategy,
+    format_context,
+    offer_context: input.offer_context ?? null,
+    outline,
+    sections,
+  });
+  const mergedChecks = mergeWorkflowChecks(checks, semanticChecks);
+  const hasPublishBlockers = mergedChecks.some(
+    (c) =>
+      c.severity === "blocker" &&
+      (c.category === "publication" ||
+        c.category === "structure" ||
+        c.category === "strategy" ||
+        c.category === "cta" ||
+        !c.category),
+  );
+
   return {
     recommendedStep,
     steps,
-    checks,
+    checks: mergedChecks,
     blockers,
     completedSectionCount,
     totalSectionCount,
     writingProgress,
-    canPublish: !hasBlockers && writeComplete && !!project.title,
+    canPublish: !hasPublishBlockers && writeComplete && !!project.title,
   };
 }
 
