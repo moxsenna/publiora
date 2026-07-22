@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { normalizePlannerResult, plannerResponseSchema } from "./planner";
+import {
+  buildPlannerUserPrompt,
+  normalizePlannerResult,
+  plannerResponseSchema,
+  type PlannerInput,
+} from "./planner";
 import type { OutlineSection } from "@/types/outline";
+import { resolveFormatContext } from "@/lib/templates/format-context";
+import type { EbookStrategy } from "@/types/strategy";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -347,5 +354,121 @@ describe("normalizePlannerResult", () => {
     expect(s.key_points.length).toBeLessThanOrEqual(5);
     expect(typeof s.estimated_words).toBe("number");
     expect(s.status).toBe("pending");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildPlannerUserPrompt — FormatContext
+// ---------------------------------------------------------------------------
+
+const baseStrategy: EbookStrategy = {
+  topic: "Content systems",
+  audience: "Founders",
+  audience_sophistication: "intermediate",
+  primary_problem: "Inconsistent publishing",
+  desired_outcome: "Ship weekly content",
+  core_promise: "A repeatable content engine",
+  unique_angle: "Systems over inspiration",
+  tone: "practical",
+  product_or_offer: null,
+  funnel_goal: null,
+  cta_goal: null,
+  traffic_source: null,
+  bonus_role: null,
+  usage_moment: null,
+  sales_positioning: null,
+  buyer_objections: [],
+  content_pillars: ["planning", "production"],
+  pain_points: ["overwhelm"],
+};
+
+function basePlannerInput(
+  overrides: Partial<PlannerInput> = {},
+): PlannerInput {
+  return {
+    project: {
+      title: "Content Engine",
+      subtitle: null,
+      description: "Build a content system",
+      audience: "Founders",
+      niche: "Marketing",
+      tone: "practical",
+      ebook_type: "lead_magnet",
+    },
+    strategy: baseStrategy,
+    readinessScore: 90,
+    offer_context: null,
+    format_context: resolveFormatContext({
+      ebookType: "lead_magnet",
+      templateId: "tpl_checklist",
+    }),
+    ...overrides,
+  };
+}
+
+describe("buildPlannerUserPrompt", () => {
+  it("includes FormatContext rules and checklist-oriented structure", () => {
+    const prompt = buildPlannerUserPrompt(basePlannerInput());
+    expect(prompt).toContain("Selected format (FormatContext — mandatory):");
+    expect(prompt).toContain("format: checklist");
+    expect(prompt).toContain("section_range: min=4 preferred=6 max=9");
+    expect(prompt).toMatch(/checklist items/i);
+    expect(prompt).toContain("requires_checklist_items: true");
+    expect(prompt).toContain("Build 4-9 flat sections");
+    // Strategy + offer context remain
+    expect(prompt).toContain("core_promise: A repeatable content engine");
+    expect(prompt).toContain("Offer relationship context: (none)");
+  });
+
+  it("materially differs for workbook vs checklist", () => {
+    const checklist = buildPlannerUserPrompt(basePlannerInput());
+    const workbook = buildPlannerUserPrompt(
+      basePlannerInput({
+        project: {
+          title: "Content Engine",
+          subtitle: null,
+          description: "Build a content system",
+          audience: "Founders",
+          niche: "Marketing",
+          tone: "practical",
+          ebook_type: "bonus_product",
+        },
+        format_context: resolveFormatContext({
+          ebookType: "bonus_product",
+          templateId: "tpl_workbook",
+        }),
+      }),
+    );
+
+    expect(checklist).toContain("format: checklist");
+    expect(workbook).toContain("format: workbook");
+    expect(workbook).toMatch(/reflection|exercise|fillable/i);
+    expect(workbook).toContain("requires_reflection_prompts: true");
+    expect(checklist).not.toContain("requires_reflection_prompts: true");
+    expect(workbook).toContain("section_range: min=4 preferred=6 max=9");
+  });
+
+  it("uses type/format section bounds for sellable playbook", () => {
+    const prompt = buildPlannerUserPrompt(
+      basePlannerInput({
+        project: {
+          title: "Deep Playbook",
+          subtitle: null,
+          description: "Deep system",
+          audience: "Marketers",
+          niche: "Growth",
+          tone: "tactical",
+          ebook_type: "sellable_ebook",
+        },
+        format_context: resolveFormatContext({
+          ebookType: "sellable_ebook",
+          templateId: "tpl_playbook",
+        }),
+      }),
+    );
+    expect(prompt).toContain("format: playbook");
+    expect(prompt).toContain("section_range: min=6 preferred=8 max=12");
+    expect(prompt).toContain("Build 6-12 flat sections");
+    expect(prompt).toMatch(/phases/i);
   });
 });

@@ -137,18 +137,24 @@ The strategy is your primary source of truth — ground every section in:
 - The content pillars (when present)
 - Ebook type / business purpose
 
-Type-specific outline defaults:
-- lead_magnet: concise, quick-consumption; prefer 5–7 sections; deliver a quick win before final CTA; avoid long textbook structure.
-- bonus_product: organize around usage_moment; reference parent product without inventing unavailable content; prefer 4–7 sections; end with implementation checklist or next step.
-- sellable_ebook: prefer 7–10 sections; allow deeper frameworks and examples; address relevant buyer objections in content.
+The selected FormatContext is mandatory for structure:
+- Obey format, depth, section_range (min/preferred/max), structural_rules, and section_output_expectations from the user message.
+- Section count MUST fall within section_range.min–section_range.max (prefer preferred).
+- Shape section titles/summaries/key_points so they fit the format (checklist items, phases, exercises, framework components, etc.).
+- estimated_words should stay near default_target_words / target_words_range when provided.
+
+Type-specific outline defaults (secondary to FormatContext):
+- lead_magnet: concise, quick-consumption; deliver a quick win before final CTA; avoid long textbook structure.
+- bonus_product: organize around usage_moment; reference parent product without inventing unavailable content; end with implementation checklist or next step.
+- sellable_ebook: allow deeper frameworks and examples; address relevant buyer objections in content.
 
 Constraints:
-- 5 to 10 sections (default to 7 unless the user asks for a specific count or type defaults above suggest otherwise)
 - Flat list only — no nested chapters or sub-sections
-- Each section: id (short string), title (clear & actionable), summary (1-2 sentences), 2-5 key_points, estimated_words (300-1200)
+- Each section: id (short string), title (clear & actionable), summary (1-2 sentences), 2-5 key_points, estimated_words within the provided range
 - status must always be "pending"
 - Actionable, non-fluffy marketing content
 - Match the project audience, tone, and niche
+- Never invent empty placeholder titles like "Section N" or key points like "Key point 2"
 
 Return JSON only:
 {

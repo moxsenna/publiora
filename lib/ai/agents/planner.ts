@@ -4,6 +4,7 @@ import { PLANNER_SYSTEM } from "@/lib/ai/prompts";
 import type { OutlineSection } from "@/types/outline";
 import type { EbookStrategy } from "@/types/strategy";
 import type { ProjectOfferContext } from "@/types/offer";
+import type { FormatContext } from "@/types/template";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +30,8 @@ export interface PlannerInput {
   userInstruction?: string;
   /** Accepted offer snapshot for outline patterns. */
   offer_context?: ProjectOfferContext | null;
+  /** Resolved template/format rules controlling outline shape. */
+  format_context: FormatContext;
 }
 
 export interface PlannerResult {
@@ -178,25 +181,16 @@ export function normalizePlannerResult(
 // runPlanner
 // ---------------------------------------------------------------------------
 
-/**
- * Call the AI to build an outline from strategy state.
- *
- * The planner receives the full strategy so it can respect:
- * - audience sophistication
- * - core promise and unique angle
- * - desired outcome
- * - tone
- */
-export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
+/** Build the planner user prompt (exported for tests / snapshots). */
+export function buildPlannerUserPrompt(input: PlannerInput): string {
   const {
     project,
     strategy,
     readinessScore,
     userInstruction,
     offer_context = null,
+    format_context,
   } = input;
-
-  // ---- Build user prompt ----
 
   const strategyBlock = [
     "Strategy:",
@@ -251,6 +245,28 @@ export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
       ].join("\n")
     : "Offer relationship context: (none)";
 
+  const fc = format_context;
+  const formatBlock = [
+    "Selected format (FormatContext — mandatory):",
+    `  template_id: ${fc.template_id ?? "(none)"}`,
+    `  format: ${fc.format}`,
+    `  depth: ${fc.depth}`,
+    `  section_range: min=${fc.section_range.min} preferred=${fc.section_range.preferred} max=${fc.section_range.max}`,
+    `  default_target_words: ${fc.default_target_words}`,
+    `  target_words_range: min=${fc.target_words_range.min} max=${fc.target_words_range.max}`,
+    "  structural_rules:",
+    ...fc.structural_rules.map((r) => `    - ${r}`),
+    "  section_output_expectations:",
+    ...fc.section_output_expectations.map((r) => `    - ${r}`),
+    "  quality_rules:",
+    `    requires_action_steps: ${fc.quality_rules.requires_action_steps}`,
+    `    requires_checklist_items: ${fc.quality_rules.requires_checklist_items}`,
+    `    requires_reflection_prompts: ${fc.quality_rules.requires_reflection_prompts}`,
+    `    requires_framework_components: ${fc.quality_rules.requires_framework_components}`,
+    `    requires_phase_structure: ${fc.quality_rules.requires_phase_structure}`,
+    `    theory_ratio_max: ${fc.quality_rules.theory_ratio_max ?? "null"}`,
+  ].join("\n");
+
   const patternGuidance =
     project.ebook_type === "lead_magnet"
       ? "Outline pattern for lead magnet: quick problem framing → immediate insight → action steps → quick win → bridge to offer → CTA."
@@ -267,6 +283,8 @@ export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
     "",
     offerBlock,
     "",
+    formatBlock,
+    "",
     patternGuidance,
   ];
 
@@ -276,17 +294,29 @@ export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
 
   userParts.push(
     "",
-    "Build 5-10 flat sections. Each section must have: id, title, summary (1-2 sentences), 2-5 key_points, estimated_words (300-1200).",
+    `Build ${fc.section_range.min}-${fc.section_range.max} flat sections (prefer ${fc.section_range.preferred}). Each section must have: id, title, summary (1-2 sentences), 2-5 key_points, estimated_words (${fc.target_words_range.min}-${fc.target_words_range.max}, default ~${fc.default_target_words}). Shape every section for format "${fc.format}".`,
   );
 
-  const user = userParts.join("\n");
+  return userParts.join("\n");
+}
 
-  // ---- Call AI + validate ----
+/**
+ * Call the AI to build an outline from strategy state.
+ *
+ * The planner receives the full strategy so it can respect:
+ * - audience sophistication
+ * - core promise and unique angle
+ * - desired outcome
+ * - tone
+ * - selected FormatContext
+ */
+export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
+  const user = buildPlannerUserPrompt(input);
 
   const raw = await completeJson<unknown>({
     system: PLANNER_SYSTEM,
     user,
   });
 
-  return normalizePlannerResult(project.title, raw);
+  return normalizePlannerResult(input.project.title, raw);
 }
