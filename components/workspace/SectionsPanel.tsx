@@ -5,9 +5,10 @@ import {
   useOutline,
   useSections,
   useGenerateSection,
-  useGenerateAllSections,
   useUpdateSection,
   useEnhanceSection,
+  useCreditBalance,
+  useCreditCosts,
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
@@ -24,20 +25,40 @@ import {
   type SaveState,
 } from "@/components/workspace/useSectionDraft";
 import { SectionRevisionDialog } from "@/components/workspace/SectionRevisionDialog";
+import {
+  GenerationConfirmDialog,
+  GenerationProgressPanel,
+} from "@/components/workspace/GenerationProgressPanel";
+import {
+  estimateGenerationCost,
+  useSequentialSectionGeneration,
+} from "@/components/workspace/useSequentialSectionGeneration";
 import { Sparkles, FileText, Play, Save, ChevronDown } from "lucide-react";
 import type { Section } from "@/types/section";
 import type { EnhancementAction, EnhancementSuggestion } from "@/types/ai-suggestions";
 import { cn } from "@/lib/utils";
 import { sectionHasReplaceableContent } from "@/lib/section-revisions";
+import { CREDIT_COSTS } from "@/lib/billing/plans";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
   const { data: outline } = useOutline(projectId);
   const { data: sections, isLoading } = useSections(projectId);
   const generate = useGenerateSection();
-  const generateAll = useGenerateAllSections();
   const updateSection = useUpdateSection();
   const enhance = useEnhanceSection();
+  const { data: creditBalance } = useCreditBalance();
+  const { data: creditCosts } = useCreditCosts();
   const pushToast = useUiStore((s) => s.pushToast);
+
+  const sequential = useSequentialSectionGeneration({
+    generateOne: async ({ outlineSectionId, confirmReplaceExisting }) => {
+      return generate.mutateAsync({
+        projectId,
+        outlineSectionId,
+        confirmReplaceExisting,
+      });
+    },
+  });
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
@@ -81,6 +102,20 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     return map;
   }, [sections]);
 
+  React.useEffect(() => {
+    if (sequential.phase !== "running") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [sequential.phase]);
+
+  const sectionCost = creditCosts?.section ?? CREDIT_COSTS.section;
+  const balanceAmount =
+    typeof creditBalance?.balance === "number" ? creditBalance.balance : null;
+
   if (isLoading) {
     return (
       <div className="p-4 grid md:grid-cols-3 gap-4">
@@ -113,7 +148,12 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     current?.title ?? currentOutline?.title ?? "Pilih section";
 
   const onGenerateAll = async () => {
-    if (generateAll.isPending) return;
+    if (
+      sequential.phase === "running" ||
+      sequential.phase === "paused_on_failure"
+    ) {
+      return;
+    }
     if (flushRef.current) {
       const ok = await flushRef.current();
       if (!ok) {
@@ -125,23 +165,11 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         return;
       }
     }
-    try {
-      await generateAll.mutateAsync(projectId);
-      pushToast({ title: "All sections generated", variant: "success" });
-    } catch (err) {
-      const e = err as { code?: string; message?: string };
-      pushToast({
-        title:
-          e?.code === "insufficient_credits"
-            ? "Kredit tidak cukup"
-            : "Generate gagal",
-        description:
-          e?.code === "insufficient_credits"
-            ? "Buka Billing untuk top-up."
-            : (e?.message ?? "Coba lagi atau hubungi support."),
-        variant: "danger",
-      });
-    }
+    sequential.prepare({
+      outlineSections: outline.sections,
+      sectionsByOutlineId: sectionsByOutline,
+      includeCompleted: false,
+    });
   };
 
   const runGenerateOne = async (
@@ -360,6 +388,15 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     setPickerOpen(false);
   };
 
+  const batchBusy =
+    sequential.phase === "running" || sequential.phase === "paused_on_failure";
+  const queueCost = estimateGenerationCost(
+    sequential.queue.length,
+    sectionCost,
+  );
+  const insufficient =
+    balanceAmount != null && queueCost > balanceAmount && sequential.queue.length > 0;
+
   const sectionList = (
     <ul className="p-1.5 space-y-0.5">
       {outline.sections.map((os) => {
@@ -407,7 +444,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                     variant="outline"
                     className="w-full"
                     loading={generate.isPending}
-                    disabled={generate.isPending}
+                    disabled={generate.isPending || batchBusy}
                     onClick={(e) => {
                       e.stopPropagation();
                       void onGenerateOne(os.id);
@@ -436,11 +473,11 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             size="sm"
             variant="outline"
             onClick={() => void onGenerateAll()}
-            loading={generateAll.isPending}
-            disabled={generateAll.isPending}
+            loading={batchBusy}
+            disabled={batchBusy}
           >
             <Play className="h-3.5 w-3.5" />
-            {generateAll.isPending ? "Generating…" : "Generate all"}
+            {batchBusy ? "Menulis…" : "Generate all"}
           </Button>
         </div>
         {sectionList}
@@ -476,8 +513,8 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               size="sm"
               variant="outline"
               onClick={() => void onGenerateAll()}
-              loading={generateAll.isPending}
-              disabled={generateAll.isPending}
+              loading={batchBusy}
+              disabled={batchBusy}
               aria-label="Generate semua section"
             >
               <Play className="h-3.5 w-3.5" />
@@ -492,6 +529,25 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             </div>
           )}
         </div>
+
+        {(sequential.phase === "running" ||
+          sequential.phase === "paused_on_failure" ||
+          sequential.phase === "completed" ||
+          sequential.phase === "stopped") && (
+          <div className="p-3 border-b border-[var(--color-publiora-border)] bg-white">
+            <GenerationProgressPanel
+              phase={sequential.phase}
+              queue={sequential.queue}
+              currentIndex={sequential.currentIndex}
+              stopAfterCurrent={sequential.stopAfterCurrent}
+              onStopAfterCurrent={sequential.requestStopAfterCurrent}
+              onRetry={() => void sequential.retryCurrent()}
+              onSkip={() => void sequential.skipAndContinue()}
+              onStop={() => sequential.reset()}
+              onClose={() => sequential.reset()}
+            />
+          </div>
+        )}
 
         {!current ? (
           <div className="p-6">
@@ -508,7 +564,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             projectId={projectId}
             onRegenerate={() => void onGenerateOne(current.outline_section_id)}
             onEnhance={(action) => void onEnhance(current.id, action)}
-            generating={generate.isPending}
+            generating={generate.isPending || batchBusy}
             enhancing={enhance.isPending}
             onDirtyChange={setDirty}
             registerFlush={(fn) => {
@@ -548,6 +604,18 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         onConfirm={() => {
           if (!pendingReplaceOutlineId) return;
           void runGenerateOne(pendingReplaceOutlineId, true);
+        }}
+      />
+
+      <GenerationConfirmDialog
+        open={sequential.phase === "confirm"}
+        queueCount={sequential.queue.length}
+        sectionCost={sectionCost}
+        balance={balanceAmount}
+        insufficient={insufficient}
+        onCancel={() => sequential.reset()}
+        onStart={() => {
+          void sequential.start();
         }}
       />
     </div>
