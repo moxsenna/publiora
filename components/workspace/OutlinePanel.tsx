@@ -10,9 +10,8 @@ import {
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardBody } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
@@ -20,9 +19,6 @@ import { TitleSuggestions } from "@/components/workspace/TitleSuggestions";
 import {
   Sparkles,
   Plus,
-  Trash2,
-  ChevronUp,
-  ChevronDown,
   Check,
   ListTree,
   ArrowRight,
@@ -30,6 +26,26 @@ import {
   Lightbulb,
 } from "lucide-react";
 import type { OutlineSection } from "@/types/outline";
+import {
+  outlineSaveStateLabel,
+  useOutlineDraft,
+} from "@/components/workspace/useOutlineDraft";
+import { OutlineSectionCard } from "@/components/workspace/OutlineSectionCard";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 const MIN_SECTIONS_FOR_APPROVE = 3;
 
@@ -51,13 +67,42 @@ export function OutlinePanel({
   const [userInstruction, setUserInstruction] = React.useState("");
   const [regenerationDialogOpen, setRegenerationDialogOpen] = React.useState(false);
 
+  const draft = useOutlineDraft({
+    outline,
+    debounceMs: 900,
+    save: async (input) => {
+      try {
+        return await update.mutateAsync({
+          projectId,
+          patch: {
+            sections: input.sections,
+            expected_updated_at: input.expected_updated_at,
+          },
+        });
+      } catch (err) {
+        const e = err as { code?: string; status?: number; message?: string };
+        const error = new Error(e?.message ?? "Save failed") as Error & {
+          code?: string;
+          status?: number;
+        };
+        error.code = e?.code;
+        error.status = e?.status;
+        throw error;
+      }
+    },
+  });
+
   // ---- Computed ----
   const validSectionCount = React.useMemo(() => {
-    if (!outline) return 0;
-    return outline.sections.filter((s) => s.title && s.title.trim().length > 0).length;
-  }, [outline]);
+    return draft.sections.filter((s) => s.title && s.title.trim().length > 0)
+      .length;
+  }, [draft.sections]);
 
-  const canApprove = !!(outline && !outline.approved && validSectionCount >= MIN_SECTIONS_FOR_APPROVE);
+  const canApprove = !!(
+    outline &&
+    !outline.approved &&
+    validSectionCount >= MIN_SECTIONS_FOR_APPROVE
+  );
 
   // ---- Strategy summary for display ----
   const strategySummary = React.useMemo(() => {
@@ -167,49 +212,59 @@ export function OutlinePanel({
   // ---- Actions ----
   const onApprove = async () => {
     try {
+      const flushed = await draft.flushSave();
+      if (!flushed) {
+        pushToast({
+          title: "Simpan dulu",
+          description: "Outline belum tersimpan. Coba lagi.",
+          variant: "danger",
+        });
+        return;
+      }
       await approve.mutateAsync(projectId);
-      pushToast({ title: "Outline approved. You can now generate sections.", variant: "success" });
+      pushToast({
+        title: "Outline disetujui. Lanjut ke Write.",
+        variant: "success",
+      });
     } catch {
-      pushToast({ title: "Approve failed", variant: "danger" });
+      pushToast({ title: "Approve gagal", variant: "danger" });
     }
   };
 
   const move = (i: number, dir: -1 | 1) => {
-    if (!outline) return;
-    const next = [...outline.sections];
-    const j = i + dir;
-    if (j < 0 || j >= next.length) return;
-    [next[i], next[j]] = [next[j], next[i]];
-    next.forEach((s, k) => (s.position = k + 1));
-    update.mutate({ projectId, patch: { sections: next } });
+    draft.move(i, dir);
   };
 
   const updateSection = (id: string, patch: Partial<OutlineSection>) => {
-    if (!outline) return;
-    const next = outline.sections.map((s) => (s.id === id ? { ...s, ...patch } : s));
-    update.mutate({ projectId, patch: { sections: next } });
+    draft.updateSection(id, patch);
   };
 
   const remove = (id: string) => {
-    if (!outline) return;
-    const next = outline.sections
-      .filter((s) => s.id !== id)
-      .map((s, k) => ({ ...s, position: k + 1 }));
-    update.mutate({ projectId, patch: { sections: next } });
+    draft.remove(id);
   };
 
   const add = () => {
-    if (!outline) return;
-    const ns: OutlineSection = {
-      id: "new_" + Math.random().toString(36).slice(2, 8),
-      position: outline.sections.length + 1,
-      title: "New section",
-      summary: "",
-      key_points: [],
-      estimated_words: 600,
-      status: "pending",
-    };
-    update.mutate({ projectId, patch: { sections: [...outline.sections, ns] } });
+    draft.add();
+  };
+
+  const saveLabel = outlineSaveStateLabel(draft.saveState);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = draft.sections.findIndex((s) => s.id === active.id);
+    const newIndex = draft.sections.findIndex((s) => s.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    draft.replaceSections(arrayMove(draft.sections, oldIndex, newIndex));
   };
 
   return (
@@ -221,11 +276,19 @@ export function OutlinePanel({
             <h2 className="text-lg font-semibold text-[var(--color-publiora-black)]">{outline.title}</h2>
             {outline.approved ? (
               <Badge variant="success">
-                <Check className="h-3 w-3" /> Approved
+                <Check className="h-3 w-3" /> Disetujui
               </Badge>
             ) : (
               <Badge variant="warning">Draft</Badge>
             )}
+            {saveLabel ? (
+              <span
+                className="text-[11px] text-[var(--color-medium-gray)]"
+                aria-live="polite"
+              >
+                {saveLabel}
+              </span>
+            ) : null}
           </div>
           <p className="text-sm text-[var(--color-medium-gray)] mt-1">{outline.description}</p>
         </div>
@@ -234,7 +297,7 @@ export function OutlinePanel({
           {outline.approved ? (
             <Button size="sm" onClick={onContinueToWrite} disabled={!onContinueToWrite}>
               <ArrowRight className="h-4 w-4" />
-              Continue to Write
+              Lanjut ke Write
             </Button>
           ) : (
             <>
@@ -242,7 +305,7 @@ export function OutlinePanel({
                 <Plus className="h-4 w-4" /> Section
               </Button>
               <Button size="sm" onClick={onApprove} loading={approve.isPending} disabled={!canApprove}>
-                Approve outline
+                Setujui outline
               </Button>
             </>
           )}
@@ -284,59 +347,30 @@ export function OutlinePanel({
       )}
 
       {/* ---- Section list ---- */}
-      <div className="space-y-3">
-        {outline.sections.map((s, i) => (
-          <Card key={s.id}>
-            <CardBody>
-              <div className="flex items-start gap-3">
-                <div className="flex flex-col items-center gap-1 pt-1">
-                  <button
-                    onClick={() => move(i, -1)}
-                    className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
-                    aria-label="Move up"
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-                  <span className="text-xs font-bold text-[var(--color-publiora-black)]">{i + 1}</span>
-                  <button
-                    onClick={() => move(i, 1)}
-                    className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
-                    aria-label="Move down"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="flex-1 min-w-0 space-y-3">
-                  <Input
-                    value={s.title}
-                    onChange={(e) => updateSection(s.id, { title: e.target.value })}
-                    placeholder="Section title"
-                  />
-                  <Textarea
-                    value={s.summary}
-                    onChange={(e) => updateSection(s.id, { summary: e.target.value })}
-                    rows={2}
-                    placeholder="Ringkasan isi section"
-                  />
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-[var(--color-medium-gray)]">
-                      ~{s.estimated_words} words
-                    </span>
-                    <SectionStatusBadge status={s.status} />
-                  </div>
-                </div>
-                <button
-                  onClick={() => remove(s.id)}
-                  className="text-[var(--color-medium-gray)] hover:text-[var(--color-danger)] pt-1"
-                  aria-label="Remove"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </CardBody>
-          </Card>
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={draft.sections.map((s) => s.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-3 min-w-0">
+            {draft.sections.map((s, i) => (
+              <OutlineSectionCard
+                key={s.id}
+                section={s}
+                index={i}
+                disabled={outline.approved}
+                onMove={move}
+                onChange={updateSection}
+                onRemove={remove}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* ---- Title Suggestions ---- */}
       <div className="border-t border-[var(--color-publiora-border)] pt-4">
@@ -377,13 +411,3 @@ export function OutlinePanel({
   );
 }
 
-function SectionStatusBadge({ status }: { status: OutlineSection["status"] }) {
-  const map: Record<string, { variant: "default" | "warning" | "info" | "success" | "danger"; label: string }> = {
-    pending: { variant: "default", label: "Pending" },
-    generating: { variant: "info", label: "Generating" },
-    generated: { variant: "success", label: "Generated" },
-    failed: { variant: "danger", label: "Failed" },
-  };
-  const m = map[status] ?? map.pending;
-  return <Badge variant={m.variant}>{m.label}</Badge>;
-}

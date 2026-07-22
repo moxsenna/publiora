@@ -8,8 +8,9 @@ import {
   OfferFormFields,
   type OfferFormState,
 } from "@/components/offers/OfferFormFields";
-import { useCreateOffer } from "@/lib/api/hooks";
+import { useCreateOffer, useOffers } from "@/lib/api/hooks";
 import { quickCreateOfferSchema } from "@/lib/offers/schemas";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import type { Offer } from "@/types/offer";
 
 type Props = {
@@ -17,6 +18,10 @@ type Props = {
   onClose: () => void;
   onCreated: (offer: Offer) => void;
 };
+
+function normalizeOfferName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
 export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
   const create = useCreateOffer();
@@ -26,6 +31,23 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
     Partial<Record<keyof OfferFormState, string>>
   >({});
   const [formError, setFormError] = React.useState<string | null>(null);
+  const [forceCreate, setForceCreate] = React.useState(false);
+
+  const debouncedName = useDebouncedValue(form.name, 300);
+  const { data: similarData } = useOffers({
+    status: "active",
+    search: open && debouncedName.trim().length >= 2 ? debouncedName.trim() : "",
+  });
+
+  const duplicateOffer = React.useMemo(() => {
+    const needle = normalizeOfferName(debouncedName);
+    if (!needle) return null;
+    return (
+      (similarData?.items ?? []).find(
+        (o) => normalizeOfferName(o.name) === needle,
+      ) ?? null
+    );
+  }, [debouncedName, similarData?.items]);
 
   React.useEffect(() => {
     if (open) {
@@ -33,10 +55,15 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
       setShowAdvanced(false);
       setErrors({});
       setFormError(null);
+      setForceCreate(false);
     }
   }, [open]);
 
-  const submit = async () => {
+  React.useEffect(() => {
+    setForceCreate(false);
+  }, [form.name]);
+
+  const submit = async (opts?: { force?: boolean }) => {
     setFormError(null);
     setErrors({});
     const payload = {
@@ -63,6 +90,11 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
       return;
     }
 
+    if (duplicateOffer && !opts?.force && !forceCreate) {
+      setFormError("Produk dengan nama serupa sudah ada.");
+      return;
+    }
+
     try {
       const result = await create.mutateAsync(parsed.data);
       onCreated(result.offer);
@@ -80,18 +112,44 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
       description="Isi minimal nama, jenis, dan kepemilikan. Detail bisa dilengkapi nanti."
       size="md"
       footer={
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 flex-wrap">
           <Button type="button" variant="secondary" onClick={onClose}>
             Batal
           </Button>
-          <Button
-            type="button"
-            onClick={submit}
-            loading={create.isPending}
-            disabled={create.isPending}
-          >
-            Simpan dan Pilih
-          </Button>
+          {duplicateOffer && !forceCreate ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  onCreated(duplicateOffer);
+                  onClose();
+                }}
+              >
+                Gunakan yang sudah ada
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setForceCreate(true);
+                  void submit({ force: true });
+                }}
+                loading={create.isPending}
+                disabled={create.isPending}
+              >
+                Tetap buat baru
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => void submit()}
+              loading={create.isPending}
+              disabled={create.isPending}
+            >
+              Simpan dan Pilih
+            </Button>
+          )}
         </div>
       }
     >
@@ -112,6 +170,12 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
           >
             › Tambahkan detail
           </button>
+        ) : null}
+        {duplicateOffer ? (
+          <p className="text-xs text-[var(--color-deep-gray)]" role="status">
+            Produk dengan nama serupa sudah ada:{" "}
+            <strong>{duplicateOffer.name}</strong>
+          </p>
         ) : null}
         {formError ? (
           <p className="text-xs text-[var(--color-danger)]" role="alert">

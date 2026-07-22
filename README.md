@@ -47,3 +47,13 @@ Playwright injects Supabase session cookies (`@supabase/ssr` format). See `e2e/h
 ## License
 
 Private.
+
+### Generation quality (2026-07)
+
+- Template `FormatContext` drives Planner/Writer structure and quality checks.
+- Section autosave, revisions, sequential Generate All progress.
+- Deterministic Review checks + optional AI quality review.
+- Atomic publish RPC preserves publication identity.
+- Migrations under `supabase/migrations/2026072300000*_*.sql` (memory, revisions, atomic publish).
+- Extra tests: `npm run test:quality`.
+

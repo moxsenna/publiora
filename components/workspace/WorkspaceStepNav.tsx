@@ -4,13 +4,14 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { ProjectWorkflowStep, WorkflowStepStatus } from "@/types/workflow";
 import { Check, Lock, AlertTriangle, ChevronDown } from "lucide-react";
+import { workflowStepLabelsId } from "@/lib/i18n/id/workspace";
 
 const STEP_LABELS: Record<ProjectWorkflowStep, string> = {
-  strategy: "Strategi",
+  strategy: workflowStepLabelsId.strategy,
   outline: "Struktur",
   write: "Tulis",
   review: "Tinjau",
-  publish: "Terbitkan",
+  publish: workflowStepLabelsId.publish,
 };
 
 const STEP_ORDER: ProjectWorkflowStep[] = [

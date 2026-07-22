@@ -14,6 +14,15 @@ export default defineConfig({
       '.worktrees/**',
       '**/node_modules/**',
     ],
+    coverage: {
+      provider: 'v8',
+      // Scoped to new quality/domain modules — do not fail whole repo.
+      include: [
+        'lib/quality/**',
+        'lib/templates/format-context.ts',
+        'lib/ai/strict-generation.ts',
+      ],
+    },
   },
   resolve: {
     alias: {

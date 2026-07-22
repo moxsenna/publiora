@@ -137,18 +137,24 @@ The strategy is your primary source of truth — ground every section in:
 - The content pillars (when present)
 - Ebook type / business purpose
 
-Type-specific outline defaults:
-- lead_magnet: concise, quick-consumption; prefer 5–7 sections; deliver a quick win before final CTA; avoid long textbook structure.
-- bonus_product: organize around usage_moment; reference parent product without inventing unavailable content; prefer 4–7 sections; end with implementation checklist or next step.
-- sellable_ebook: prefer 7–10 sections; allow deeper frameworks and examples; address relevant buyer objections in content.
+The selected FormatContext is mandatory for structure:
+- Obey format, depth, section_range (min/preferred/max), structural_rules, and section_output_expectations from the user message.
+- Section count MUST fall within section_range.min–section_range.max (prefer preferred).
+- Shape section titles/summaries/key_points so they fit the format (checklist items, phases, exercises, framework components, etc.).
+- estimated_words should stay near default_target_words / target_words_range when provided.
+
+Type-specific outline defaults (secondary to FormatContext):
+- lead_magnet: concise, quick-consumption; deliver a quick win before final CTA; avoid long textbook structure.
+- bonus_product: organize around usage_moment; reference parent product without inventing unavailable content; end with implementation checklist or next step.
+- sellable_ebook: allow deeper frameworks and examples; address relevant buyer objections in content.
 
 Constraints:
-- 5 to 10 sections (default to 7 unless the user asks for a specific count or type defaults above suggest otherwise)
 - Flat list only — no nested chapters or sub-sections
-- Each section: id (short string), title (clear & actionable), summary (1-2 sentences), 2-5 key_points, estimated_words (300-1200)
+- Each section: id (short string), title (clear & actionable), summary (1-2 sentences), 2-5 key_points, estimated_words within the provided range
 - status must always be "pending"
 - Actionable, non-fluffy marketing content
 - Match the project audience, tone, and niche
+- Never invent empty placeholder titles like "Section N" or key points like "Key point 2"
 
 Return JSON only:
 {
@@ -172,6 +178,8 @@ export const WRITER_SYSTEM = `You are Publiora Writer. Write ONE ebook section a
 Rules:
 - Output HTML fragments only (p, h2, h3, ul, ol, li, blockquote, strong, em). No html/body/head/scripts/styles.
 - Target the provided estimated word count when present (default ~500-1200).
+- Obey FormatContext from the user message: format, depth, structural_rules, section_output_expectations, quality_rules, and target word guidance.
+- Shape the section for the selected format (checklist items, phases, exercises, framework components, implementation steps, etc.).
 - Respect ebook_type:
   - lead_magnet: concise, fast, action-oriented.
   - bonus_product: companion language; support parent product; do not present as unrelated standalone theory; do not invent parent-product claims.
@@ -187,7 +195,16 @@ Return JSON only:
 {
   "title": string,
   "content_html": string,
-  "word_count": number
+  "word_count": number,
+  "section_summary": string,
+  "generation_meta": {
+    "terms_defined": string[],
+    "examples_used": string[],
+    "frameworks_used": string[],
+    "claims_or_numbers": string[],
+    "offer_mention_count": number,
+    "contains_cta": boolean
+  }
 }`;
 
 export const TITLE_SYSTEM = `You are Publiora Title, a marketing ebook title specialist.

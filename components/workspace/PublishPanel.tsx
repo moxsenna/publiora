@@ -73,7 +73,7 @@ export function PublishPanel({
   const checks = workflow?.checks ?? [];
 
   // Re-publish copy
-  const publishLabel = isPublished ? "Republish" : "Publish now";
+  const publishLabel = isPublished ? "Terbitkan ulang" : "Terbitkan sekarang";
   const publishDescription = isPublished
     ? "This will replace the previous publication snapshot."
     : "All sections will be snapshotted and published to the reader.";
@@ -98,7 +98,7 @@ export function PublishPanel({
       const message =
         err instanceof Error
           ? err.message
-          : "Publish failed. Please try again.";
+          : "Gagal menerbitkan. Silakan coba lagi.";
       pushToast({ title: message, variant: "danger" });
     }
   };
@@ -125,7 +125,7 @@ export function PublishPanel({
         <div className="flex items-center gap-2">
           <Rocket className="h-5 w-5 text-[var(--color-gold)]" />
           <h2 className="text-lg font-semibold text-[var(--color-publiora-black)]">
-            {isPublished ? "Publication Overview" : "Publish your ebook"}
+            {isPublished ? "Ringkasan publikasi" : "Terbitkan ebook Anda"}
           </h2>
         </div>
 

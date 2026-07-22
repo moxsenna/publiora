@@ -83,6 +83,35 @@ describe("prefill", () => {
     expect(next.audience).toBe("user");
   });
 
+  it("user audience survives Offer B after user edit", () => {
+    const offerA = buildOfferPrefill(offer);
+    const first = applyOfferPrefill({
+      current: { audience: null },
+      origins: {},
+      prefill: offerA,
+    });
+    expect(first.values.audience).toBe("Founder SaaS");
+
+    const afterUser = markFieldUserEdited(first.origins, "audience");
+    const current = {
+      ...first.values,
+      audience: "Founder SaaS awal",
+    };
+    const offerB = buildOfferPrefill({
+      ...offer,
+      target_audience: "Tim marketing B2B",
+      niche: "B2B",
+    });
+    const second = applyOfferPrefill({
+      current,
+      origins: afterUser,
+      prefill: offerB,
+      replaceOfferDerived: true,
+    });
+    expect(second.values.audience).toBe("Founder SaaS awal");
+    expect(second.values.niche).toBe("B2B");
+  });
+
   it("does not mutate input objects", () => {
     const current = { audience: null as string | null };
     const origins = {};

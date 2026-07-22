@@ -1,18 +1,39 @@
 "use client";
 
-import type { FieldErrors, UseFormRegister } from "react-hook-form";
+import type {
+  FieldErrors,
+  UseFormRegister,
+} from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import type { WizardFormValues } from "@/components/projects/new/wizard-types";
+import {
+  registerOriginAware,
+  type SetFieldOrigins,
+} from "@/components/projects/new/useOriginAwareField";
 
 export function CommonBriefFields({
   register,
   errors,
   compact = false,
+  setFieldOrigins,
 }: {
   register: UseFormRegister<WizardFormValues>;
   errors: FieldErrors<WizardFormValues>;
   compact?: boolean;
+  setFieldOrigins?: SetFieldOrigins;
 }) {
+  const reg = (name: keyof WizardFormValues) => {
+    if (!setFieldOrigins) {
+      return register(name as never);
+    }
+    // Cast keeps Input/Textarea prop types happy while preserving handlers.
+    return registerOriginAware(
+      register,
+      setFieldOrigins,
+      name as never,
+    ) as ReturnType<UseFormRegister<WizardFormValues>>;
+  };
+
   return (
     <div className="space-y-4">
       {!compact ? (
@@ -24,7 +45,7 @@ export function CommonBriefFields({
               placeholder="Contoh: Membangun sistem lead generation B2B"
               aria-invalid={!!errors.topic}
               aria-describedby={errors.topic ? "topic-error" : undefined}
-              {...register("topic")}
+              {...reg("topic")}
             />
             {errors.topic && (
               <p id="topic-error" className="mt-1 text-xs text-red-600">
@@ -41,7 +62,7 @@ export function CommonBriefFields({
               placeholder="Contoh: Founder SaaS tahap awal yang belum punya tim marketing"
               aria-invalid={!!errors.audience}
               aria-describedby={errors.audience ? "audience-error" : undefined}
-              {...register("audience")}
+              {...reg("audience")}
             />
             {errors.audience && (
               <p id="audience-error" className="mt-1 text-xs text-red-600">
@@ -60,7 +81,7 @@ export function CommonBriefFields({
               aria-describedby={
                 errors.primary_problem ? "primary_problem-error" : undefined
               }
-              {...register("primary_problem")}
+              {...reg("primary_problem")}
             />
             {errors.primary_problem && (
               <p id="primary_problem-error" className="mt-1 text-xs text-red-600">
@@ -79,7 +100,7 @@ export function CommonBriefFields({
               aria-describedby={
                 errors.desired_outcome ? "desired_outcome-error" : undefined
               }
-              {...register("desired_outcome")}
+              {...reg("desired_outcome")}
             />
             {errors.desired_outcome && (
               <p id="desired_outcome-error" className="mt-1 text-xs text-red-600">
@@ -95,7 +116,7 @@ export function CommonBriefFields({
                 id="niche"
                 placeholder="Contoh: B2B SaaS Marketing"
                 aria-invalid={!!errors.niche}
-                {...register("niche")}
+                {...reg("niche")}
               />
               {errors.niche && (
                 <p className="mt-1 text-xs text-red-600">{errors.niche.message}</p>
@@ -106,7 +127,7 @@ export function CommonBriefFields({
               <Input
                 id="tone"
                 placeholder="Contoh: Praktis, taktis, dan ringkas"
-                {...register("tone")}
+                {...reg("tone")}
               />
             </div>
           </div>
@@ -118,12 +139,12 @@ export function CommonBriefFields({
             <Input
               id="audience"
               placeholder="Bisa diisi dari produk"
-              {...register("audience")}
+              {...reg("audience")}
             />
           </div>
           <div>
             <Label htmlFor="niche">Niche (opsional)</Label>
-            <Input id="niche" placeholder="Bisa diisi dari produk" {...register("niche")} />
+            <Input id="niche" placeholder="Bisa diisi dari produk" {...reg("niche")} />
           </div>
         </div>
       )}
@@ -137,19 +158,19 @@ export function CommonBriefFields({
             <>
               <div>
                 <Label htmlFor="topic">Topik (opsional)</Label>
-                <Input id="topic" {...register("topic")} />
+                <Input id="topic" {...reg("topic")} />
               </div>
               <div>
                 <Label htmlFor="primary_problem">Masalah utama (opsional)</Label>
-                <Textarea id="primary_problem" rows={2} {...register("primary_problem")} />
+                <Textarea id="primary_problem" rows={2} {...reg("primary_problem")} />
               </div>
               <div>
                 <Label htmlFor="desired_outcome">Hasil (opsional)</Label>
-                <Textarea id="desired_outcome" rows={2} {...register("desired_outcome")} />
+                <Textarea id="desired_outcome" rows={2} {...reg("desired_outcome")} />
               </div>
               <div>
                 <Label htmlFor="tone">Gaya bahasa</Label>
-                <Input id="tone" {...register("tone")} />
+                <Input id="tone" {...reg("tone")} />
               </div>
             </>
           ) : null}
@@ -158,7 +179,7 @@ export function CommonBriefFields({
             <Input
               id="working_title"
               placeholder="Anda dapat membuat dan mengganti judul dengan AI di tahap berikutnya."
-              {...register("working_title")}
+              {...reg("working_title")}
             />
           </div>
           <div>
@@ -166,7 +187,7 @@ export function CommonBriefFields({
             <Input
               id="author"
               aria-invalid={!!errors.author}
-              {...register("author")}
+              {...reg("author")}
             />
             {errors.author && (
               <p className="mt-1 text-xs text-red-600">{errors.author.message}</p>
@@ -178,7 +199,7 @@ export function CommonBriefFields({
               id="additional_notes"
               rows={3}
               placeholder="Tambahkan batasan, pengalaman, contoh, atau konteks yang perlu diketahui AI."
-              {...register("additional_notes")}
+              {...reg("additional_notes")}
             />
           </div>
         </div>

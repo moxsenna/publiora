@@ -1,6 +1,7 @@
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
 import { runPlanner } from "@/lib/ai/agents/planner";
+import { resolveFormatContext } from "@/lib/templates/format-context";
 import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 import { chargeGeneration, grantCredits } from "@/lib/credits";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
@@ -173,6 +174,11 @@ export async function POST(
       ownerId: user.id,
     });
 
+    const format_context = resolveFormatContext({
+      ebookType: ebookType as "lead_magnet" | "bonus_product" | "sellable_ebook",
+      templateId: (project.template_id as string | null) ?? null,
+    });
+
     const planned = await runPlanner({
       project: {
         title: project.title,
@@ -187,6 +193,7 @@ export async function POST(
       readinessScore,
       userInstruction,
       offer_context,
+      format_context,
     });
 
     // ---- Persist outline ----

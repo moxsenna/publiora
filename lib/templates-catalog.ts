@@ -1,11 +1,38 @@
 import type { Template } from "@/types/template";
 import type { EbookType } from "@/types/project";
+import {
+  FORMAT_QUALITY_PRESETS,
+  FORMAT_SECTION_EXPECTATIONS,
+  FORMAT_STRUCTURAL_RULES,
+  baseSectionRangeForFormat,
+  defaultTargetWordsForDepth,
+} from "@/lib/templates/format-rules";
 
 const ALL: EbookType[] = ["lead_magnet", "bonus_product", "sellable_ebook"];
 
+function withFormatMeta(
+  base: Omit<
+    Template,
+    | "section_range"
+    | "default_target_words"
+    | "structural_rules"
+    | "section_output_expectations"
+    | "quality_rules"
+  >,
+): Template {
+  return {
+    ...base,
+    section_range: baseSectionRangeForFormat(base.format),
+    default_target_words: defaultTargetWordsForDepth(base.depth),
+    structural_rules: [...FORMAT_STRUCTURAL_RULES[base.format]],
+    section_output_expectations: [...FORMAT_SECTION_EXPECTATIONS[base.format]],
+    quality_rules: { ...FORMAT_QUALITY_PRESETS[base.format] },
+  };
+}
+
 /** System templates with format + compatibility metadata. */
 export const SYSTEM_TEMPLATES: Template[] = [
-  {
+  withFormatMeta({
     id: "tpl_quick_win",
     name: "Quick Win Guide",
     description:
@@ -20,8 +47,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: ["lead_magnet", "quick_result"],
     default_section_count: 5,
     depth: "quick",
-  },
-  {
+  }),
+  withFormatMeta({
     id: "tpl_checklist",
     name: "Checklist",
     description: "Langkah ringkas yang langsung dapat dipraktikkan.",
@@ -35,8 +62,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: ["lead_magnet", "bonus_product", "ready_to_use_assets"],
     default_section_count: 5,
     depth: "quick",
-  },
-  {
+  }),
+  withFormatMeta({
     id: "tpl_playbook",
     name: "Playbook",
     description: "Panduan sistematis dan mendalam untuk proses yang kompleks.",
@@ -50,8 +77,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: ["sellable_ebook", "complex_system"],
     default_section_count: 8,
     depth: "deep",
-  },
-  {
+  }),
+  withFormatMeta({
     id: "tpl_framework",
     name: "Framework",
     description:
@@ -66,8 +93,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: ["sellable_ebook", "complex_system"],
     default_section_count: 7,
     depth: "deep",
-  },
-  {
+  }),
+  withFormatMeta({
     id: "tpl_workbook",
     name: "Workbook",
     description:
@@ -82,8 +109,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: ["bonus_product", "ready_to_use_assets"],
     default_section_count: 6,
     depth: "standard",
-  },
-  {
+  }),
+  withFormatMeta({
     id: "tpl_implementation_guide",
     name: "Panduan Implementasi",
     description:
@@ -98,8 +125,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: ["bonus_product", "implementation_aid"],
     default_section_count: 6,
     depth: "standard",
-  },
-  {
+  }),
+  withFormatMeta({
     id: "tpl_resource_guide",
     name: "Resource Guide",
     description: "Kumpulan aset, template, dan referensi siap pakai.",
@@ -113,8 +140,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: ["bonus_product", "ready_to_use_assets"],
     default_section_count: 5,
     depth: "quick",
-  },
-  {
+  }),
+  withFormatMeta({
     id: "tpl_workshop",
     name: "Workshop",
     description: "Format sprint mingguan dengan alur seperti course.",
@@ -128,8 +155,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: ["sellable_ebook"],
     default_section_count: 8,
     depth: "deep",
-  },
-  {
+  }),
+  withFormatMeta({
     id: "tpl_blank",
     name: "Blank",
     description: "Mulai dari kosong tanpa struktur default.",
@@ -143,7 +170,7 @@ export const SYSTEM_TEMPLATES: Template[] = [
     recommended_for: [],
     default_section_count: 5,
     depth: "standard",
-  },
+  }),
 ];
 
 export function getTemplateById(id: string | null | undefined): Template | null {

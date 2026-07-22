@@ -11,10 +11,14 @@ export interface Section {
   /** Plain text length for analytics. */
   word_count: number;
   status: "pending" | "generating" | "generated" | "failed" | "edited";
+  /** Writer/quality metadata (optional until migration applied). */
+  generation_meta?: Record<string, unknown>;
   updated_at: string;
 }
 
 export interface SectionUpdateInput {
   title?: string;
   content_html?: string;
+  /** Optimistic concurrency token (section.updated_at). */
+  expected_updated_at?: string;
 }

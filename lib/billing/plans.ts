@@ -86,6 +86,7 @@ export const CREDIT_COSTS = {
   title: 2,
   cta: 2,
   enhancement: 2,
+  quality_review: 3,
   publish: 0,
 } as const;
 

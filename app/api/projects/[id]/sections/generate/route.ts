@@ -1,6 +1,6 @@
 import { requireOwnedProject } from "@/lib/api/project-access";
 import { jsonError } from "@/lib/api/errors";
-import { runWriter } from "@/lib/ai/agents/writer";
+import { runWriterWithQualityGate } from "@/lib/ai/agents/writer";
 import { chargeGeneration, grantCredits } from "@/lib/credits";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 import type { Outline, OutlineSection } from "@/types/outline";
@@ -15,6 +15,19 @@ import { getSupabaseErrorMessage } from "@/lib/api/supabase-result";
 import { setOutlineSectionStatus } from "@/lib/outline/section-status";
 import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 import { planGenerationRestore } from "@/lib/outline/generation-recovery";
+import { resolveFormatContext } from "@/lib/templates/format-context";
+import type { FormatContext } from "@/types/template";
+import { validateSectionContent } from "@/lib/quality/section-validator";
+import { countWords } from "@/lib/quality/text-analysis";
+import {
+  loadProjectGenerationMemory,
+  upsertProjectGenerationMemory,
+} from "@/lib/generation-memory/store";
+import { mergeWriterMetaIntoMemory } from "@/lib/generation-memory/merge";
+import {
+  createSectionRevision,
+  sectionHasReplaceableContent,
+} from "@/lib/section-revisions";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -57,6 +70,7 @@ export async function POST(
     const body = (await req.json().catch(() => null)) as {
       outline_section_id?: string;
       all?: boolean;
+      confirm_replace_existing?: boolean;
     } | null;
 
     const { data: outlineRow, error: outlineErr } = await supabase
@@ -120,6 +134,11 @@ export async function POST(
       total_sections: Number(project.total_sections ?? mutableOutlineSections.length),
     };
 
+    const format_context = resolveFormatContext({
+      ebookType,
+      templateId: (project.template_id as string | null) ?? null,
+    });
+
     // Generate all: sequential with shared mutable outline state
     if (body?.all) {
       const results: Section[] = [];
@@ -132,6 +151,7 @@ export async function POST(
           outlineSection: os,
           outlineSections: mutableOutlineSections,
           strategy,
+          format_context,
           sectionIndex: i,
         });
         if ("error" in one) return one.error;
@@ -153,6 +173,29 @@ export async function POST(
     }
     const os = mutableOutlineSections[sectionIndex];
 
+    // Require confirmation when replacing existing content (single-section path).
+    const { data: existingContent } = await supabase
+      .from("ebook_sections")
+      .select("id, content_html, status")
+      .eq("project_id", id)
+      .eq("outline_section_id", outlineSectionId)
+      .maybeSingle();
+
+    if (
+      sectionHasReplaceableContent(existingContent) &&
+      body?.confirm_replace_existing !== true
+    ) {
+      return jsonError(
+        "Section already has content. Confirm replace to regenerate.",
+        409,
+        "section_replace_confirmation_required",
+        {
+          outline_section_id: outlineSectionId,
+          section_id: existingContent?.id ?? null,
+        },
+      );
+    }
+
     try {
       await chargeGeneration(user.id, "section", id);
       charged = true;
@@ -171,8 +214,12 @@ export async function POST(
       outlineSection: os,
       outlineSections: mutableOutlineSections,
       strategy,
+      format_context,
       sectionIndex,
       alreadyCharged: true,
+      revisionSource: sectionHasReplaceableContent(existingContent)
+        ? "before_regenerate"
+        : null,
     });
     if ("error" in one) {
       if (charged) {
@@ -218,14 +265,25 @@ async function generateOne(opts: {
   /** Current mutable outline sections (statuses must accumulate across generate-all). */
   outlineSections: OutlineSection[];
   strategy: EbookStrategy;
+  format_context: FormatContext;
   sectionIndex: number;
   alreadyCharged?: boolean;
+  /** When set, snapshot current content before overwrite. */
+  revisionSource?: "before_regenerate" | null;
 }): Promise<
   | { section: Section; outlineSections: OutlineSection[] }
   | { error: Response }
 > {
-  const { supabase, userId, project, outlineSection, strategy, sectionIndex } =
-    opts;
+  const {
+    supabase,
+    userId,
+    project,
+    outlineSection,
+    strategy,
+    format_context,
+    sectionIndex,
+    revisionSource = null,
+  } = opts;
   let outlineSections = [...opts.outlineSections];
   let chargedHere = false;
   const previousSectionStatus = outlineSection.status ?? "pending";
@@ -382,47 +440,107 @@ async function generateOne(opts: {
       ownerId: userId,
     });
 
-    const writtenRaw = await runWriter({
-      project: {
-        title: project.title,
-        audience: project.audience,
-        tone: project.tone,
-        niche: project.niche,
-        ebook_type: project.ebook_type,
-      },
-      strategy,
-      offer_context,
-      outlineSections: outlineSections.map((s) => ({
-        id: s.id,
-        title: s.title,
-        summary: s.summary,
-        position: s.position,
-      })),
-      section: {
-        id: outlineSection.id,
-        title: outlineSection.title,
-        summary: outlineSection.summary,
-        key_points: outlineSection.key_points,
-        estimated_words: outlineSection.estimated_words,
-        position: outlineSection.position,
-      },
-      previousSection: prevOs
-        ? { title: prevOs.title, summary: prevOs.summary }
-        : null,
-      nextSection: nextOs
-        ? { title: nextOs.title, summary: nextOs.summary }
-        : null,
-      previousSectionBodySummary,
-    });
+    const generation_memory = await loadProjectGenerationMemory(
+      supabase,
+      project.id,
+    );
 
-    const sanitized = sanitizeHtml(writtenRaw.content_html);
+    const targetWords =
+      outlineSection.estimated_words ||
+      format_context.default_target_words ||
+      700;
+    const isFinalSection = sectionIndex >= outlineSections.length - 1;
+    let previousContentHtml: string | null = null;
+    if (prevOs) {
+      const { data: prevFull } = await supabase
+        .from("ebook_sections")
+        .select("content_html")
+        .eq("project_id", project.id)
+        .eq("outline_section_id", prevOs.id)
+        .maybeSingle();
+      previousContentHtml = prevFull?.content_html
+        ? String(prevFull.content_html)
+        : null;
+    }
+
+    let qualityPass;
+    try {
+      qualityPass = await runWriterWithQualityGate({
+        input: {
+          project: {
+            title: project.title,
+            audience: project.audience,
+            tone: project.tone,
+            niche: project.niche,
+            ebook_type: project.ebook_type,
+          },
+          strategy,
+          offer_context,
+          format_context,
+          generation_memory,
+          outlineSections: outlineSections.map((s) => ({
+            id: s.id,
+            title: s.title,
+            summary: s.summary,
+            position: s.position,
+          })),
+          section: {
+            id: outlineSection.id,
+            title: outlineSection.title,
+            summary: outlineSection.summary,
+            key_points: outlineSection.key_points,
+            estimated_words: outlineSection.estimated_words,
+            position: outlineSection.position,
+          },
+          previousSection: prevOs
+            ? { title: prevOs.title, summary: prevOs.summary }
+            : null,
+          nextSection: nextOs
+            ? { title: nextOs.title, summary: nextOs.summary }
+            : null,
+          previousSectionBodySummary,
+        },
+        sanitize: sanitizeHtml,
+        validate: ({ content_html, pre_sanitize_html, generation_meta }) =>
+          validateSectionContent({
+            section_id: outlineSection.id,
+            content_html,
+            pre_sanitize_html,
+            target_words: targetWords,
+            key_points: outlineSection.key_points ?? [],
+            format_context,
+            previous_content_html: previousContentHtml,
+            offer_name: offer_context?.snapshot.name ?? null,
+            is_final_section: isFinalSection,
+            generation_meta,
+          }),
+      });
+    } catch (writerErr) {
+      await restoreAfterFailure();
+      await refundLocalCharge("Refund section generate quality failure");
+      const e = writerErr as Error & { code?: string };
+      if (e.code === "section_quality_failed") {
+        return {
+          error: jsonError(
+            e.message || "Section failed quality validation",
+            422,
+            "section_quality_failed",
+          ),
+        };
+      }
+      throw writerErr;
+    }
+
     const written = {
-      ...writtenRaw,
-      content_html: sanitized,
-      word_count: sanitized
-        .replace(/<[^>]+>/g, " ")
-        .split(/\s+/)
-        .filter(Boolean).length,
+      title: qualityPass.result.title,
+      content_html: qualityPass.content_html,
+      word_count: qualityPass.word_count || countWords(qualityPass.content_html),
+      section_summary: qualityPass.result.section_summary,
+      generation_meta: {
+        ...qualityPass.result.generation_meta,
+        quality_issues: qualityPass.quality.issues,
+        repaired: qualityPass.repaired,
+      },
     };
 
     const now = new Date().toISOString();
@@ -446,6 +564,32 @@ async function generateOne(opts: {
 
     let row: Record<string, unknown> | null = null;
     if (existing) {
+      if (revisionSource) {
+        const { data: fullExisting } = await supabase
+          .from("ebook_sections")
+          .select("id, project_id, title, content_html, word_count")
+          .eq("id", existing.id)
+          .maybeSingle();
+        if (fullExisting && sectionHasReplaceableContent(fullExisting)) {
+          const rev = await createSectionRevision(supabase, {
+            section: {
+              id: String(fullExisting.id),
+              project_id: project.id,
+              title: String(fullExisting.title),
+              content_html: String(fullExisting.content_html ?? ""),
+              word_count: Number(fullExisting.word_count ?? 0),
+            },
+            source: revisionSource,
+          });
+          if (!rev.ok) {
+            console.error(
+              "[sections/generate] revision snapshot failed",
+              rev.error,
+            );
+          }
+        }
+      }
+
       const { data, error } = await supabase
         .from("ebook_sections")
         .update({
@@ -454,6 +598,7 @@ async function generateOne(opts: {
           word_count: written.word_count,
           status: "generated",
           position: outlineSection.position,
+          generation_meta: written.generation_meta,
           updated_at: now,
         })
         .eq("id", existing.id)
@@ -461,7 +606,7 @@ async function generateOne(opts: {
         .single();
       if (error) {
         await restoreAfterFailure();
-      await refundLocalCharge("Refund section generate DB failure");
+        await refundLocalCharge("Refund section generate DB failure");
         return { error: jsonError(error.message, 500, "db_error") };
       }
       row = data;
@@ -476,16 +621,36 @@ async function generateOne(opts: {
           content_html: written.content_html,
           word_count: written.word_count,
           status: "generated",
+          generation_meta: written.generation_meta,
           updated_at: now,
         })
         .select("*")
         .single();
       if (error) {
         await restoreAfterFailure();
-      await refundLocalCharge("Refund section generate DB failure");
+        await refundLocalCharge("Refund section generate DB failure");
         return { error: jsonError(error.message, 500, "db_error") };
       }
       row = data;
+    }
+
+    // Memory upsert is non-fatal after successful section persistence.
+    const nextMemory = mergeWriterMetaIntoMemory({
+      memory: generation_memory,
+      section_id: outlineSection.id,
+      section_summary: written.section_summary,
+      meta: qualityPass.result.generation_meta,
+    });
+    const memResult = await upsertProjectGenerationMemory(
+      supabase,
+      project.id,
+      nextMemory,
+    );
+    if (!memResult.ok) {
+      console.error(
+        "[sections/generate] generation memory upsert failed",
+        memResult.error,
+      );
     }
 
     {

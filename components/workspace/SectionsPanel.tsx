@@ -5,9 +5,10 @@ import {
   useOutline,
   useSections,
   useGenerateSection,
-  useGenerateAllSections,
   useUpdateSection,
   useEnhanceSection,
+  useCreditBalance,
+  useCreditCosts,
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
@@ -18,28 +19,60 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { EnhancementMenu } from "@/components/workspace/EnhancementMenu";
 import { EnhancementReviewDialog } from "@/components/workspace/EnhancementReviewDialog";
+import {
+  saveStateLabel,
+  useSectionDraft,
+  type SaveState,
+} from "@/components/workspace/useSectionDraft";
+import { SectionRevisionDialog } from "@/components/workspace/SectionRevisionDialog";
+import {
+  GenerationConfirmDialog,
+  GenerationProgressPanel,
+} from "@/components/workspace/GenerationProgressPanel";
+import {
+  estimateGenerationCost,
+  useSequentialSectionGeneration,
+} from "@/components/workspace/useSequentialSectionGeneration";
 import { Sparkles, FileText, Play, Save, ChevronDown } from "lucide-react";
 import type { Section } from "@/types/section";
 import type { EnhancementAction, EnhancementSuggestion } from "@/types/ai-suggestions";
 import { cn } from "@/lib/utils";
+import { sectionHasReplaceableContent } from "@/lib/section-revisions";
+import { CREDIT_COSTS } from "@/lib/billing/plans";
+import { sectionStatusLabelsId } from "@/lib/i18n/id/common";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
   const { data: outline } = useOutline(projectId);
   const { data: sections, isLoading } = useSections(projectId);
   const generate = useGenerateSection();
-  const generateAll = useGenerateAllSections();
   const updateSection = useUpdateSection();
   const enhance = useEnhanceSection();
+  const { data: creditBalance } = useCreditBalance();
+  const { data: creditCosts } = useCreditCosts();
   const pushToast = useUiStore((s) => s.pushToast);
+
+  const sequential = useSequentialSectionGeneration({
+    generateOne: async ({ outlineSectionId, confirmReplaceExisting }) => {
+      return generate.mutateAsync({
+        projectId,
+        outlineSectionId,
+        confirmReplaceExisting,
+      });
+    },
+  });
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
 
   // Enhancement review dialog state
   const [reviewOpen, setReviewOpen] = React.useState(false);
-  const [reviewSuggestion, setReviewSuggestion] = React.useState<EnhancementSuggestion | null>(null);
-  const [reviewSectionId, setReviewSectionId] = React.useState<string | null>(null);
-  const [reviewAction, setReviewAction] = React.useState<EnhancementAction | null>(null);
+  const [reviewSuggestion, setReviewSuggestion] =
+    React.useState<EnhancementSuggestion | null>(null);
+  const [reviewSectionId, setReviewSectionId] = React.useState<string | null>(
+    null,
+  );
+  const [reviewAction, setReviewAction] =
+    React.useState<EnhancementAction | null>(null);
   const [priorHtml, setPriorHtml] = React.useState<string | null>(null);
   const [reviewError, setReviewError] = React.useState<string | null>(null);
   const [accepting, setAccepting] = React.useState(false);
@@ -47,10 +80,13 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   const [regenerating, setRegenerating] = React.useState(false);
   const [undoing, setUndoing] = React.useState(false);
 
-  // Dirty tracking for beforeunload
   const [dirty, setDirty] = React.useState(false);
+  const flushRef = React.useRef<(() => Promise<boolean>) | null>(null);
+  const [replaceDialogOpen, setReplaceDialogOpen] = React.useState(false);
+  const [pendingReplaceOutlineId, setPendingReplaceOutlineId] = React.useState<
+    string | null
+  >(null);
 
-  // beforeunload protection
   React.useEffect(() => {
     if (!dirty) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -66,6 +102,20 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     for (const s of sections ?? []) map.set(s.outline_section_id, s);
     return map;
   }, [sections]);
+
+  React.useEffect(() => {
+    if (sequential.phase !== "running") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [sequential.phase]);
+
+  const sectionCost = creditCosts?.section ?? CREDIT_COSTS.section;
+  const balanceAmount =
+    typeof creditBalance?.balance === "number" ? creditBalance.balance : null;
 
   if (isLoading) {
     return (
@@ -89,38 +139,60 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   }
 
   const current = activeId
-    ? sections?.find((s) => s.id === activeId) ?? null
-    : sections?.[0] ?? null;
+    ? (sections?.find((s) => s.id === activeId) ?? null)
+    : (sections?.[0] ?? null);
 
   const currentOutline =
     outline.sections.find((os) => os.id === current?.outline_section_id) ??
     outline.sections[0];
-  const currentLabel = current?.title ?? currentOutline?.title ?? "Pilih section";
+  const currentLabel =
+    current?.title ?? currentOutline?.title ?? "Pilih section";
 
   const onGenerateAll = async () => {
-    if (generateAll.isPending) return; // prevent duplicate jobs
-    try {
-      await generateAll.mutateAsync(projectId);
-      pushToast({ title: "All sections generated", variant: "success" });
-    } catch (err) {
-      const e = err as { code?: string; message?: string };
-      pushToast({
-        title: e?.code === "insufficient_credits" ? "Kredit tidak cukup" : "Generate gagal",
-        description: e?.code === "insufficient_credits"
-          ? "Buka Billing untuk top-up."
-          : e?.message ?? "Coba lagi atau hubungi support.",
-        variant: "danger",
-      });
+    if (
+      sequential.phase === "running" ||
+      sequential.phase === "paused_on_failure"
+    ) {
+      return;
     }
+    if (flushRef.current) {
+      const ok = await flushRef.current();
+      if (!ok) {
+        pushToast({
+          title: "Simpan dulu",
+          description: "Perubahan section aktif belum tersimpan.",
+          variant: "danger",
+        });
+        return;
+      }
+    }
+    sequential.prepare({
+      outlineSections: outline.sections,
+      sectionsByOutlineId: sectionsByOutline,
+      includeCompleted: false,
+    });
   };
 
-  const onGenerateOne = async (outlineSectionId: string) => {
-    if (generate.isPending) return; // prevent double submission
+  const runGenerateOne = async (
+    outlineSectionId: string,
+    confirmReplaceExisting?: boolean,
+  ) => {
     try {
-      const s = await generate.mutateAsync({ projectId, outlineSectionId });
+      const s = await generate.mutateAsync({
+        projectId,
+        outlineSectionId,
+        confirmReplaceExisting,
+      });
       setActiveId(s.id);
+      setReplaceDialogOpen(false);
+      setPendingReplaceOutlineId(null);
     } catch (err) {
       const e = err as { code?: string; message?: string };
+      if (e?.code === "section_replace_confirmation_required") {
+        setPendingReplaceOutlineId(outlineSectionId);
+        setReplaceDialogOpen(true);
+        return;
+      }
       pushToast({
         title: "Generate gagal",
         description: e?.message ?? "Coba generate ulang.",
@@ -129,28 +201,50 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     }
   };
 
-  const onSave = async (sectionId: string, html: string, title: string) => {
-    try {
-      await updateSection.mutateAsync({
-        id: sectionId,
-        projectId,
-        patch: { content_html: html, title },
-      });
-      setDirty(false);
-      pushToast({ title: "Section disimpan", variant: "success" });
-    } catch {
-      pushToast({ title: "Simpan gagal", variant: "danger" });
+  const onGenerateOne = async (outlineSectionId: string) => {
+    if (generate.isPending) return;
+    if (flushRef.current) {
+      const ok = await flushRef.current();
+      if (!ok) {
+        pushToast({
+          title: "Simpan dulu",
+          description: "Perubahan section aktif belum tersimpan.",
+          variant: "danger",
+        });
+        return;
+      }
     }
+
+    const existing = sectionsByOutline.get(outlineSectionId);
+    if (sectionHasReplaceableContent(existing)) {
+      setPendingReplaceOutlineId(outlineSectionId);
+      setReplaceDialogOpen(true);
+      return;
+    }
+
+    await runGenerateOne(outlineSectionId, false);
   };
 
-  // Enhancement flow
-  const onEnhance = async (sectionId: string, action: EnhancementAction, currentHtml: string) => {
-    if (enhance.isPending) return; // prevent double submission
+  const onEnhance = async (
+    sectionId: string,
+    action: EnhancementAction,
+  ) => {
+    if (enhance.isPending) return;
+    if (flushRef.current) {
+      const ok = await flushRef.current();
+      if (!ok) {
+        pushToast({
+          title: "Simpan dulu",
+          description: "Perubahan section aktif belum tersimpan.",
+          variant: "danger",
+        });
+        return;
+      }
+    }
     try {
       setReviewError(null);
       setReviewSectionId(sectionId);
       setReviewAction(action);
-      // Capture prior HTML before suggestion arrives (the persisted version)
       const section = sections?.find((s) => s.id === sectionId);
       setPriorHtml(section?.content_html ?? null);
 
@@ -172,7 +266,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         description:
           e?.code === "insufficient_credits"
             ? "Buka Billing untuk top-up."
-            : e?.message ?? "Coba lagi.",
+            : (e?.message ?? "Coba lagi."),
         variant: "danger",
       });
     }
@@ -183,10 +277,26 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     setAccepting(true);
     setReviewError(null);
     try {
+      const section = sections?.find((s) => s.id === reviewSectionId);
+      // Best-effort revision snapshot before enhancement overwrite (no AI credit).
+      if (section && sectionHasReplaceableContent(section)) {
+        await fetch(
+          `/api/projects/${projectId}/sections/${reviewSectionId}/revisions`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ source: "before_enhancement_accept" }),
+          },
+        ).catch(() => null);
+      }
       await updateSection.mutateAsync({
         id: reviewSectionId,
         projectId,
-        patch: { content_html: suggestedHtml },
+        patch: {
+          content_html: suggestedHtml,
+          expected_updated_at: section?.updated_at,
+        },
       });
       setDirty(false);
       setReviewOpen(false);
@@ -195,7 +305,8 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     } catch (err) {
       const e = err as { message?: string };
       setReviewError(
-        e?.message ?? "Gagal menyimpan enhancement. Dialog tetap terbuka — silakan coba lagi."
+        e?.message ??
+          "Gagal menyimpan enhancement. Dialog tetap terbuka — silakan coba lagi.",
       );
     } finally {
       setAccepting(false);
@@ -204,7 +315,6 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
 
   const handleReject = () => {
     setRejecting(true);
-    // Reject is instant — just close without any persist
     setReviewOpen(false);
     setReviewSuggestion(null);
     setReviewError(null);
@@ -224,9 +334,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       setReviewSuggestion(result.suggestion);
     } catch (err) {
       const e = err as { message?: string };
-      setReviewError(
-        e?.message ?? "Regenerate gagal. Silakan coba lagi."
-      );
+      setReviewError(e?.message ?? "Regenerate gagal. Silakan coba lagi.");
     } finally {
       setRegenerating(false);
     }
@@ -237,44 +345,75 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     setUndoing(true);
     setReviewError(null);
     try {
+      const section = sections?.find((s) => s.id === reviewSectionId);
       await updateSection.mutateAsync({
         id: reviewSectionId,
         projectId,
-        patch: { content_html: priorHtml },
+        patch: {
+          content_html: priorHtml,
+          expected_updated_at: section?.updated_at,
+        },
       });
       setDirty(false);
       setReviewOpen(false);
       setReviewSuggestion(null);
       setPriorHtml(null);
-      pushToast({ title: "Konten dikembalikan ke versi sebelumnya", variant: "success" });
+      pushToast({
+        title: "Konten dikembalikan ke versi sebelumnya",
+        variant: "success",
+      });
     } catch (err) {
       const e = err as { message?: string };
       setReviewError(
-        e?.message ?? "Gagal mengembalikan konten. Dialog tetap terbuka — silakan coba lagi."
+        e?.message ??
+          "Gagal mengembalikan konten. Dialog tetap terbuka — silakan coba lagi.",
       );
     } finally {
       setUndoing(false);
     }
   };
 
-  const selectSection = (osId: string, sectionId?: string) => {
+  const selectSection = async (osId: string, sectionId?: string) => {
+    if (flushRef.current) {
+      const ok = await flushRef.current();
+      if (!ok) {
+        pushToast({
+          title: "Belum bisa pindah section",
+          description: "Gagal menyimpan perubahan. Coba lagi dulu.",
+          variant: "danger",
+        });
+        return;
+      }
+    }
     if (sectionId) setActiveId(sectionId);
     setPickerOpen(false);
   };
+
+  const batchBusy =
+    sequential.phase === "running" || sequential.phase === "paused_on_failure";
+  const queueCost = estimateGenerationCost(
+    sequential.queue.length,
+    sectionCost,
+  );
+  const insufficient =
+    balanceAmount != null && queueCost > balanceAmount && sequential.queue.length > 0;
 
   const sectionList = (
     <ul className="p-1.5 space-y-0.5">
       {outline.sections.map((os) => {
         const s = sectionsByOutline.get(os.id);
-        const active = current?.id === s?.id || (!current && os.id === currentOutline?.id);
+        const active =
+          current?.id === s?.id || (!current && os.id === currentOutline?.id);
         return (
           <li key={os.id}>
             <button
               type="button"
-              onClick={() => selectSection(os.id, s?.id)}
+              onClick={() => void selectSection(os.id, s?.id)}
               className={cn(
                 "w-full text-left p-2 rounded-lg transition-colors",
-                active ? "bg-[var(--color-surface-2)]" : "hover:bg-[var(--color-surface-2)]"
+                active
+                  ? "bg-[var(--color-surface-2)]"
+                  : "hover:bg-[var(--color-surface-2)]",
               )}
             >
               <div className="flex items-center gap-2">
@@ -286,15 +425,17 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                 </span>
                 {s ? (
                   <>
-                    <Badge variant={s.status === "edited" ? "info" : "success"}>
+                    <Badge
+                      variant={s.status === "edited" ? "info" : "success"}
+                    >
                       {s.word_count}w
                     </Badge>
                     <span className="text-[11px] text-[var(--color-medium-gray)]">
-                      {s.status}
+                      {sectionStatusLabelsId[s.status] ?? s.status}
                     </span>
                   </>
                 ) : (
-                  <Badge variant="default">pending</Badge>
+                  <Badge variant="default">{sectionStatusLabelsId.pending}</Badge>
                 )}
               </div>
               {!s && (
@@ -304,10 +445,10 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                     variant="outline"
                     className="w-full"
                     loading={generate.isPending}
-                    disabled={generate.isPending}
+                    disabled={generate.isPending || batchBusy}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onGenerateOne(os.id);
+                      void onGenerateOne(os.id);
                     }}
                   >
                     <Sparkles className="h-3.5 w-3.5" />
@@ -324,7 +465,6 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="grid md:grid-cols-[240px_1fr] lg:grid-cols-[260px_1fr] h-full">
-      {/* Desktop / tablet sidebar */}
       <aside className="hidden md:flex flex-col border-r border-[var(--color-publiora-border)] bg-white overflow-y-auto min-h-0">
         <div className="p-2.5 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 border-b border-[var(--color-publiora-border)]">
           <span className="text-sm font-semibold text-[var(--color-publiora-black)]">
@@ -333,19 +473,18 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           <Button
             size="sm"
             variant="outline"
-            onClick={onGenerateAll}
-            loading={generateAll.isPending}
-            disabled={generateAll.isPending}
+            onClick={() => void onGenerateAll()}
+            loading={batchBusy}
+            disabled={batchBusy}
           >
             <Play className="h-3.5 w-3.5" />
-            {generateAll.isPending ? "Generating…" : "Generate all"}
+            {batchBusy ? "Menulis…" : "Tulis semua"}
           </Button>
         </div>
         {sectionList}
       </aside>
 
       <div className="overflow-y-auto bg-[var(--color-surface-2)] min-h-0 flex flex-col">
-        {/* Mobile section picker */}
         <div className="md:hidden sticky top-0 z-20 border-b border-[var(--color-publiora-border)] bg-white">
           <div className="p-2.5 flex items-center gap-2">
             <button
@@ -367,16 +506,16 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               <ChevronDown
                 className={cn(
                   "h-4 w-4 shrink-0 text-[var(--color-medium-gray)] transition-transform",
-                  pickerOpen && "rotate-180"
+                  pickerOpen && "rotate-180",
                 )}
               />
             </button>
             <Button
               size="sm"
               variant="outline"
-              onClick={onGenerateAll}
-              loading={generateAll.isPending}
-              disabled={generateAll.isPending}
+              onClick={() => void onGenerateAll()}
+              loading={batchBusy}
+              disabled={batchBusy}
               aria-label="Generate semua section"
             >
               <Play className="h-3.5 w-3.5" />
@@ -392,6 +531,25 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           )}
         </div>
 
+        {(sequential.phase === "running" ||
+          sequential.phase === "paused_on_failure" ||
+          sequential.phase === "completed" ||
+          sequential.phase === "stopped") && (
+          <div className="p-3 border-b border-[var(--color-publiora-border)] bg-white">
+            <GenerationProgressPanel
+              phase={sequential.phase}
+              queue={sequential.queue}
+              currentIndex={sequential.currentIndex}
+              stopAfterCurrent={sequential.stopAfterCurrent}
+              onStopAfterCurrent={sequential.requestStopAfterCurrent}
+              onRetry={() => void sequential.retryCurrent()}
+              onSkip={() => void sequential.skipAndContinue()}
+              onStop={() => sequential.reset()}
+              onClose={() => sequential.reset()}
+            />
+          </div>
+        )}
+
         {!current ? (
           <div className="p-6">
             <EmptyState
@@ -404,17 +562,19 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           <SectionEditor
             key={current.id}
             section={current}
-            onSave={onSave}
-            onRegenerate={() => onGenerateOne(current.outline_section_id)}
-            onEnhance={(action) => onEnhance(current.id, action, current.content_html)}
-            generating={generate.isPending}
+            projectId={projectId}
+            onRegenerate={() => void onGenerateOne(current.outline_section_id)}
+            onEnhance={(action) => void onEnhance(current.id, action)}
+            generating={generate.isPending || batchBusy}
             enhancing={enhance.isPending}
             onDirtyChange={setDirty}
+            registerFlush={(fn) => {
+              flushRef.current = fn;
+            }}
           />
         )}
       </div>
 
-      {/* Enhancement review dialog */}
       <EnhancementReviewDialog
         open={reviewOpen}
         onClose={() => {
@@ -434,69 +594,150 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         onSessionUndo={handleSessionUndo}
         error={reviewError}
       />
+
+      <SectionRevisionDialog
+        open={replaceDialogOpen}
+        loading={generate.isPending}
+        onCancel={() => {
+          setReplaceDialogOpen(false);
+          setPendingReplaceOutlineId(null);
+        }}
+        onConfirm={() => {
+          if (!pendingReplaceOutlineId) return;
+          void runGenerateOne(pendingReplaceOutlineId, true);
+        }}
+      />
+
+      <GenerationConfirmDialog
+        open={sequential.phase === "confirm"}
+        queueCount={sequential.queue.length}
+        sectionCost={sectionCost}
+        balance={balanceAmount}
+        insufficient={insufficient}
+        onCancel={() => sequential.reset()}
+        onStart={() => {
+          void sequential.start();
+        }}
+      />
     </div>
   );
 }
 
 function SectionEditor({
   section,
-  onSave,
+  projectId,
   onRegenerate,
   onEnhance,
   generating,
   enhancing,
   onDirtyChange,
+  registerFlush,
 }: {
   section: Section;
-  onSave: (id: string, html: string, title: string) => void;
+  projectId: string;
   onRegenerate: () => void;
   onEnhance: (action: EnhancementAction) => void;
   generating?: boolean;
   enhancing?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
+  registerFlush?: (fn: (() => Promise<boolean>) | null) => void;
 }) {
-  const [title, setTitle] = React.useState(section.title);
-  const [html, setHtml] = React.useState(section.content_html);
-  const [localDirty, setLocalDirty] = React.useState(false);
+  const updateSection = useUpdateSection();
+  const pushToast = useUiStore((s) => s.pushToast);
+
+  const save = React.useCallback(
+    async (input: {
+      title: string;
+      content_html: string;
+      expected_updated_at: string;
+    }) => {
+      try {
+        const saved = await updateSection.mutateAsync({
+          id: section.id,
+          projectId,
+          patch: {
+            title: input.title,
+            content_html: input.content_html,
+            expected_updated_at: input.expected_updated_at,
+          },
+        });
+        return {
+          title: saved.title,
+          content_html: saved.content_html,
+          updated_at: saved.updated_at,
+        };
+      } catch (err) {
+        const e = err as { code?: string; status?: number; message?: string };
+        const error = new Error(e?.message ?? "Save failed") as Error & {
+          code?: string;
+          status?: number;
+        };
+        error.code = e?.code;
+        error.status = e?.status;
+        throw error;
+      }
+    },
+    [projectId, section.id, updateSection],
+  );
+
+  const draft = useSectionDraft({
+    section,
+    debounceMs: 1200,
+    save,
+    onSaveStateChange: (state: SaveState) => {
+      onDirtyChange?.(
+        state === "dirty" ||
+          state === "saving" ||
+          state === "error" ||
+          state === "conflict",
+      );
+    },
+  });
 
   React.useEffect(() => {
-    setTitle(section.title);
-    setHtml(section.content_html);
-    setLocalDirty(false);
-  }, [section.id, section.title, section.content_html]);
+    registerFlush?.(() => draft.flushSave());
+    return () => registerFlush?.(null);
+  }, [draft.flushSave, registerFlush]);
 
   React.useEffect(() => {
-    onDirtyChange?.(localDirty);
-  }, [localDirty, onDirtyChange]);
-
-  const onChange = (v: string) => {
-    setHtml(v);
-    setLocalDirty(true);
-  };
+    if (draft.saveState === "conflict") {
+      pushToast({
+        title: "Konflik perubahan",
+        description:
+          "Konten ini berubah di tempat lain. Muat ulang atau coba simpan lagi.",
+        variant: "danger",
+      });
+    }
+  }, [draft.saveState, pushToast]);
 
   const wordCount = React.useMemo(() => {
-    if (!html) return 0;
-    const text = html.replace(/<[^>]*>/g, " ");
+    if (!draft.contentHtml) return 0;
+    const text = draft.contentHtml.replace(/<[^>]*>/g, " ");
     const words = text
       .replace(/&[a-z]+;/gi, " ")
       .split(/\s+/)
       .filter(Boolean);
     return words.length;
-  }, [html]);
+  }, [draft.contentHtml]);
 
-  const hasContent = (html ?? "").replace(/<[^>]*>/g, "").trim().length > 0;
+  const hasContent =
+    (draft.contentHtml ?? "").replace(/<[^>]*>/g, "").trim().length > 0;
+  const statusText = saveStateLabel(draft.saveState, draft.lastSavedAt);
 
   return (
     <div className="p-3 space-y-3 max-w-3xl mx-auto">
       <div className="flex items-center gap-1.5 flex-wrap">
         <Input
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            setLocalDirty(true);
-          }}
+          value={draft.title}
+          onChange={(e) => draft.setTitle(e.target.value)}
           className="text-sm font-semibold min-w-[10rem] flex-1"
         />
+        <span
+          className="text-[11px] text-[var(--color-medium-gray)] min-w-[6rem]"
+          aria-live="polite"
+        >
+          {statusText || `${wordCount} kata`}
+        </span>
         <span className="text-[11px] text-[var(--color-medium-gray)] min-w-[3rem] text-right">
           {wordCount}w
         </span>
@@ -516,14 +757,36 @@ function SectionEditor({
         </Button>
         <Button
           size="sm"
-          disabled={!localDirty}
-          onClick={() => onSave(section.id, html, title)}
+          disabled={!draft.isDirty || draft.saveState === "saving"}
+          loading={draft.saveState === "saving"}
+          onClick={() => void draft.flushSave()}
         >
           <Save className="h-4 w-4" />
-          Save
+          {draft.saveState === "error" ? "Coba lagi" : "Save"}
         </Button>
       </div>
-      <RichTextEditor value={html} onChange={onChange} />
+      {draft.saveState === "error" && (
+        <p className="text-xs text-[var(--color-danger,#b91c1c)]">
+          Gagal menyimpan.{" "}
+          <button
+            type="button"
+            className="underline font-medium"
+            onClick={() => void draft.retrySave()}
+          >
+            Coba lagi
+          </button>
+        </p>
+      )}
+      {draft.saveState === "conflict" && (
+        <p className="text-xs text-[var(--color-danger,#b91c1c)]">
+          Konten ini berubah di tempat lain. Muat ulang halaman atau gunakan
+          versi terbaru, lalu simpan ulang.
+        </p>
+      )}
+      <RichTextEditor
+        value={draft.contentHtml}
+        onChange={(v) => draft.setContentHtml(v)}
+      />
     </div>
   );
 }

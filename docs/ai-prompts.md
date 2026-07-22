@@ -429,3 +429,31 @@ Not MVP:
 - Marketplace SEO prompts
 - Reader summarization prompts
 - AI chat-with-book prompts
+
+## 14. Generation Quality Hardening (2026-07)
+
+### FormatContext
+Planner and Writer receive `FormatContext` from the selected template:
+- format / depth
+- section_range
+- structural_rules + section_output_expectations
+- quality_rules
+
+Resolver: `lib/templates/format-context.ts`.
+
+### Strict Planner
+- No substantive fallbacks (`Cover:`, `Expand:`, `Key point N`).
+- One internal repair via `generateJsonWithSingleRepair`.
+- Final invalid output fails and refunds outline credits.
+
+### Writer quality gate
+- Deterministic checks in `lib/quality/section-validator.ts`.
+- One free internal repair on blockers.
+- Warnings may persist with metadata.
+
+### Optional AI semantic review
+- Explicit user action only.
+- Route: `POST /api/projects/:id/quality-review`.
+- Cost: `CREDIT_COSTS.quality_review` (default 3).
+- Suggestions only — never silent content mutation.
+

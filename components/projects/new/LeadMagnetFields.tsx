@@ -38,7 +38,13 @@ export function LeadMagnetFields({
   selectedOffer: Offer | null;
   onSelectedOfferChange: (offer: Offer | null) => void;
   fieldOrigins: Partial<Record<string, FieldOrigin>>;
-  setFieldOrigins: (next: Partial<Record<string, FieldOrigin>>) => void;
+  setFieldOrigins: (
+    next:
+      | Partial<Record<string, FieldOrigin>>
+      | ((
+          prev: Partial<Record<string, FieldOrigin>>,
+        ) => Partial<Record<string, FieldOrigin>>),
+  ) => void;
 }) {
   const postRead = watch("post_read_action");
   const needsUrl =

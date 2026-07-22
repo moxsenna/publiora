@@ -1,8 +1,14 @@
+import { z } from "zod";
 import { completeJson } from "@/lib/ai/provider";
 import { WRITER_SYSTEM } from "@/lib/ai/prompts";
 import type { EbookStrategy } from "@/types/strategy";
 import type { OutlineSection } from "@/types/outline";
 import type { ProjectOfferContext } from "@/types/offer";
+import type { FormatContext } from "@/types/template";
+import type { WriterGenerationMeta } from "@/types/quality";
+import type { EbookGenerationMemory } from "@/types/generation-memory";
+import { countWords } from "@/lib/quality/text-analysis";
+import { formatMemoryForPrompt } from "@/lib/generation-memory/merge";
 
 export type WriterNeighbor = {
   title: string;
@@ -35,13 +41,58 @@ export type WriterInput = {
   previousSectionBodySummary?: string | null;
   /** Safe offer snapshot fields only. */
   offer_context?: ProjectOfferContext | null;
+  /** Resolved template/format rules controlling section shape. */
+  format_context: FormatContext;
+  /** Compact project memory for continuity (optional). */
+  generation_memory?: EbookGenerationMemory | null;
 };
 
 export type WriterResult = {
   title: string;
   content_html: string;
   word_count: number;
+  section_summary: string;
+  generation_meta: WriterGenerationMeta;
 };
+
+const stringListSchema = z
+  .array(z.string().trim().max(300))
+  .max(12)
+  .optional()
+  .default([]);
+
+const writerRawSchema = z.object({
+  title: z.string().optional(),
+  content_html: z.string().optional(),
+  word_count: z.number().optional(),
+  section_summary: z.string().optional(),
+  generation_meta: z
+    .object({
+      terms_defined: stringListSchema,
+      examples_used: stringListSchema,
+      frameworks_used: stringListSchema,
+      claims_or_numbers: stringListSchema,
+      offer_mention_count: z.number().int().min(0).max(100).optional(),
+      contains_cta: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+function normalizeMeta(
+  raw: z.infer<typeof writerRawSchema>["generation_meta"],
+): WriterGenerationMeta {
+  return {
+    terms_defined: (raw?.terms_defined ?? []).slice(0, 12),
+    examples_used: (raw?.examples_used ?? []).slice(0, 12),
+    frameworks_used: (raw?.frameworks_used ?? []).slice(0, 12),
+    claims_or_numbers: (raw?.claims_or_numbers ?? []).slice(0, 12),
+    offer_mention_count: Math.max(
+      0,
+      Math.min(100, Math.round(raw?.offer_mention_count ?? 0)),
+    ),
+    contains_cta: Boolean(raw?.contains_cta),
+  };
+}
 
 function line(label: string, value: string | null | undefined): string {
   return `  ${label}: ${value && String(value).trim() ? value : "(none)"}`;
@@ -135,7 +186,36 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     .filter(Boolean)
     .join("\n");
 
-  const targetWords = input.section.estimated_words ?? 700;
+  const fc = input.format_context;
+  const targetWords =
+    input.section.estimated_words ?? fc.default_target_words ?? 700;
+
+  const formatBlock = [
+    "Selected format (FormatContext — mandatory):",
+    line("template_id", fc.template_id),
+    line("format", fc.format),
+    line("depth", fc.depth),
+    line(
+      "section_range",
+      `min=${fc.section_range.min} preferred=${fc.section_range.preferred} max=${fc.section_range.max}`,
+    ),
+    line("default_target_words", String(fc.default_target_words)),
+    line(
+      "target_words_range",
+      `min=${fc.target_words_range.min} max=${fc.target_words_range.max}`,
+    ),
+    "  structural_rules:",
+    ...fc.structural_rules.map((r) => `    - ${r}`),
+    "  section_output_expectations:",
+    ...fc.section_output_expectations.map((r) => `    - ${r}`),
+    "  quality_rules:",
+    `    requires_action_steps: ${fc.quality_rules.requires_action_steps}`,
+    `    requires_checklist_items: ${fc.quality_rules.requires_checklist_items}`,
+    `    requires_reflection_prompts: ${fc.quality_rules.requires_reflection_prompts}`,
+    `    requires_framework_components: ${fc.quality_rules.requires_framework_components}`,
+    `    requires_phase_structure: ${fc.quality_rules.requires_phase_structure}`,
+    `    theory_ratio_max: ${fc.quality_rules.theory_ratio_max ?? "null"}`,
+  ].join("\n");
 
   return [
     "Project:",
@@ -149,6 +229,10 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     "",
     offerBlock,
     "",
+    formatBlock,
+    "",
+    formatMemoryForPrompt(input.generation_memory),
+    "",
     outlineBlock,
     outlineBlock ? "" : null,
     neighbors,
@@ -158,30 +242,184 @@ export function buildWriterUserPrompt(input: WriterInput): string {
     line("summary", input.section.summary),
     line("key_points", JSON.stringify(input.section.key_points ?? [])),
     line("target_words", String(targetWords)),
-    line("position", input.section.position != null ? String(input.section.position) : null),
+    line(
+      "position",
+      input.section.position != null ? String(input.section.position) : null,
+    ),
     "",
+    `Shape this section for format "${fc.format}". Follow structural_rules and section_output_expectations above.`,
     "Rules reminder: do not re-introduce the whole ebook; continue from previous section; match tone and promise; never fabricate product capabilities.",
   ]
     .filter((x) => x !== null)
     .join("\n");
 }
 
+function parseWriterRaw(raw: unknown, input: WriterInput): WriterResult {
+  const parsed = writerRawSchema.parse(raw);
+  if (!parsed.content_html?.trim()) {
+    throw new Error("Writer returned empty content_html");
+  }
+  // Never trust model word_count; recalculate from HTML text.
+  const word_count = countWords(parsed.content_html);
+  const summaryRaw = (parsed.section_summary ?? "").trim();
+  const section_summary =
+    summaryRaw.length >= 30
+      ? summaryRaw.slice(0, 700)
+      : stripToSummary(parsed.content_html, input.section.summary);
+
+  return {
+    title: (parsed.title ?? "").trim() || input.section.title,
+    content_html: parsed.content_html,
+    word_count,
+    section_summary,
+    generation_meta: normalizeMeta(parsed.generation_meta),
+  };
+}
+
 export async function runWriter(input: WriterInput): Promise<WriterResult> {
   const user = buildWriterUserPrompt(input);
-  const result = await completeJson<WriterResult>({
+  const raw = await completeJson<unknown>({
     system: WRITER_SYSTEM,
     user,
   });
-  if (!result.content_html?.trim()) {
-    throw new Error("Writer returned empty content_html");
+  return parseWriterRaw(raw, input);
+}
+
+export async function runWriterRepair(
+  input: WriterInput,
+  issues: Array<{ code: string; message: string; repair_instruction?: string }>,
+): Promise<WriterResult> {
+  const base = buildWriterUserPrompt(input);
+  const issueLines = issues
+    .map((issue, i) => {
+      const fix = issue.repair_instruction
+        ? ` Fix: ${issue.repair_instruction}`
+        : "";
+      return `${i + 1}. (${issue.code}) ${issue.message}.${fix}`;
+    })
+    .join("\n");
+
+  const user = [
+    base,
+    "",
+    "Your previous section failed quality validation. Rewrite the SAME section only.",
+    "Fix these issues exactly:",
+    issueLines,
+    "",
+    "Return full JSON again (title, content_html, word_count, section_summary, generation_meta).",
+  ].join("\n");
+
+  const raw = await completeJson<unknown>({
+    system: WRITER_SYSTEM,
+    user,
+  });
+  return parseWriterRaw(raw, input);
+}
+
+export type WriterQualityPassResult = {
+  result: WriterResult;
+  /** Sanitized HTML ready to persist. */
+  content_html: string;
+  word_count: number;
+  quality: import("@/types/quality").SectionQualityResult;
+  repaired: boolean;
+};
+
+/**
+ * Writer → sanitize → deterministic quality gate → optional one repair.
+ * Repair does not charge extra credits (caller owns billing).
+ */
+export async function runWriterWithQualityGate(opts: {
+  input: WriterInput;
+  sanitize: (html: string) => string;
+  validate: (args: {
+    content_html: string;
+    pre_sanitize_html: string;
+    generation_meta: WriterGenerationMeta;
+  }) => import("@/types/quality").SectionQualityResult;
+}): Promise<WriterQualityPassResult> {
+  const first = await runWriter(opts.input);
+  const firstSanitized = opts.sanitize(first.content_html);
+  const firstQuality = opts.validate({
+    content_html: firstSanitized,
+    pre_sanitize_html: first.content_html,
+    generation_meta: first.generation_meta,
+  });
+
+  if (firstQuality.passed) {
+    return {
+      result: {
+        ...first,
+        content_html: firstSanitized,
+        word_count: countWords(firstSanitized),
+      },
+      content_html: firstSanitized,
+      word_count: countWords(firstSanitized),
+      quality: firstQuality,
+      repaired: false,
+    };
   }
-  const word_count =
-    result.word_count ||
-    result.content_html.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean)
-      .length;
+
+  const blockers = firstQuality.issues.filter((i) => i.severity === "blocker");
+  if (blockers.length === 0) {
+    // Warnings only — persist first result.
+    return {
+      result: {
+        ...first,
+        content_html: firstSanitized,
+        word_count: countWords(firstSanitized),
+      },
+      content_html: firstSanitized,
+      word_count: countWords(firstSanitized),
+      quality: firstQuality,
+      repaired: false,
+    };
+  }
+
+  const repaired = await runWriterRepair(opts.input, blockers);
+  const repairedSanitized = opts.sanitize(repaired.content_html);
+  const secondQuality = opts.validate({
+    content_html: repairedSanitized,
+    pre_sanitize_html: repaired.content_html,
+    generation_meta: repaired.generation_meta,
+  });
+
+  if (!secondQuality.passed) {
+    const stillBlocking = secondQuality.issues.filter(
+      (i) => i.severity === "blocker",
+    );
+    const msg = stillBlocking.map((i) => i.message).join("; ");
+    const err = new Error(
+      msg || "Writer section failed quality validation after repair",
+    ) as Error & {
+      code?: string;
+      quality?: import("@/types/quality").SectionQualityResult;
+    };
+    err.code = "section_quality_failed";
+    err.quality = secondQuality;
+    throw err;
+  }
+
   return {
-    title: result.title || input.section.title,
-    content_html: result.content_html,
-    word_count,
+    result: {
+      ...repaired,
+      content_html: repairedSanitized,
+      word_count: countWords(repairedSanitized),
+    },
+    content_html: repairedSanitized,
+    word_count: countWords(repairedSanitized),
+    quality: secondQuality,
+    repaired: true,
   };
+}
+
+function stripToSummary(html: string, fallback: string): string {
+  const plain = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (plain.length >= 30) return plain.slice(0, 700);
+  const fb = (fallback ?? "").trim();
+  if (fb.length >= 30) return fb.slice(0, 700);
+  return (plain || fb || "Section content generated.").slice(0, 700);
 }

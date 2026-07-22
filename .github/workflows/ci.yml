@@ -18,6 +18,7 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm test
+      - run: npm run test:quality
       - run: npm run build
         env:
           # Build-time public env placeholders (no secrets)

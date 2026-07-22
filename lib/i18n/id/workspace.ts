@@ -1,0 +1,40 @@
+import { sectionStatusLabelsId } from "@/lib/i18n/id/common";
+
+export const workspaceId = {
+  sections: "Sections",
+  generateAll: "Tulis semua",
+  generating: "Menulis…",
+  generate: "Tulis",
+  regenerate: "Tulis ulang",
+  save: "Simpan",
+  activeSection: "Section aktif",
+  selectSection: "Pilih section",
+  noOutlineTitle: "Outline belum ada",
+  noOutlineDesc: "Buat outline dulu sebelum menulis section.",
+  noSectionTitle: "Belum ada section ter-generate",
+  noSectionDesc: "Pilih section di navigator, lalu generate untuk mulai menulis.",
+  sectionSaved: "Section disimpan",
+  saveFailed: "Simpan gagal",
+  generateFailed: "Generate gagal",
+  saveFirst: "Simpan dulu",
+  saveFirstDesc: "Perubahan section aktif belum tersimpan.",
+  cannotSwitch: "Belum bisa pindah section",
+  cannotSwitchDesc: "Gagal menyimpan perubahan. Coba lagi dulu.",
+  enhancementApplied: "Enhancement diterapkan",
+  contentRestored: "Konten dikembalikan ke versi sebelumnya",
+  outlineApproved: "Outline disetujui. Lanjut ke Write.",
+  approveOutline: "Setujui outline",
+  continueToWrite: "Lanjut ke Write",
+  newSection: "Section",
+  draft: "Draft",
+  approved: "Disetujui",
+  sectionStatus: sectionStatusLabelsId,
+} as const;
+
+export const workflowStepLabelsId = {
+  strategy: "Strategi",
+  outline: "Outline",
+  write: "Write",
+  review: "Review",
+  publish: "Terbit",
+} as const;
