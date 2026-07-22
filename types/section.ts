@@ -19,4 +19,6 @@ export interface Section {
 export interface SectionUpdateInput {
   title?: string;
   content_html?: string;
+  /** Optimistic concurrency token (section.updated_at). */
+  expected_updated_at?: string;
 }

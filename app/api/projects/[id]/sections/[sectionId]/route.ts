@@ -13,13 +13,17 @@ function mapSection(row: Record<string, unknown>): Section {
     content_html: String(row.content_html ?? ""),
     word_count: Number(row.word_count ?? 0),
     status: row.status as Section["status"],
+    generation_meta:
+      row.generation_meta && typeof row.generation_meta === "object"
+        ? (row.generation_meta as Record<string, unknown>)
+        : undefined,
     updated_at: String(row.updated_at),
   };
 }
 
 export async function PATCH(
   req: Request,
-  ctx: { params: Promise<{ id: string; sectionId: string }> }
+  ctx: { params: Promise<{ id: string; sectionId: string }> },
 ) {
   try {
     const { id, sectionId } = await ctx.params;
@@ -44,16 +48,41 @@ export async function PATCH(
         .filter(Boolean).length;
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("ebook_sections")
       .update(patch)
       .eq("id", sectionId)
-      .eq("project_id", id)
-      .select("*")
-      .maybeSingle();
+      .eq("project_id", id);
+
+    if (body.expected_updated_at) {
+      query = query.eq("updated_at", body.expected_updated_at);
+    }
+
+    const { data, error } = await query.select("*").maybeSingle();
 
     if (error) return jsonError(error.message, 500, "db_error");
-    if (!data) return jsonError("Section not found", 404, "not_found");
+    if (!data) {
+      // Distinguish missing vs stale concurrency token.
+      if (body.expected_updated_at) {
+        const { data: existing } = await supabase
+          .from("ebook_sections")
+          .select("id, updated_at")
+          .eq("id", sectionId)
+          .eq("project_id", id)
+          .maybeSingle();
+        if (existing) {
+          return jsonError(
+            "Section was modified elsewhere",
+            409,
+            "section_conflict",
+            {
+              server_updated_at: existing.updated_at,
+            },
+          );
+        }
+      }
+      return jsonError("Section not found", 404, "not_found");
+    }
     return Response.json(mapSection(data));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Server error";
