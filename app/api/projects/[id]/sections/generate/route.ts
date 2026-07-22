@@ -24,6 +24,10 @@ import {
   upsertProjectGenerationMemory,
 } from "@/lib/generation-memory/store";
 import { mergeWriterMetaIntoMemory } from "@/lib/generation-memory/merge";
+import {
+  createSectionRevision,
+  sectionHasReplaceableContent,
+} from "@/lib/section-revisions";
 
 function mapSection(row: Record<string, unknown>): Section {
   return {
@@ -66,6 +70,7 @@ export async function POST(
     const body = (await req.json().catch(() => null)) as {
       outline_section_id?: string;
       all?: boolean;
+      confirm_replace_existing?: boolean;
     } | null;
 
     const { data: outlineRow, error: outlineErr } = await supabase
@@ -168,6 +173,29 @@ export async function POST(
     }
     const os = mutableOutlineSections[sectionIndex];
 
+    // Require confirmation when replacing existing content (single-section path).
+    const { data: existingContent } = await supabase
+      .from("ebook_sections")
+      .select("id, content_html, status")
+      .eq("project_id", id)
+      .eq("outline_section_id", outlineSectionId)
+      .maybeSingle();
+
+    if (
+      sectionHasReplaceableContent(existingContent) &&
+      body?.confirm_replace_existing !== true
+    ) {
+      return jsonError(
+        "Section already has content. Confirm replace to regenerate.",
+        409,
+        "section_replace_confirmation_required",
+        {
+          outline_section_id: outlineSectionId,
+          section_id: existingContent?.id ?? null,
+        },
+      );
+    }
+
     try {
       await chargeGeneration(user.id, "section", id);
       charged = true;
@@ -189,6 +217,9 @@ export async function POST(
       format_context,
       sectionIndex,
       alreadyCharged: true,
+      revisionSource: sectionHasReplaceableContent(existingContent)
+        ? "before_regenerate"
+        : null,
     });
     if ("error" in one) {
       if (charged) {
@@ -237,6 +268,8 @@ async function generateOne(opts: {
   format_context: FormatContext;
   sectionIndex: number;
   alreadyCharged?: boolean;
+  /** When set, snapshot current content before overwrite. */
+  revisionSource?: "before_regenerate" | null;
 }): Promise<
   | { section: Section; outlineSections: OutlineSection[] }
   | { error: Response }
@@ -249,6 +282,7 @@ async function generateOne(opts: {
     strategy,
     format_context,
     sectionIndex,
+    revisionSource = null,
   } = opts;
   let outlineSections = [...opts.outlineSections];
   let chargedHere = false;
@@ -530,6 +564,32 @@ async function generateOne(opts: {
 
     let row: Record<string, unknown> | null = null;
     if (existing) {
+      if (revisionSource) {
+        const { data: fullExisting } = await supabase
+          .from("ebook_sections")
+          .select("id, project_id, title, content_html, word_count")
+          .eq("id", existing.id)
+          .maybeSingle();
+        if (fullExisting && sectionHasReplaceableContent(fullExisting)) {
+          const rev = await createSectionRevision(supabase, {
+            section: {
+              id: String(fullExisting.id),
+              project_id: project.id,
+              title: String(fullExisting.title),
+              content_html: String(fullExisting.content_html ?? ""),
+              word_count: Number(fullExisting.word_count ?? 0),
+            },
+            source: revisionSource,
+          });
+          if (!rev.ok) {
+            console.error(
+              "[sections/generate] revision snapshot failed",
+              rev.error,
+            );
+          }
+        }
+      }
+
       const { data, error } = await supabase
         .from("ebook_sections")
         .update({

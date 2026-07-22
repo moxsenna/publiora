@@ -23,10 +23,12 @@ import {
   useSectionDraft,
   type SaveState,
 } from "@/components/workspace/useSectionDraft";
+import { SectionRevisionDialog } from "@/components/workspace/SectionRevisionDialog";
 import { Sparkles, FileText, Play, Save, ChevronDown } from "lucide-react";
 import type { Section } from "@/types/section";
 import type { EnhancementAction, EnhancementSuggestion } from "@/types/ai-suggestions";
 import { cn } from "@/lib/utils";
+import { sectionHasReplaceableContent } from "@/lib/section-revisions";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
   const { data: outline } = useOutline(projectId);
@@ -58,6 +60,10 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
 
   const [dirty, setDirty] = React.useState(false);
   const flushRef = React.useRef<(() => Promise<boolean>) | null>(null);
+  const [replaceDialogOpen, setReplaceDialogOpen] = React.useState(false);
+  const [pendingReplaceOutlineId, setPendingReplaceOutlineId] = React.useState<
+    string | null
+  >(null);
 
   React.useEffect(() => {
     if (!dirty) return;
@@ -138,6 +144,34 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     }
   };
 
+  const runGenerateOne = async (
+    outlineSectionId: string,
+    confirmReplaceExisting?: boolean,
+  ) => {
+    try {
+      const s = await generate.mutateAsync({
+        projectId,
+        outlineSectionId,
+        confirmReplaceExisting,
+      });
+      setActiveId(s.id);
+      setReplaceDialogOpen(false);
+      setPendingReplaceOutlineId(null);
+    } catch (err) {
+      const e = err as { code?: string; message?: string };
+      if (e?.code === "section_replace_confirmation_required") {
+        setPendingReplaceOutlineId(outlineSectionId);
+        setReplaceDialogOpen(true);
+        return;
+      }
+      pushToast({
+        title: "Generate gagal",
+        description: e?.message ?? "Coba generate ulang.",
+        variant: "danger",
+      });
+    }
+  };
+
   const onGenerateOne = async (outlineSectionId: string) => {
     if (generate.isPending) return;
     if (flushRef.current) {
@@ -151,17 +185,15 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         return;
       }
     }
-    try {
-      const s = await generate.mutateAsync({ projectId, outlineSectionId });
-      setActiveId(s.id);
-    } catch (err) {
-      const e = err as { code?: string; message?: string };
-      pushToast({
-        title: "Generate gagal",
-        description: e?.message ?? "Coba generate ulang.",
-        variant: "danger",
-      });
+
+    const existing = sectionsByOutline.get(outlineSectionId);
+    if (sectionHasReplaceableContent(existing)) {
+      setPendingReplaceOutlineId(outlineSectionId);
+      setReplaceDialogOpen(true);
+      return;
     }
+
+    await runGenerateOne(outlineSectionId, false);
   };
 
   const onEnhance = async (
@@ -217,6 +249,18 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     setReviewError(null);
     try {
       const section = sections?.find((s) => s.id === reviewSectionId);
+      // Best-effort revision snapshot before enhancement overwrite (no AI credit).
+      if (section && sectionHasReplaceableContent(section)) {
+        await fetch(
+          `/api/projects/${projectId}/sections/${reviewSectionId}/revisions`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ source: "before_enhancement_accept" }),
+          },
+        ).catch(() => null);
+      }
       await updateSection.mutateAsync({
         id: reviewSectionId,
         projectId,
@@ -492,6 +536,19 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         onRegenerate={handleRegenerate}
         onSessionUndo={handleSessionUndo}
         error={reviewError}
+      />
+
+      <SectionRevisionDialog
+        open={replaceDialogOpen}
+        loading={generate.isPending}
+        onCancel={() => {
+          setReplaceDialogOpen(false);
+          setPendingReplaceOutlineId(null);
+        }}
+        onConfirm={() => {
+          if (!pendingReplaceOutlineId) return;
+          void runGenerateOne(pendingReplaceOutlineId, true);
+        }}
       />
     </div>
   );

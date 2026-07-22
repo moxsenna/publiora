@@ -183,10 +183,21 @@ export function useSections(projectId: string) {
 export function useGenerateSection() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ projectId, outlineSectionId }: { projectId: string; outlineSectionId: string }) =>
+    mutationFn: ({
+      projectId,
+      outlineSectionId,
+      confirmReplaceExisting,
+    }: {
+      projectId: string;
+      outlineSectionId: string;
+      confirmReplaceExisting?: boolean;
+    }) =>
       apiFetch<Section>(`/api/projects/${projectId}/sections/generate`, {
         method: "POST",
-        body: JSON.stringify({ outline_section_id: outlineSectionId }),
+        body: JSON.stringify({
+          outline_section_id: outlineSectionId,
+          confirm_replace_existing: confirmReplaceExisting === true,
+        }),
       }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: qk.sections(data.project_id) });
