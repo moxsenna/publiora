@@ -19,6 +19,7 @@ import type {
   Template,
 } from "@/types";
 import type { Profile } from "@/types/auth";
+import { SYSTEM_TEMPLATES } from "@/lib/templates-catalog";
 
 export const seedProfile: Profile[] = [
   {
@@ -898,65 +899,5 @@ export const CREDIT_COSTS = {
   publish: 0,
 } as const;
 
-export const seedTemplates: Template[] = [
-  {
-    id: "tpl_playbook",
-    name: "Playbook",
-    description: "Long-form, 6 bab mendalam, sistematis.",
-    niche: "Marketing / Growth",
-    default_audience: "Founder & marketer",
-    default_tone: "Taktis, padat",
-    cover_color: "#0A0A0A",
-    is_system: true,
-  format: "playbook",
-  supported_ebook_types: ["lead_magnet", "bonus_product", "sellable_ebook"],
-  recommended_for: [],
-  default_section_count: 7,
-  depth: "standard",
-  },
-  {
-    id: "tpl_checklist",
-    name: "Checklist",
-    description: "Aksi cepat, format bullet, langsung pakai.",
-    niche: "Marketing / Conversion",
-    default_audience: "Solo marketer",
-    default_tone: "Ringkas, praktis",
-    cover_color: "#2563EB",
-    is_system: true,
-  format: "playbook",
-  supported_ebook_types: ["lead_magnet", "bonus_product", "sellable_ebook"],
-  recommended_for: [],
-  default_section_count: 7,
-  depth: "standard",
-  },
-  {
-    id: "tpl_framework",
-    name: "Framework",
-    description: "Decision tree & grid, referensi.",
-    niche: "AI / Product",
-    default_audience: "PM & desainer",
-    default_tone: "Presisi, referensial",
-    cover_color: "#059669",
-    is_system: true,
-  format: "playbook",
-  supported_ebook_types: ["lead_magnet", "bonus_product", "sellable_ebook"],
-  recommended_for: [],
-  default_section_count: 7,
-  depth: "standard",
-  },
-  {
-    id: "tpl_workshop",
-    name: "Workshop",
-    description: "Sprint mingguan, naratif-course.",
-    niche: "Branding",
-    default_audience: "Indie founder",
-    default_tone: "Hangat, ringan",
-    cover_color: "#C8A24B",
-    is_system: true,
-  format: "playbook",
-  supported_ebook_types: ["lead_magnet", "bonus_product", "sellable_ebook"],
-  recommended_for: [],
-  default_section_count: 7,
-  depth: "standard",
-  },
-];
+/** Legacy mock seed — reuses generation-aware system catalog. */
+export const seedTemplates: Template[] = SYSTEM_TEMPLATES;
