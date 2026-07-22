@@ -45,6 +45,7 @@ export function NewProjectWizard() {
   const [fieldOrigins, setFieldOrigins] = React.useState<
     Partial<Record<string, FieldOrigin>>
   >({});
+  // Functional updater supported so origin-aware field helpers can mark "user".
   const [offerLocked, setOfferLocked] = React.useState(false);
   const errorSummaryRef = React.useRef<HTMLDivElement>(null);
 
@@ -277,7 +278,7 @@ export function NewProjectWizard() {
                     setSelectedOffer(o);
                   }}
                   fieldOrigins={fieldOrigins}
-                  setFieldOrigins={setFieldOrigins}
+                  setFieldOrigins={setFieldOrigins as never}
                 />
               )}
               {ebookType === "bonus_product" && (
@@ -292,7 +293,7 @@ export function NewProjectWizard() {
                     setSelectedOffer(o);
                   }}
                   fieldOrigins={fieldOrigins}
-                  setFieldOrigins={setFieldOrigins}
+                  setFieldOrigins={setFieldOrigins as never}
                 />
               )}
               {ebookType === "sellable_ebook" && (
@@ -308,7 +309,12 @@ export function NewProjectWizard() {
                   }}
                 />
               )}
-              <CommonBriefFields register={register} errors={errors} compact />
+              <CommonBriefFields
+                register={register}
+                errors={errors}
+                compact
+                setFieldOrigins={setFieldOrigins as never}
+              />
             </section>
           )}
 
