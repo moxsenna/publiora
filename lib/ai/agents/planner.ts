@@ -1,10 +1,16 @@
 import { z } from "zod";
 import { completeJson } from "@/lib/ai/provider";
 import { PLANNER_SYSTEM } from "@/lib/ai/prompts";
+import {
+  StrictGenerationError,
+  formatIssuesForPrompt,
+  generateJsonWithSingleRepair,
+  type ValidationIssue,
+} from "@/lib/ai/strict-generation";
 import type { OutlineSection } from "@/types/outline";
 import type { EbookStrategy } from "@/types/strategy";
 import type { ProjectOfferContext } from "@/types/offer";
-import type { FormatContext } from "@/types/template";
+import type { FormatContext, SectionRange } from "@/types/template";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,29 +46,55 @@ export interface PlannerResult {
   sections: OutlineSection[];
 }
 
+export class PlannerValidationError extends Error {
+  readonly issues: ValidationIssue[];
+
+  constructor(message: string, issues: ValidationIssue[]) {
+    super(message);
+    this.name = "PlannerValidationError";
+    this.issues = issues;
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Zod schema — permissive AI response parsing
-//
-// The schema is deliberately loose: the AI may return missing fields, NaN,
-// out-of-range values, or invalid enums.  All validation & cleanup happens in
-// `normalizePlannerResult` below, mirroring the strategist pattern where
-// `parseStrategistResponse` owns all coercion.
+// Strict raw schema — no substantive fabrication allowed after parse
 // ---------------------------------------------------------------------------
 
-const outlineSectionSchema = z.object({
+const plannerSectionSchema = z.object({
+  title: z.string().trim().min(3).max(160),
+  summary: z.string().trim().min(20).max(800),
+  key_points: z.array(z.string().trim().min(5).max(300)).min(2).max(6),
+  estimated_words: z.number().int().min(150).max(3000),
   id: z.string().optional(),
   position: z.number().int().optional(),
-  title: z.string().optional(),
-  summary: z.string().optional(),
-  key_points: z.array(z.string()).optional(),
-  estimated_words: z.number().optional(),
   status: z.string().optional(),
 });
 
+const plannerRawSchema = z
+  .object({
+    title: z.string().trim().min(3).max(200),
+    description: z.string().trim().min(20).max(1500),
+    sections: z.array(plannerSectionSchema),
+  })
+  .strict();
+
+/** @deprecated Prefer plannerRawSchema; kept for transitional imports. */
 export const plannerResponseSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
-  sections: z.array(outlineSectionSchema).optional(),
+  sections: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        position: z.number().int().optional(),
+        title: z.string().optional(),
+        summary: z.string().optional(),
+        key_points: z.array(z.string()).optional(),
+        estimated_words: z.number().optional(),
+        status: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -73,113 +105,129 @@ function rid(): string {
   return Math.random().toString(36).slice(2, 8);
 }
 
-/** Clamp a word count into the valid range [300, 1200]. Defaults to 700 for non-finite. */
-function clampWords(n: number): number {
-  if (!Number.isFinite(n)) return 700;
-  return Math.max(300, Math.min(1200, Math.round(n)));
+/** Clamp estimated words into a technical bound. Does not invent content. */
+function clampWords(
+  n: number,
+  range: { min: number; max: number },
+  fallback: number,
+): number {
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(range.min, Math.min(range.max, Math.round(n)));
+}
+
+function dedupeKeyPoints(points: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of points) {
+    const key = p.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(p.trim());
+  }
+  return out;
+}
+
+function issuesFromZod(err: z.ZodError): ValidationIssue[] {
+  return err.issues.map((issue) => ({
+    path: issue.path.join(".") || "",
+    code: String(issue.code),
+    message: issue.message,
+  }));
 }
 
 /**
- * Clean key_points to 2–5 non-empty strings.
- * Pads from title/summary when AI returns 0–1 valid points.
- */
-function normalizeKeyPoints(
-  raw: unknown,
-  title: string,
-  summary: string,
-): string[] {
-  const points = Array.isArray(raw)
-    ? raw
-        .filter((k): k is string => typeof k === "string" && k.trim().length > 0)
-        .map((k) => k.trim())
-        .slice(0, 5)
-    : [];
-
-  if (points.length < 2) {
-    const cover = `Cover: ${title}`;
-    if (!points.includes(cover)) points.push(cover);
-  }
-
-  if (points.length < 2) {
-    const fromSummary = summary
-      .split(/[.!?]/)
-      .map((s) => s.trim())
-      .find((s) => s.length > 0 && !points.includes(s));
-    const fallback = fromSummary ?? `Expand: ${title}`;
-    if (!points.includes(fallback)) points.push(fallback);
-  }
-
-  // Guarantee length >= 2 even if title/summary empty or duplicates
-  while (points.length < 2) {
-    points.push(`Key point ${points.length + 1}`);
-  }
-
-  return points.slice(0, 5);
-}
-
-// ---------------------------------------------------------------------------
-// normalizePlannerResult
-// ---------------------------------------------------------------------------
-
-/**
- * Validate raw AI JSON and normalize into a clean `PlannerResult`.
+ * Technical normalization only:
+ * - trim strings
+ * - remove duplicate key points
+ * - reassign positions
+ * - clamp estimated words
+ * - generate technical IDs
  *
- * Normalization rules:
- * - Require 5–10 sections (throw if fewer than 5 after cap; cap at 10)
- * - Every section gets a stable id (preserve AI id or generate one)
- * - `position` is reassigned sequentially from 1
- * - `title` must be non-empty; falls back to "Section {N}"
- * - `summary` defaults to ""
- * - `key_points` enforced to 2–5 items (pad from title/summary if needed)
- * - `estimated_words` clamped to [300, 1200]; defaults to 700
- * - `status` is always "pending"
- *
- * Exported so tests can exercise normalization without calling the AI.
+ * Does NOT invent titles, summaries, key points, or section placeholders.
  */
 export function normalizePlannerResult(
   projectTitle: string,
   raw: unknown,
+  sectionRange?: SectionRange,
+  targetWords?: { min: number; max: number; preferred: number },
 ): PlannerResult {
-  const parsed = plannerResponseSchema.parse(raw);
+  const range = sectionRange ?? { min: 4, preferred: 6, max: 10 };
+  const words = targetWords ?? { min: 150, max: 3000, preferred: 700 };
 
-  const rawSections = parsed.sections ?? [];
-
-  if (rawSections.length === 0) {
-    throw new Error("Planner returned no sections");
+  let parsed: z.infer<typeof plannerRawSchema>;
+  try {
+    parsed = plannerRawSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      throw new PlannerValidationError(
+        "Planner output failed schema validation",
+        issuesFromZod(err),
+      );
+    }
+    throw err;
   }
 
-  const sections: OutlineSection[] = rawSections
-    .slice(0, 10)
-    .map((s, i) => {
-      const title = s.title?.trim() || `Section ${i + 1}`;
-      const summary = s.summary?.trim() || "";
-      return {
-        id: s.id || `sec_${i + 1}_${rid()}`,
-        position: i + 1,
-        title,
-        summary,
-        key_points: normalizeKeyPoints(s.key_points, title, summary),
-        estimated_words: clampWords(s.estimated_words ?? 700),
-        status: "pending" as const,
-      };
-    });
+  const issues: ValidationIssue[] = [];
 
-  if (sections.length < 5) {
-    throw new Error(
-      `Planner returned ${sections.length} sections; need 5-10`,
+  if (parsed.sections.length < range.min) {
+    issues.push({
+      path: "sections",
+      code: "too_few_sections",
+      message: `Need at least ${range.min} sections; got ${parsed.sections.length}`,
+    });
+  }
+  if (parsed.sections.length > range.max) {
+    issues.push({
+      path: "sections",
+      code: "too_many_sections",
+      message: `Need at most ${range.max} sections; got ${parsed.sections.length}`,
+    });
+  }
+
+  const sections: OutlineSection[] = [];
+
+  parsed.sections.forEach((s, i) => {
+    const key_points = dedupeKeyPoints(s.key_points);
+    if (key_points.length < 2) {
+      issues.push({
+        path: `sections.${i}.key_points`,
+        code: "insufficient_key_points",
+        message: `Section ${i + 1} needs at least 2 unique key points after dedupe`,
+      });
+      return;
+    }
+
+    sections.push({
+      id: s.id?.trim() || `sec_${i + 1}_${rid()}`,
+      position: i + 1,
+      title: s.title.trim(),
+      summary: s.summary.trim(),
+      key_points: key_points.slice(0, 6),
+      estimated_words: clampWords(
+        s.estimated_words,
+        { min: words.min, max: words.max },
+        words.preferred,
+      ),
+      status: "pending",
+    });
+  });
+
+  if (issues.length > 0) {
+    throw new PlannerValidationError(
+      "Planner output failed substantive validation",
+      issues,
     );
   }
 
+  // Cap excess only when above max was not thrown (shouldn't happen).
+  const finalSections = sections.slice(0, range.max);
+
   return {
-    title: parsed.title || projectTitle,
-    description: parsed.description || "",
-    sections,
+    title: parsed.title.trim() || projectTitle,
+    description: parsed.description.trim(),
+    sections: finalSections,
   };
 }
-
-// ---------------------------------------------------------------------------
-// runPlanner
-// ---------------------------------------------------------------------------
 
 /** Build the planner user prompt (exported for tests / snapshots). */
 export function buildPlannerUserPrompt(input: PlannerInput): string {
@@ -294,29 +342,63 @@ export function buildPlannerUserPrompt(input: PlannerInput): string {
 
   userParts.push(
     "",
-    `Build ${fc.section_range.min}-${fc.section_range.max} flat sections (prefer ${fc.section_range.preferred}). Each section must have: id, title, summary (1-2 sentences), 2-5 key_points, estimated_words (${fc.target_words_range.min}-${fc.target_words_range.max}, default ~${fc.default_target_words}). Shape every section for format "${fc.format}".`,
+    `Build ${fc.section_range.min}-${fc.section_range.max} flat sections (prefer ${fc.section_range.preferred}). Each section must have: id, title (min 3 chars), summary (min 20 chars), 2-5 unique key_points (each min 5 chars), estimated_words (${fc.target_words_range.min}-${fc.target_words_range.max}, default ~${fc.default_target_words}). Shape every section for format "${fc.format}". Do not invent placeholder titles or key points.`,
   );
 
   return userParts.join("\n");
 }
 
+function validatePlannerRaw(
+  projectTitle: string,
+  format_context: FormatContext,
+  raw: unknown,
+): PlannerResult {
+  return normalizePlannerResult(
+    projectTitle,
+    raw,
+    format_context.section_range,
+    {
+      min: Math.max(150, format_context.target_words_range.min),
+      max: Math.min(3000, format_context.target_words_range.max),
+      preferred: format_context.default_target_words,
+    },
+  );
+}
+
 /**
- * Call the AI to build an outline from strategy state.
- *
- * The planner receives the full strategy so it can respect:
- * - audience sophistication
- * - core promise and unique angle
- * - desired outcome
- * - tone
- * - selected FormatContext
+ * Call the AI to build an outline from strategy + FormatContext.
+ * One internal repair attempt on validation failure (no extra credits).
  */
 export async function runPlanner(input: PlannerInput): Promise<PlannerResult> {
   const user = buildPlannerUserPrompt(input);
+  const { format_context, project } = input;
 
-  const raw = await completeJson<unknown>({
-    system: PLANNER_SYSTEM,
-    user,
-  });
-
-  return normalizePlannerResult(input.project.title, raw);
+  try {
+    return await generateJsonWithSingleRepair({
+      firstAttempt: () =>
+        completeJson<unknown>({
+          system: PLANNER_SYSTEM,
+          user,
+        }),
+      validate: (raw) =>
+        validatePlannerRaw(project.title, format_context, raw),
+      repairAttempt: (issues) =>
+        completeJson<unknown>({
+          system: PLANNER_SYSTEM,
+          user: [
+            user,
+            "",
+            "Your previous outline failed validation. Fix ONLY the listed issues.",
+            "Do not invent placeholder titles, summaries, or key points.",
+            "Validation issues:",
+            formatIssuesForPrompt(issues),
+          ].join("\n"),
+        }),
+    });
+  } catch (err) {
+    if (err instanceof StrictGenerationError) {
+      throw new PlannerValidationError(err.message, err.issues);
+    }
+    throw err;
+  }
 }
