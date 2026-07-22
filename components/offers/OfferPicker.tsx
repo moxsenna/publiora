@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { OfferQuickCreateDialog } from "@/components/offers/OfferQuickCreateDialog";
 import { OfferSelectedCard } from "@/components/offers/OfferSelectedCard";
-import { OfferOwnershipBadge } from "@/components/offers/OfferOwnershipBadge";
-import { OfferTypeBadge } from "@/components/offers/OfferTypeBadge";
+import { OfferSearchResults } from "@/components/offers/OfferSearchResults";
 import { useOffers } from "@/lib/api/hooks";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import type { Offer } from "@/types/offer";
 
 type Props = {
@@ -28,12 +28,53 @@ export function OfferPicker({
   label = "Produk atau penawaran",
 }: Props) {
   const [search, setSearch] = React.useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [openList, setOpenList] = React.useState(false);
   const [quickOpen, setQuickOpen] = React.useState(false);
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  const listboxId = React.useId();
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
   const { data, isLoading } = useOffers({
     status: "active",
-    search: search.trim(),
+    search: debouncedSearch.trim(),
   });
+
+  const offers = data?.items ?? [];
+  const isRecent = debouncedSearch.trim().length === 0;
+
+  React.useEffect(() => {
+    setActiveIndex(0);
+  }, [debouncedSearch, offers.length]);
+
+  const selectOffer = (offer: Offer) => {
+    onChange(offer);
+    setOpenList(false);
+    setSearch("");
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!openList && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      setOpenList(true);
+      return;
+    }
+    if (!openList) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, Math.max(offers.length - 1, 0)));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const offer = offers[activeIndex];
+      if (offer) selectOffer(offer);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setOpenList(false);
+    }
+  };
 
   if (value) {
     return (
@@ -50,12 +91,18 @@ export function OfferPicker({
               : () => {
                   onChange(null);
                   setOpenList(true);
+                  queueMicrotask(() => inputRef.current?.focus());
                 }
           }
         />
       </div>
     );
   }
+
+  const activeDescendant =
+    openList && offers[activeIndex]
+      ? `${listboxId}-opt-${offers[activeIndex].id}`
+      : undefined;
 
   return (
     <div className="space-y-2">
@@ -67,8 +114,12 @@ export function OfferPicker({
           type="button"
           size="sm"
           variant="secondary"
-          onClick={() => setOpenList((v) => !v)}
+          onClick={() => {
+            setOpenList((v) => !v);
+            queueMicrotask(() => inputRef.current?.focus());
+          }}
           aria-expanded={openList}
+          aria-controls={listboxId}
         >
           Pilih produk atau penawaran
         </Button>
@@ -95,46 +146,36 @@ export function OfferPicker({
       {openList ? (
         <div className="rounded-lg border border-[var(--color-publiora-border)] p-2 space-y-2">
           <Input
+            ref={inputRef}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setOpenList(true);
+            }}
+            onKeyDown={onKeyDown}
             placeholder="Cari nama produk atau penawaran..."
             aria-label="Cari produk"
+            role="combobox"
+            aria-expanded={openList}
+            aria-controls={listboxId}
+            aria-autocomplete="list"
+            aria-activedescendant={activeDescendant}
           />
           {isLoading ? (
             <p className="text-xs text-[var(--color-medium-gray)] px-1 py-2">
               Memuat...
             </p>
-          ) : (data?.items ?? []).length === 0 ? (
-            <p className="text-xs text-[var(--color-medium-gray)] px-1 py-2">
-              Tidak ada produk. Gunakan tambah cepat.
-            </p>
           ) : (
-            <ul className="max-h-56 overflow-y-auto space-y-1" role="listbox">
-              {(data?.items ?? []).map((offer) => (
-                <li key={offer.id}>
-                  <button
-                    type="button"
-                    role="option"
-                    className="w-full text-left rounded-md px-2 py-2 hover:bg-[var(--color-surface-2)] min-h-11"
-                    onClick={() => {
-                      onChange(offer);
-                      setOpenList(false);
-                    }}
-                  >
-                    <div className="text-sm font-medium">{offer.name}</div>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <OfferTypeBadge offerType={offer.offer_type} />
-                      <OfferOwnershipBadge ownership={offer.ownership} />
-                    </div>
-                    {offer.target_audience ? (
-                      <div className="text-xs text-[var(--color-medium-gray)] mt-1">
-                        {offer.target_audience}
-                      </div>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <OfferSearchResults
+              offers={offers}
+              activeIndex={activeIndex}
+              listboxId={listboxId}
+              emptyLabel="Tidak ada produk. Gunakan tambah cepat."
+              recentLabel="Terakhir digunakan"
+              isRecent={isRecent}
+              onSelect={selectOffer}
+              onActiveIndexChange={setActiveIndex}
+            />
           )}
         </div>
       ) : null}
