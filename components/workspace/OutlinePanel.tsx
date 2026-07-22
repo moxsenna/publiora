@@ -10,9 +10,8 @@ import {
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardBody } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
@@ -20,9 +19,6 @@ import { TitleSuggestions } from "@/components/workspace/TitleSuggestions";
 import {
   Sparkles,
   Plus,
-  Trash2,
-  ChevronUp,
-  ChevronDown,
   Check,
   ListTree,
   ArrowRight,
@@ -34,6 +30,22 @@ import {
   outlineSaveStateLabel,
   useOutlineDraft,
 } from "@/components/workspace/useOutlineDraft";
+import { OutlineSectionCard } from "@/components/workspace/OutlineSectionCard";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 const MIN_SECTIONS_FOR_APPROVE = 3;
 
@@ -237,6 +249,24 @@ export function OutlinePanel({
 
   const saveLabel = outlineSaveStateLabel(draft.saveState);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = draft.sections.findIndex((s) => s.id === active.id);
+    const newIndex = draft.sections.findIndex((s) => s.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    draft.replaceSections(arrayMove(draft.sections, oldIndex, newIndex));
+  };
+
   return (
     <div className="p-5 space-y-5 max-w-3xl mx-auto">
       {/* ---- Header with title and approve/continue ---- */}
@@ -317,59 +347,30 @@ export function OutlinePanel({
       )}
 
       {/* ---- Section list ---- */}
-      <div className="space-y-3">
-        {draft.sections.map((s, i) => (
-          <Card key={s.id}>
-            <CardBody>
-              <div className="flex items-start gap-3">
-                <div className="flex flex-col items-center gap-1 pt-1">
-                  <button
-                    onClick={() => move(i, -1)}
-                    className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
-                    aria-label="Pindah ke atas"
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-                  <span className="text-xs font-bold text-[var(--color-publiora-black)]">{i + 1}</span>
-                  <button
-                    onClick={() => move(i, 1)}
-                    className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
-                    aria-label="Pindah ke bawah"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="flex-1 min-w-0 space-y-3">
-                  <Input
-                    value={s.title}
-                    onChange={(e) => updateSection(s.id, { title: e.target.value })}
-                    placeholder="Judul section"
-                  />
-                  <Textarea
-                    value={s.summary}
-                    onChange={(e) => updateSection(s.id, { summary: e.target.value })}
-                    rows={2}
-                    placeholder="Ringkasan isi section"
-                  />
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-[var(--color-medium-gray)]">
-                      ~{s.estimated_words} kata
-                    </span>
-                    <SectionStatusBadge status={s.status} />
-                  </div>
-                </div>
-                <button
-                  onClick={() => remove(s.id)}
-                  className="text-[var(--color-medium-gray)] hover:text-[var(--color-danger)] pt-1"
-                  aria-label="Hapus"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </CardBody>
-          </Card>
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={draft.sections.map((s) => s.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-3 min-w-0">
+            {draft.sections.map((s, i) => (
+              <OutlineSectionCard
+                key={s.id}
+                section={s}
+                index={i}
+                disabled={outline.approved}
+                onMove={move}
+                onChange={updateSection}
+                onRemove={remove}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* ---- Title Suggestions ---- */}
       <div className="border-t border-[var(--color-publiora-border)] pt-4">
@@ -410,13 +411,3 @@ export function OutlinePanel({
   );
 }
 
-function SectionStatusBadge({ status }: { status: OutlineSection["status"] }) {
-  const map: Record<string, { variant: "default" | "warning" | "info" | "success" | "danger"; label: string }> = {
-    pending: { variant: "default", label: "Belum ditulis" },
-    generating: { variant: "info", label: "Menulis…" },
-    generated: { variant: "success", label: "Selesai ditulis" },
-    failed: { variant: "danger", label: "Gagal" },
-  };
-  const m = map[status] ?? map.pending;
-  return <Badge variant={m.variant}>{m.label}</Badge>;
-}
