@@ -221,25 +221,6 @@ export async function POST(
     }
     statusSetToPublishing = true;
 
-    const { error: deleteErr } = await supabase
-      .from("published_ebooks")
-      .delete()
-      .eq("project_id", id);
-    if (deleteErr) {
-      await restoreProjectStatus(
-        supabase,
-        id,
-        previousStatus ?? "generated",
-        now,
-        previousPublishedAt,
-      );
-      return jsonError(
-        getSupabaseErrorMessage(deleteErr, "Failed to remove previous publication"),
-        500,
-        "db_error",
-      );
-    }
-
     const publishableSections = sections
       .filter((s) => s.status === "generated" || s.status === "edited")
       .map((s) => ({
@@ -299,33 +280,39 @@ export async function POST(
         }
       : null;
 
+    // Prefer stable slug on republish; generate only for first publish.
+    const { data: existingPub } = await supabase
+      .from("published_ebooks")
+      .select("id, slug")
+      .eq("project_id", id)
+      .maybeSingle();
     const slug =
+      (existingPub?.slug as string | undefined) ||
       slugify(project.title) + "-" + Math.random().toString(36).slice(2, 6);
 
-    const { data: insertedPub, error: pubErr } = await supabase
-      .from("published_ebooks")
-      .insert({
-        project_id: id,
-        creator_id: user.id,
-        title: project.title,
-        slug,
-        subtitle: project.subtitle,
-        author: project.author,
-        cover_color: project.cover_color,
-        sections: publishableSections,
-        is_public: body.is_public ?? true,
-        total_readers: 0,
-        active_claims: 0,
-        published_at: now,
-        cta_goal: project.cta_goal ?? null,
-        final_cta: finalCta,
-        cta_url: ctaUrl,
-        offer_context: offerContextSnapshot,
-      })
-      .select("*")
-      .single();
+    const publication_snapshot = {
+      title: project.title,
+      subtitle: project.subtitle,
+      author: project.author,
+      cover_color: project.cover_color,
+      sections: publishableSections,
+      cta_goal: project.cta_goal ?? null,
+      final_cta: finalCta,
+      cta_url: ctaUrl,
+      offer_context: offerContextSnapshot,
+    };
 
-    if (pubErr || !insertedPub) {
+    const { data: rpcPub, error: pubErr } = await supabase.rpc(
+      "publish_project_atomic_v1",
+      {
+        p_project_id: id,
+        p_publication_snapshot: publication_snapshot,
+        p_is_public: body.is_public ?? true,
+        p_slug: slug,
+      },
+    );
+
+    if (pubErr || !rpcPub) {
       await restoreProjectStatus(
         supabase,
         id,
@@ -340,49 +327,7 @@ export async function POST(
       );
     }
 
-    const { error: publishedErr } = await supabase
-      .from("projects")
-      .update({
-        status: "published",
-        published_at: now,
-        updated_at: now,
-      })
-      .eq("id", id);
-    if (publishedErr) {
-      // Snapshot exists but project row not updated — fail closed:
-      // delete orphan snapshot (cannot restore previous publication without RPC),
-      // restore non-published project status so UI does not claim success.
-      {
-        const { error: cleanupErr } = await supabase
-          .from("published_ebooks")
-          .delete()
-          .eq("id", insertedPub.id);
-        if (cleanupErr) {
-          console.error(
-            "[publish] orphan snapshot cleanup failed",
-            insertedPub.id,
-            getSupabaseErrorMessage(cleanupErr),
-          );
-        }
-      }
-      await restoreProjectStatus(
-        supabase,
-        id,
-        previousStatus === "published" ? "generated" : (previousStatus ?? "generated"),
-        now,
-        previousPublishedAt,
-      );
-      return jsonError(
-        getSupabaseErrorMessage(
-          publishedErr,
-          "Publication snapshot saved but project status update failed",
-        ),
-        500,
-        "db_error",
-      );
-    }
-
-    const pub = insertedPub;
+    const pub = Array.isArray(rpcPub) ? rpcPub[0] : rpcPub;
     return Response.json({
       id: pub.id,
       project_id: pub.project_id,
