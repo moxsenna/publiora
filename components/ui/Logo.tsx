@@ -10,9 +10,9 @@ interface LogoProps {
 }
 
 const dim = {
-  sm: { mark: 24, text: { w: 130, h: 40 } },
-  md: { mark: 28, text: { w: 150, h: 46 } },
-  lg: { mark: 36, text: { w: 180, h: 55 } },
+  sm: { mark: 32, text: { w: 150, h: 46 } },
+  md: { mark: 40, text: { w: 180, h: 56 } },
+  lg: { mark: 52, text: { w: 220, h: 68 } },
 };
 
 export function Logo({
