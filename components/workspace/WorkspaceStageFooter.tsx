@@ -48,6 +48,7 @@ export function WorkspaceStageFooter({
             <div className="hidden sm:flex items-center gap-2 min-w-[120px] max-w-[200px]">
               <ProgressBar
                 value={writingProgress}
+                aria-label={`Progres penulisan: ${writingProgress}%`}
                 barClassName="bg-[var(--color-publiora-blue)]"
               />
               <span className="text-xs text-[var(--color-medium-gray)] whitespace-nowrap">

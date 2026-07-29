@@ -84,6 +84,14 @@ describe("StrategyReadinessCard", () => {
     expect(screen.getByText(COPY.readinessTitle)).toBeInTheDocument();
   });
 
+  it("names the strategy readiness progress indicator in Indonesian", () => {
+    render(<StrategyReadinessCard {...defaultProps({ readinessScore: 55 })} />);
+
+    expect(
+      screen.getByRole("progressbar", { name: "Kesiapan strategi: 55%" }),
+    ).toBeInTheDocument();
+  });
+
   // -----------------------------------------------------------------------
   // 3. Missing list: max 3 + overflow "+N lainnya"
   // -----------------------------------------------------------------------

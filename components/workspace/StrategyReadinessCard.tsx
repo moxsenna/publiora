@@ -83,6 +83,7 @@ export function StrategyReadinessCard({
           <ProgressBar
             value={score}
             size="md"
+            aria-label={`Kesiapan strategi: ${score}%`}
             barClassName={
               score >= 70
                 ? "bg-[var(--color-success)]"
