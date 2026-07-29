@@ -11,7 +11,6 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { OfferOwnershipBadge } from "@/components/offers/OfferOwnershipBadge";
 import { OfferTypeBadge } from "@/components/offers/OfferTypeBadge";
-import { OFFER_LIBRARY_LABEL } from "@/lib/offers/copy";
 import { formatRelativeTime } from "@/lib/utils";
 import { offersId } from "@/lib/i18n/id/offers";
 
@@ -44,7 +43,7 @@ export default function OffersPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-[var(--color-publiora-black)]">
-            {OFFER_LIBRARY_LABEL}
+            {offersId.title}
           </h1>
           <p className="text-sm text-[var(--color-medium-gray)] mt-0.5 max-w-2xl">
             Simpan konteks produk sekali, lalu gunakan untuk Lead Magnet, Bonus

@@ -7,8 +7,10 @@ import type {
   ProjectOfferRelationship,
 } from "@/types/offer";
 import type { EbookType } from "@/types/project";
+import { offersId } from "@/lib/i18n/id/offers";
 
-export const OFFER_LIBRARY_LABEL = "Produk dan Penawaran";
+/** @deprecated Use offersId.title for visible UI copy. */
+export const OFFER_LIBRARY_LABEL = offersId.title;
 
 export const OFFER_TYPE_LABELS: Record<OfferType, string> = {
   digital_product: "Produk digital",

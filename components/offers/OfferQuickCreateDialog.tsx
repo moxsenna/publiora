@@ -13,6 +13,7 @@ import { quickCreateOfferSchema } from "@/lib/offers/schemas";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import type { Offer } from "@/types/offer";
 import { offersId } from "@/lib/i18n/id/offers";
+import { useUiStore } from "@/store/projectStore";
 
 type Props = {
   open: boolean;
@@ -26,6 +27,7 @@ function normalizeOfferName(name: string): string {
 
 export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
   const create = useCreateOffer();
+  const pushToast = useUiStore((state) => state.pushToast);
   const [form, setForm] = React.useState<OfferFormState>(EMPTY_OFFER_FORM);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
   const [errors, setErrors] = React.useState<
@@ -99,6 +101,7 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
     try {
       const result = await create.mutateAsync(parsed.data);
       onCreated(result.offer);
+      pushToast({ title: "Produk berhasil dibuat dan dipilih.", variant: "success" });
       onClose();
     } catch {
       setFormError(offersId.saveError);

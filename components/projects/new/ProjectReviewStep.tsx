@@ -6,6 +6,7 @@ import {
   EBOOK_TYPE_LABELS,
   LEAD_GOAL_LABELS,
   SALES_POSITIONING_LABELS,
+  DEPTH_LABELS,
 } from "@/lib/projects/project-type-copy";
 import { getTemplateById } from "@/lib/templates-catalog";
 import {
@@ -111,11 +112,11 @@ export function ProjectReviewStep({
       <ReviewSection title="Format" onEdit={() => onEditStep(3)}>
         <ReviewRow
           label="Template"
-          value={tpl?.name ?? "Blank"}
+          value={tpl?.name ?? "Tanpa template"}
         />
         {tpl && (
           <>
-            <ReviewRow label="Depth" value={tpl.depth} />
+            <ReviewRow label="Kedalaman" value={DEPTH_LABELS[tpl.depth]} />
             <ReviewRow
               label="Estimasi bagian"
               value={String(tpl.default_section_count)}

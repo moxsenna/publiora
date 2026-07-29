@@ -15,7 +15,6 @@ import { OfferForm } from "@/components/offers/OfferForm";
 import { OfferLinkProjectsList } from "@/components/offers/OfferLinkProjectsList";
 import { OfferOwnershipBadge } from "@/components/offers/OfferOwnershipBadge";
 import { OfferTypeBadge } from "@/components/offers/OfferTypeBadge";
-import { OFFER_LIBRARY_LABEL } from "@/lib/offers/copy";
 import { offersId } from "@/lib/i18n/id/offers";
 import { ApiError } from "@/lib/api/errors";
 
@@ -27,6 +26,7 @@ export default function OfferDetailPage() {
   const update = useUpdateOffer();
   const archive = useArchiveOffer();
   const [editing, setEditing] = React.useState(false);
+  const [mutationError, setMutationError] = React.useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -77,12 +77,17 @@ export default function OfferDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-3 sm:px-5 py-5 space-y-4">
+      {mutationError ? (
+        <p role="alert" className="text-sm text-[var(--color-danger)]">
+          {mutationError}
+        </p>
+      ) : null}
       <div>
         <Link
           href="/offers"
           className="text-xs text-[var(--color-medium-gray)] hover:underline"
         >
-          ← {OFFER_LIBRARY_LABEL}
+          ← {offersId.title}
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-1">
           <div>
@@ -119,9 +124,16 @@ export default function OfferDetailPage() {
                   ) {
                     return;
                   }
-                  await archive.mutateAsync(offer.id);
-                  router.refresh();
+                  setMutationError(null);
+                  try {
+                    await archive.mutateAsync(offer.id);
+                    router.refresh();
+                  } catch {
+                    setMutationError(offersId.archiveError);
+                  }
                 }}
+                loading={archive.isPending}
+                disabled={archive.isPending || update.isPending}
               >
                 Arsipkan
               </Button>
@@ -130,11 +142,18 @@ export default function OfferDetailPage() {
                 size="sm"
                 variant="outline"
                 onClick={async () => {
-                  await update.mutateAsync({
-                    id: offer.id,
-                    patch: { status: "active" },
-                  });
+                  setMutationError(null);
+                  try {
+                    await update.mutateAsync({
+                      id: offer.id,
+                      patch: { status: "active" },
+                    });
+                  } catch {
+                    setMutationError(offersId.restoreError);
+                  }
                 }}
+                loading={update.isPending}
+                disabled={archive.isPending || update.isPending}
               >
                 Pulihkan
               </Button>
@@ -163,11 +182,17 @@ export default function OfferDetailPage() {
               submitLabel="Simpan perubahan"
               onCancel={() => setEditing(false)}
               onSubmit={async (payload) => {
-                await update.mutateAsync({
-                  id: offer.id,
-                  patch: payload as never,
-                });
-                setEditing(false);
+                setMutationError(null);
+                try {
+                  await update.mutateAsync({
+                    id: offer.id,
+                    patch: payload as never,
+                  });
+                  setEditing(false);
+                } catch {
+                  setMutationError(offersId.updateError);
+                  throw new Error(offersId.updateError);
+                }
               }}
             />
           </CardBody>
