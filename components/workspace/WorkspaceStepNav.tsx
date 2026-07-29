@@ -36,7 +36,7 @@ export function WorkspaceStepNav({
   // ---- Desktop: horizontal step bar ----
   const desktopBar = (
     <nav
-      aria-label="Workflow stages"
+      aria-label="Tahapan pembuatan ebook"
       className="hidden sm:flex items-center gap-0.5 p-0.5 rounded-[var(--radius-button)] bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)]"
     >
       {STEP_ORDER.map((step, i) => {
@@ -88,7 +88,7 @@ export function WorkspaceStepNav({
         )}
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-label="Workflow stage selector"
+        aria-label="Pilih tahap pembuatan ebook"
       >
         <span className="text-sm font-medium text-[var(--color-publiora-black)]">
           <span className="text-[var(--color-medium-gray)]">
@@ -106,7 +106,7 @@ export function WorkspaceStepNav({
       {open && (
         <ul
           role="listbox"
-          aria-label="Workflow stages"
+          aria-label="Tahapan pembuatan ebook"
           className="absolute top-full left-0 right-0 mt-1 z-30 border border-[var(--color-publiora-border)] bg-white rounded-lg shadow-lg overflow-hidden"
         >
           {STEP_ORDER.map((step) => {

@@ -5,7 +5,7 @@ export const reviewId = {
   content: "Kualitas Isi",
   offerCta: "Produk & CTA",
   ready: "Siap Terbit",
-  openSection: "Buka section",
+  openSection: "Buka bagian",
   fix: "Perbaiki",
   freeChecks: "Pemeriksaan otomatis (gratis)",
   aiReview: (cost: number) => `Periksa kualitas dengan AI · ${cost} kredit`,

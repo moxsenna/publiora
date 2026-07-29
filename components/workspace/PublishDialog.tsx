@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Input";
 import { Radio } from "@/components/ui/Radio";
+import { publishId } from "@/lib/i18n/id/publish";
 
 interface PublishDialogProps {
   open: boolean;
@@ -28,15 +29,15 @@ export function PublishDialog({ open, onClose, projectId }: PublishDialogProps) 
         project_id: projectId,
         is_public: visibility === "public",
       });
-      pushToast({ title: "Ebook published", description: "Klaim link bisa dibuat sekarang.", variant: "success" });
+      pushToast({
+        title: publishId.success,
+        description: "Tautan klaim kini dapat dibuat.",
+        variant: "success",
+      });
       onClose();
       router.push(`/published/${ebook.id}`);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Publish gagal. Periksa blocker dan coba lagi.";
-      pushToast({ title: message, variant: "danger" });
+    } catch {
+      pushToast({ title: publishId.failed, variant: "danger" });
     }
   };
 
@@ -44,28 +45,30 @@ export function PublishDialog({ open, onClose, projectId }: PublishDialogProps) 
     <Modal
       open={open}
       onClose={publish.isPending ? () => {} : onClose}
-      title="Publish ebook"
-      description="Publish menjadikan semua section terkini menjadi versi reader. Public = slug aktif."
+      title={publishId.title}
+      description="Terbitkan versi terbaru ebook untuk pembaca. Visibilitas publik mengaktifkan slug pembaca."
       footer={
         <>
           <Button variant="outline" onClick={onClose} disabled={publish.isPending}>Batal</Button>
           <Button onClick={onPublish} loading={publish.isPending} disabled={publish.isPending}>
-            {publish.isPending ? "Memproses..." : "Publish sekarang"}
+            {publish.isPending ? "Memproses…" : publishId.publishNow}
           </Button>
         </>
       }
     >
       <div className="space-y-3">
-        <Label>Visibility</Label>
+        <Label>{publishId.visibility}</Label>
         <Radio
           checked={visibility === "public"}
           onChange={() => setVisibility("public")}
-          label="Public — slug aktif, claim link bisa diakses"
+          label={publishId.public}
+          description="Slug pembaca aktif dan dapat diakses semua orang."
         />
         <Radio
           checked={visibility === "private"}
           onChange={() => setVisibility("private")}
-          label="Private — slug hidden, hanya claim link bisa beri akses"
+          label={publishId.private}
+          description="Akses hanya tersedia melalui tautan klaim."
         />
       </div>
     </Modal>

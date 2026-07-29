@@ -48,24 +48,26 @@ export function GenerationConfirmDialog({
     <Modal
       open={open}
       onClose={onCancel}
-      title="Mulai menulis section?"
+      title="Mulai menulis bagian?"
       size="sm"
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={onCancel}>
             Batalkan
           </Button>
-          {!insufficient && (
-            <Button size="sm" onClick={onStart} disabled={queueCount === 0}>
-              Mulai menulis
-            </Button>
-          )}
+          <Button
+            size="sm"
+            onClick={onStart}
+            disabled={queueCount === 0 || insufficient}
+          >
+            Mulai menulis
+          </Button>
         </div>
       }
     >
       <div className="space-y-2 text-sm text-[var(--color-deep-gray)]">
         <p>
-          Akan menulis <strong>{queueCount}</strong> section
+          Akan menulis <strong>{queueCount}</strong> bagian
         </p>
         <p>
           Biaya: <strong>{total}</strong> kredit
@@ -82,12 +84,12 @@ export function GenerationConfirmDialog({
         )}
         {insufficient && (
           <p className="text-[var(--color-danger,#b91c1c)]">
-            Kredit tidak cukup untuk semua section. Isi kredit atau tulis
-            section satu per satu.
+            Kredit tidak cukup untuk semua bagian. Isi kredit atau tulis
+            bagian satu per satu.
           </p>
         )}
         {queueCount === 0 && (
-          <p>Semua section sudah selesai ditulis.</p>
+          <p>Semua bagian sudah selesai ditulis.</p>
         )}
       </div>
     </Modal>
@@ -131,18 +133,18 @@ export function GenerationProgressPanel({
           </p>
           {phase === "paused_on_failure" && failed?.status === "failed" && (
             <p className="text-xs text-[var(--color-danger,#b91c1c)] mt-1">
-              Section gagal ditulis: {failed.title}
+              Bagian gagal ditulis: {failed.title}
               {failed.error ? ` — ${failed.error}` : ""}
             </p>
           )}
           {phase === "completed" && (
             <p className="text-xs text-[var(--color-medium-gray)] mt-1">
-              Selesai. {done} section berhasil.
+              Selesai. {done} bagian berhasil.
             </p>
           )}
           {phase === "stopped" && (
             <p className="text-xs text-[var(--color-medium-gray)] mt-1">
-              Dihentikan setelah section saat ini. {done} section berhasil.
+              Dihentikan setelah bagian saat ini. {done} bagian berhasil.
             </p>
           )}
         </div>
@@ -185,8 +187,8 @@ export function GenerationProgressPanel({
             disabled={stopAfterCurrent}
           >
             {stopAfterCurrent
-              ? "Akan berhenti setelah section ini"
-              : "Hentikan setelah section ini"}
+              ? "Akan berhenti setelah bagian ini"
+              : "Hentikan setelah bagian ini"}
           </Button>
         )}
         {phase === "paused_on_failure" && (

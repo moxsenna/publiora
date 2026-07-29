@@ -135,7 +135,7 @@ function getPrimaryCta(
     case "review":
       if (canPublish) {
         cta = {
-          label: workspaceId.publishEbook,
+          label: "Terbitkan",
           disabled: false,
           action: onPublish,
           icon: <Rocket className="h-3.5 w-3.5" />,
@@ -155,7 +155,7 @@ function getPrimaryCta(
 
     case "publish":
       cta = {
-        label: workspaceId.publishEbook,
+        label: "Terbitkan",
         disabled: !canPublish,
         disabledReason: "Selesaikan semua masalah sebelum menerbitkan",
         action: onPublish,
@@ -184,7 +184,7 @@ function getPrimaryCta(
       {cta.icon}
       <span className="hidden sm:inline">{cta.label}</span>
       <span className="sm:hidden">
-        {current === "publish" || current === "review" ? "Publish" : "Lanjut"}
+        {current === "publish" || current === "review" ? "Terbitkan" : "Lanjut"}
       </span>
     </Button>
   );
