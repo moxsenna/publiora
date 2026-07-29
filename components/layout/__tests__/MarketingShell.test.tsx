@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MarketingShell } from "../MarketingShell";
@@ -14,8 +14,36 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-beforeEach(() => useAuthStore.setState({ profile: null }));
-afterEach(cleanup);
+function installMatchMedia(initialMatches = false) {
+  let matches = initialMatches;
+  const listeners = new Set<(event: MediaQueryListEvent) => void>();
+  const mediaQuery = {
+    get matches() { return matches; },
+    media: "(min-width: 768px)",
+    onchange: null,
+    addEventListener: vi.fn((_type: string, listener: (event: MediaQueryListEvent) => void) => listeners.add(listener)),
+    removeEventListener: vi.fn((_type: string, listener: (event: MediaQueryListEvent) => void) => listeners.delete(listener)),
+    dispatchEvent: vi.fn(),
+  } as unknown as MediaQueryList;
+  vi.stubGlobal("matchMedia", vi.fn(() => mediaQuery));
+  return {
+    mediaQuery,
+    setMatches(next: boolean) {
+      matches = next;
+      const event = { matches, media: mediaQuery.media } as MediaQueryListEvent;
+      listeners.forEach((listener) => listener(event));
+    },
+  };
+}
+
+beforeEach(() => {
+  useAuthStore.setState({ profile: null });
+  installMatchMedia();
+});
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("MarketingShell mobile disclosure", () => {
   it("uses Indonesian disclosure semantics and conditionally renders controls", async () => {
@@ -49,6 +77,25 @@ describe("MarketingShell mobile disclosure", () => {
     await user.click(screen.getByRole("button", { name: "Buka menu navigasi" }));
     await user.click(within(screen.getByRole("navigation", { name: "Navigasi seluler" })).getByRole("link", { name: "Cara kerja" }));
     expect(screen.queryByRole("navigation", { name: "Navigasi seluler" })).not.toBeInTheDocument();
+  });
+
+  it("closes on desktop breakpoint and stays closed when returning to mobile", async () => {
+    const breakpoint = installMatchMedia();
+    const user = userEvent.setup();
+    const { unmount } = render(<MarketingShell><p>Isi</p></MarketingShell>);
+    const trigger = screen.getByRole("button", { name: "Buka menu navigasi" });
+    await user.click(trigger);
+
+    act(() => breakpoint.setMatches(true));
+    expect(screen.queryByRole("navigation", { name: "Navigasi seluler" })).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    act(() => breakpoint.setMatches(false));
+    expect(screen.queryByRole("navigation", { name: "Navigasi seluler" })).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    unmount();
+    expect(breakpoint.mediaQuery.removeEventListener).toHaveBeenCalledWith("change", expect.any(Function));
   });
 
   it("localizes shared shell and footer copy", () => {

@@ -76,7 +76,7 @@ function NavBody({ onNavigate, mobile = false }: { onNavigate?: () => void; mobi
 
 export function Sidebar() {
   const open = useUiStore((s) => s.sidebarOpen);
-  return <aside className={cn("hidden md:flex flex-col border-r border-[var(--color-publiora-border)] bg-white transition-[width] duration-200 shrink-0 h-full sticky top-0", open ? "w-60" : "w-0 overflow-hidden")}><NavBody /></aside>;
+  return <aside className={cn("hidden md:flex flex-col border-r border-[var(--color-publiora-border)] bg-white transition-[width] duration-200 shrink-0 h-full sticky top-0", open ? "w-60" : "w-0 overflow-hidden")}>{open ? <NavBody /> : null}</aside>;
 }
 
 export function MobileSidebar() {

@@ -61,13 +61,17 @@ describe("Sidebar", () => {
     expect(screen.getByRole("link", { name: "Proyek" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("labels desktop sidebar control from current state", async () => {
+  it("removes collapsed desktop navigation from focus and accessibility while keeping expand available", async () => {
     const user = userEvent.setup();
     render(<><Sidebar /><TopBar /></>);
 
     const collapse = screen.getAllByRole("button", { name: "Ciutkan panel samping" }).at(-1)!;
     await user.click(collapse);
+
+    expect(screen.queryByRole("navigation", { name: "Navigasi utama" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Proyek Baru" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bentangkan panel samping" })).toBeInTheDocument();
+    expect(document.querySelector("aside")?.querySelectorAll("a, button")).toHaveLength(0);
   });
 });
 

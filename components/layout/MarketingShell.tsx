@@ -22,6 +22,15 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
   const triggerRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const onChange = (event: MediaQueryListEvent) => {
+      if (event.matches) setOpen(false);
+    };
+    desktop.addEventListener("change", onChange);
+    return () => desktop.removeEventListener("change", onChange);
+  }, []);
+
+  React.useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
