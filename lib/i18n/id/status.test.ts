@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   claimEventStatusCopyId,
@@ -16,6 +18,15 @@ import {
 } from "@/lib/i18n/id";
 
 describe("Indonesian status copy", () => {
+  it("uses shared billing order domain contract", () => {
+    const statusSource = fs.readFileSync(path.join(process.cwd(), "lib/i18n/id/status.ts"), "utf8");
+    const contractSource = fs.readFileSync(path.join(process.cwd(), "types/billing-order.ts"), "utf8");
+
+    expect(statusSource).toContain('import type { PaymentOrderStatus } from "@/types/billing-order"');
+    expect(statusSource).not.toMatch(/export type PaymentOrderStatus\s*=/);
+    expect(contractSource).toContain('export type PaymentOrderStatus =');
+  });
+
   it("exhaustively maps internal domain unions", () => {
     expect(Object.keys(projectStatusCopyId).sort()).toEqual(
       ["approved", "draft", "failed", "generated", "generating", "outline_draft", "published", "publishing"].sort(),

@@ -1,5 +1,6 @@
 import type { BadgeProps } from "@/components/ui/Badge";
 import type { CreditTxnType, Subscription } from "@/types/billing";
+import type { PaymentOrderStatus } from "@/types/billing-order";
 import type { ClaimEvent, ClaimLinkStatus } from "@/types/claim-link";
 import type { ExportStatus } from "@/types/export";
 import type { OfferStatus } from "@/types/offer";
@@ -12,7 +13,6 @@ export type StatusCopy = Readonly<{
 
 export type ClaimEventStatus = ClaimEvent["status"];
 export type SubscriptionStatus = Subscription["status"];
-export type PaymentOrderStatus = "pending" | "paid" | "failed" | "expired" | "canceled";
 
 export const unknownStatusCopyId = {
   label: "Status tidak diketahui",

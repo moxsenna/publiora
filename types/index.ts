@@ -12,6 +12,7 @@ export * from "./entitlement";
 export * from "./reading-progress";
 export * from "./export";
 export * from "./billing";
+export * from "./billing-order";
 export * from "./template";
 export * from "./agent";
 export * from "./api";
