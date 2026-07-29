@@ -9,10 +9,31 @@ import * as React from "react";
 const pushMock = vi.fn();
 const mutateAsyncMock = vi.fn();
 const pushToastMock = vi.fn();
+let mockSearchParams = new URLSearchParams();
+let mockOfferData: { offer: ReturnType<typeof makeOffer> } | undefined;
+
+function makeOffer() {
+  return {
+    id: "offer-a",
+    owner_id: "u1",
+    name: "Growth Audit",
+    offer_type: "service" as const,
+    ownership: "owned" as const,
+    status: "active" as const,
+    short_description: "Audit",
+    target_audience: "Founder SaaS",
+    primary_problem: "Growth stuck",
+    primary_outcome: "Find bottlenecks",
+    niche: "SaaS",
+    destination_url: "https://example.com",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  };
+}
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
 }));
 
 vi.mock("next/link", () => ({
@@ -36,7 +57,7 @@ vi.mock("@/lib/api/hooks", () => ({
       profile: { name: "Creator Test", email: "creator@example.com" },
     },
   }),
-  useOffer: () => ({ data: undefined, isLoading: false }),
+  useOffer: () => ({ data: mockOfferData, isLoading: false }),
   useOffers: () => ({ data: { items: [], next_cursor: null }, isLoading: false }),
   useCreateOffer: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
@@ -54,6 +75,8 @@ import { toCreateProjectV3 } from "@/components/projects/new/wizard-types";
 describe("NewProjectWizard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchParams = new URLSearchParams();
+    mockOfferData = undefined;
     mutateAsyncMock.mockResolvedValue({ id: "proj-new-1" });
   });
 
@@ -89,7 +112,10 @@ describe("NewProjectWizard", () => {
     await user.selectOptions(screen.getByLabelText("Tujuan Lead Magnet"), "collect_email");
     await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
 
-    expect(await screen.findByText("Tipe: Lead Magnet")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Tinjau proyek" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Lead Magnet")).toBeInTheDocument();
     expect(screen.queryByText(/lead_magnet/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Tanpa template/ })).toBeInTheDocument();
   });
@@ -123,6 +149,44 @@ describe("NewProjectWizard", () => {
     const idea = screen.getByLabelText("Ide lead magnet");
     expect(idea).toHaveAttribute("aria-invalid", "true");
     expect(idea).toHaveAttribute("aria-describedby", expect.stringContaining("error"));
+  });
+
+  it("keeps delayed locked preset from overwriting user edits", async () => {
+    const user = userEvent.setup();
+    mockSearchParams = new URLSearchParams("offer_id=offer-a&ebook_type=lead_magnet");
+    const view = render(<NewProjectWizard />);
+
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    await user.type(screen.getByLabelText("Target pembaca (opsional)"), "Audiens manual");
+
+    mockOfferData = { offer: makeOffer() };
+    view.rerender(<NewProjectWizard />);
+
+    expect(await screen.findByText("Growth Audit")).toBeInTheDocument();
+    expect(screen.getByLabelText("Target pembaca (opsional)")).toHaveValue(
+      "Audiens manual",
+    );
+    expect(screen.getByRole("button", { name: "Ganti" })).toBeInTheDocument();
+  });
+
+  it("reapplies retained locked offer after lead to bonus type switch", async () => {
+    const user = userEvent.setup();
+    mockSearchParams = new URLSearchParams("offer_id=offer-a&ebook_type=lead_magnet");
+    mockOfferData = { offer: makeOffer() };
+    render(<NewProjectWizard />);
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    expect(await screen.findByText("Growth Audit")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Kembali" }));
+
+    await user.click(
+      screen.getByRole("button", { name: /Bonus Pembelian/ }),
+    );
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+
+    expect(await screen.findByText("Growth Audit")).toBeInTheDocument();
+    expect(screen.getByLabelText("Target pembaca (opsional)")).toHaveValue(
+      "Founder SaaS",
+    );
   });
 
   it("builds V3 lead payload without offer", () => {

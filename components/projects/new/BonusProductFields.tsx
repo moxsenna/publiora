@@ -18,6 +18,7 @@ import type { Offer } from "@/types/offer";
 import {
   applyOfferPrefill,
   buildOfferPrefill,
+  clearOfferDerivedFields,
   type FieldOrigin,
 } from "@/lib/offers/prefill";
 
@@ -66,20 +67,36 @@ export function BonusProductFields({
   const handleOffer = (offer: Offer | null) => {
     onSelectedOfferChange(offer);
     if (!offer) {
+      const cleared = clearOfferDerivedFields({
+        current: {
+          audience: watch("audience"),
+          primary_problem: watch("primary_problem"),
+          niche: watch("niche"),
+          cta_url: watch("cta_url"),
+          product_or_offer: watch("parent_product"),
+        },
+        origins: fieldOrigins as never,
+      });
+      setValue("audience", cleared.values.audience ?? "");
+      setValue("primary_problem", cleared.values.primary_problem ?? "");
+      setValue("niche", cleared.values.niche ?? "");
+      setValue("cta_url", cleared.values.cta_url ?? "");
+      setValue("parent_product", cleared.values.product_or_offer ?? "");
+      setFieldOrigins(cleared.origins as never);
       setValue("selected_offer_id", null);
       setValue("offer_mode", "none");
-      setValue("parent_product", "");
       return;
     }
     setValue("selected_offer_id", offer.id);
     setValue("offer_mode", "existing");
-    setValue("parent_product", offer.name);
 
     const prefill = buildOfferPrefill(offer);
     const applied = applyOfferPrefill({
       current: {
         audience: watch("audience"),
+        primary_problem: watch("primary_problem"),
         niche: watch("niche"),
+        cta_url: watch("cta_url"),
         product_or_offer: watch("parent_product"),
       },
       origins: fieldOrigins as never,
@@ -89,8 +106,17 @@ export function BonusProductFields({
     if (applied.values.audience != null) {
       setValue("audience", applied.values.audience || "");
     }
+    if (applied.values.primary_problem != null) {
+      setValue("primary_problem", applied.values.primary_problem || "");
+    }
     if (applied.values.niche != null) {
       setValue("niche", applied.values.niche || "");
+    }
+    if (applied.values.cta_url != null) {
+      setValue("cta_url", applied.values.cta_url || "");
+    }
+    if (applied.values.product_or_offer != null) {
+      setValue("parent_product", applied.values.product_or_offer || "");
     }
     setFieldOrigins(applied.origins as never);
   };

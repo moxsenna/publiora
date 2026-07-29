@@ -88,7 +88,6 @@ export function LeadMagnetFields({
     setValue("no_offer", false);
     setValue("selected_offer_id", offer.id);
     setValue("offer_mode", "existing");
-    setValue("next_offer", offer.name);
 
     const prefill = buildOfferPrefill(offer);
     const applied = applyOfferPrefill({
@@ -114,6 +113,9 @@ export function LeadMagnetFields({
     }
     if (applied.values.cta_url != null) {
       setValue("cta_url", applied.values.cta_url || "");
+    }
+    if (applied.values.product_or_offer != null) {
+      setValue("next_offer", applied.values.product_or_offer || "");
     }
     setFieldOrigins(applied.origins as never);
   };

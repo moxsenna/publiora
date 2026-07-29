@@ -20,6 +20,7 @@ import { LeadMagnetFields } from "@/components/projects/new/LeadMagnetFields";
 import { BonusProductFields } from "@/components/projects/new/BonusProductFields";
 import { SellableEbookFields } from "@/components/projects/new/SellableEbookFields";
 import { TemplateRecommendationStep } from "@/components/projects/new/TemplateRecommendationStep";
+import { ProjectReviewStep } from "@/components/projects/new/ProjectReviewStep";
 import { TypeChangeConfirmDialog } from "@/components/projects/new/TypeChangeConfirmDialog";
 import {
   hasTypeSpecificDirty,
@@ -35,7 +36,7 @@ import {
   buildOfferPrefill,
   type FieldOrigin,
 } from "@/lib/offers/prefill";
-import { ebookTypeLabelsId, projectWizardId } from "@/lib/i18n/id/projects";
+import { projectWizardId } from "@/lib/i18n/id/projects";
 
 export function NewProjectWizard() {
   const router = useRouter();
@@ -181,7 +182,30 @@ export function NewProjectWizard() {
       offer_mode: offerLocked ? current.offer_mode : "none",
       no_offer: false,
     });
-    if (!offerLocked) setSelectedOffer(null);
+    if (!offerLocked) {
+      setSelectedOffer(null);
+    } else if (selectedOffer) {
+      const productField =
+        next === "bonus_product" ? "parent_product" : "next_offer";
+      const applied = applyOfferPrefill({
+        current: {
+          audience: current.audience,
+          primary_problem: current.primary_problem,
+          niche: current.niche,
+          cta_url: "",
+          product_or_offer: "",
+        },
+        origins: fieldOrigins as never,
+        prefill: buildOfferPrefill(selectedOffer),
+        replaceOfferDerived: true,
+      });
+      setValue("audience", applied.values.audience ?? "");
+      setValue("primary_problem", applied.values.primary_problem ?? "");
+      setValue("niche", applied.values.niche ?? "");
+      setValue("cta_url", applied.values.cta_url ?? "");
+      setValue(productField, applied.values.product_or_offer ?? "");
+      setFieldOrigins(applied.origins as never);
+    }
     setPendingType(null);
   };
 
@@ -358,19 +382,10 @@ export function NewProjectWizard() {
                   setValue("template_id", id, { shouldValidate: true })
                 }
               />
-              <div className="rounded-lg border border-[var(--color-publiora-border)] p-3 text-sm space-y-1">
-                <div className="font-medium">Ringkasan</div>
-                <div>Tipe: {ebookTypeLabelsId[ebookType]}</div>
-                {selectedOffer ? (
-                  <div>Produk: {selectedOffer.name}</div>
-                ) : (
-                  <div>Produk: —</div>
-                )}
-                <div>
-                  Ide:{" "}
-                  {values.idea_text || values.topic || values.working_title || "—"}
-                </div>
-              </div>
+              <ProjectReviewStep
+                values={values}
+                onEditStep={(target) => setStep(target === 3 ? 3 : target)}
+              />
             </div>
           )}
 
