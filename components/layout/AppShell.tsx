@@ -35,7 +35,7 @@ export function AppShell({ title, children }: AppShellProps) {
   if (!profile) return null;
 
   return (
-    <div className="flex flex-1 min-h-screen">
+    <div className="flex flex-1 min-h-screen min-w-0 overflow-x-clip">
       <Sidebar />
       <MobileSidebar />
       <div className="flex flex-col flex-1 min-w-0 min-h-0">

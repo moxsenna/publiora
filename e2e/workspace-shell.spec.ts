@@ -27,6 +27,11 @@ test.describe("workspace shell", () => {
     await page.goto(`/projects/${PROJECT_ID}`);
     const nav = page.getByRole("navigation", { name: "Workflow stages" });
     await expect(nav.first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: "Proyek" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Proyek" }).first()).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
 
     for (const label of ["Strategy", "Outline", "Write", "Review", "Publish"]) {
       await expect(page.getByRole("tab", { name: label }).first()).toBeVisible();
@@ -104,6 +109,9 @@ test.describe("workspace shell", () => {
 
     const mobileSelect = page.getByLabel("Workflow stage selector");
     await expect(mobileSelect).toBeVisible({ timeout: 15_000 });
+    const menuTrigger = page.getByRole("button", { name: "Buka menu" });
+    await expect(menuTrigger).toHaveAttribute("aria-controls", "app-navigation-drawer");
+    await expect(menuTrigger).toHaveAttribute("aria-expanded", "false");
 
     // Open stage list and pick Outline
     await mobileSelect.click();
