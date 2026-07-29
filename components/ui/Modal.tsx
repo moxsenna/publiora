@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 interface ModalProps {
   open: boolean;
   onClose: () => void;
-  title?: string;
+  title: string;
   description?: string;
   children: React.ReactNode;
   size?: "sm" | "md" | "lg";
@@ -54,7 +54,7 @@ export function Modal({ open, onClose, title, description, children, size = "md"
       const last = nodes[nodes.length - 1];
       const active = document.activeElement;
       if (event.shiftKey && (active === first || !panel.contains(active))) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
+      else if (!event.shiftKey && (active === last || !panel.contains(active))) { event.preventDefault(); first.focus(); }
     };
     document.addEventListener("keydown", onKey);
     const previousOverflow = document.body.style.overflow;

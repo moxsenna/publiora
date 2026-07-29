@@ -36,6 +36,26 @@ describe("Modal", () => {
     trigger.remove();
   });
 
+  it("moves outside focus to first modal control on forward Tab", async () => {
+    const outside = document.createElement("button");
+    outside.textContent = "Di luar";
+    document.body.append(outside);
+    render(<Fixture />);
+    const first = screen.getByRole("button", { name: "Tutup dialog" });
+    await waitFor(() => expect(first).toHaveFocus());
+
+    outside.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+
+    expect(first).toHaveFocus();
+    outside.remove();
+  });
+
+  it("uses its required title as the accessible dialog name", () => {
+    render(<Fixture title="Nama dialog" />);
+    expect(screen.getByRole("dialog", { name: "Nama dialog" })).toBeInTheDocument();
+  });
+
   it("keeps focus on rerender and Escape uses latest callback and policies", async () => {
     const trigger = document.createElement("button");
     document.body.append(trigger);
