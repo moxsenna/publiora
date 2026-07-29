@@ -8,23 +8,23 @@ import type {
 } from "@/types/offer";
 import type { EbookType } from "@/types/project";
 
-export const OFFER_LIBRARY_LABEL = "Produk & Penawaran";
+export const OFFER_LIBRARY_LABEL = "Produk dan Penawaran";
 
 export const OFFER_TYPE_LABELS: Record<OfferType, string> = {
   digital_product: "Produk digital",
-  course: "Kelas / course",
-  service: "Jasa / layanan",
-  saas: "Software / SaaS",
-  membership: "Membership / komunitas",
-  webinar: "Webinar / event",
+  course: "Kursus",
+  service: "Jasa",
+  saas: "Perangkat lunak / SaaS",
+  membership: "Keanggotaan / komunitas",
+  webinar: "Webinar / acara",
   physical_product: "Produk fisik",
-  affiliate_product: "Produk affiliate",
+  affiliate_product: "Produk afiliasi",
   other: "Lainnya",
 };
 
 export const OFFER_OWNERSHIP_LABELS: Record<OfferOwnership, string> = {
   owned: "Milik saya",
-  affiliate: "Produk affiliate",
+  affiliate: "Afiliasi",
   client: "Produk klien",
 };
 

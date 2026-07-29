@@ -53,7 +53,7 @@ export function OfferSearchResults({
                 type="button"
                 id={optionId}
                 role="option"
-                aria-selected={active}
+                aria-selected={false}
                 className={cn(
                   "w-full text-left rounded-md px-2 py-2 min-h-11",
                   active

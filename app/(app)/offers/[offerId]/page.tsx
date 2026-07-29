@@ -16,12 +16,14 @@ import { OfferLinkProjectsList } from "@/components/offers/OfferLinkProjectsList
 import { OfferOwnershipBadge } from "@/components/offers/OfferOwnershipBadge";
 import { OfferTypeBadge } from "@/components/offers/OfferTypeBadge";
 import { OFFER_LIBRARY_LABEL } from "@/lib/offers/copy";
+import { offersId } from "@/lib/i18n/id/offers";
+import { ApiError } from "@/lib/api/errors";
 
 export default function OfferDetailPage() {
   const params = useParams<{ offerId: string }>();
   const offerId = params.offerId;
   const router = useRouter();
-  const { data, isLoading, error } = useOffer(offerId);
+  const { data, isLoading, isFetching, error, refetch } = useOffer(offerId);
   const update = useUpdateOffer();
   const archive = useArchiveOffer();
   const [editing, setEditing] = React.useState(false);
@@ -35,12 +37,35 @@ export default function OfferDetailPage() {
     );
   }
 
-  if (error || !data) {
+  if (error) {
+    const notFound = error instanceof ApiError && error.status === 404;
     return (
-      <div className="max-w-3xl mx-auto px-3 sm:px-5 py-5">
+      <div className="max-w-3xl mx-auto px-3 sm:px-5 py-5 space-y-3" role="alert">
         <p className="text-sm text-[var(--color-danger)]">
-          Produk tidak ditemukan.
+          {notFound ? offersId.notFound : offersId.detailError}
         </p>
+        {!notFound ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => void refetch()}
+            loading={isFetching}
+            disabled={isFetching}
+          >
+            {offersId.retry}
+          </Button>
+        ) : null}
+        <Link href="/offers" className="text-sm underline block">
+          Kembali
+        </Link>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="max-w-3xl mx-auto px-3 sm:px-5 py-5" role="alert">
+        <p className="text-sm text-[var(--color-danger)]">{offersId.notFound}</p>
         <Link href="/offers" className="text-sm underline mt-2 inline-block">
           Kembali
         </Link>
@@ -89,7 +114,7 @@ export default function OfferDetailPage() {
                 onClick={async () => {
                   if (
                     !window.confirm(
-                      "Arsipkan produk ini? Proyek terhubung tetap menyimpan snapshot.",
+                      `Arsipkan “${offer.name}”? Produk ini tidak akan tersedia untuk proyek baru. Proyek yang sudah terhubung tetap menyimpan salinan konteksnya.`,
                     )
                   ) {
                     return;

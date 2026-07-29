@@ -12,6 +12,7 @@ import { useCreateOffer, useOffers } from "@/lib/api/hooks";
 import { quickCreateOfferSchema } from "@/lib/offers/schemas";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import type { Offer } from "@/types/offer";
+import { offersId } from "@/lib/i18n/id/offers";
 
 type Props = {
   open: boolean;
@@ -99,8 +100,8 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
       const result = await create.mutateAsync(parsed.data);
       onCreated(result.offer);
       onClose();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Gagal menyimpan");
+    } catch {
+      setFormError(offersId.saveError);
     }
   };
 
@@ -111,9 +112,15 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
       title="Tambah Produk dengan Cepat"
       description="Isi minimal nama, jenis, dan kepemilikan. Detail bisa dilengkapi nanti."
       size="md"
+      preventClose={create.isPending}
       footer={
         <div className="flex justify-end gap-2 flex-wrap">
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={create.isPending}
+          >
             Batal
           </Button>
           {duplicateOffer && !forceCreate ? (
@@ -125,6 +132,7 @@ export function OfferQuickCreateDialog({ open, onClose, onCreated }: Props) {
                   onCreated(duplicateOffer);
                   onClose();
                 }}
+                disabled={create.isPending}
               >
                 Gunakan yang sudah ada
               </Button>

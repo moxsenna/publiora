@@ -80,14 +80,29 @@ export function OfferForm({
       }
       setErrors(fieldErrors);
       setFormError(parsed.error.issues[0]?.message ?? "Data tidak valid");
+      const firstField = parsed.error.issues[0]?.path[0];
+      const fieldIds: Record<string, string> = {
+        name: "offer-name",
+        offer_type: "offer-type",
+        ownership: "offer-ownership",
+        destination_url: "offer-url",
+        short_description: "offer-desc",
+        target_audience: "offer-audience",
+        primary_outcome: "offer-outcome",
+        primary_problem: "offer-problem",
+        niche: "offer-niche",
+      };
+      if (typeof firstField === "string") {
+        document.getElementById(fieldIds[firstField] ?? "")?.focus();
+      }
       return;
     }
 
     setPending(true);
     try {
       await onSubmit(parsed.data as Record<string, unknown>);
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Gagal menyimpan");
+    } catch {
+      setFormError("Produk belum dapat disimpan. Periksa data Anda lalu coba lagi.");
     } finally {
       setPending(false);
     }

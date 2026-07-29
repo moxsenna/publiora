@@ -75,7 +75,7 @@ export function OfferFormFields({
           <Label htmlFor={`${idPrefix}-type`}>Jenis</Label>
           <select
             id={`${idPrefix}-type`}
-            className="h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
+            className="h-11 sm:h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
             value={value.offer_type}
             onChange={(e) => set("offer_type", e.target.value)}
           >
@@ -90,7 +90,7 @@ export function OfferFormFields({
           <Label htmlFor={`${idPrefix}-ownership`}>Kepemilikan</Label>
           <select
             id={`${idPrefix}-ownership`}
-            className="h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
+            className="h-11 sm:h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
             value={value.ownership}
             onChange={(e) => set("ownership", e.target.value)}
           >

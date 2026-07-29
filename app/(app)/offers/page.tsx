@@ -13,13 +13,14 @@ import { OfferOwnershipBadge } from "@/components/offers/OfferOwnershipBadge";
 import { OfferTypeBadge } from "@/components/offers/OfferTypeBadge";
 import { OFFER_LIBRARY_LABEL } from "@/lib/offers/copy";
 import { formatRelativeTime } from "@/lib/utils";
+import { offersId } from "@/lib/i18n/id/offers";
 
 type FilterKey = "all" | "owned" | "affiliate" | "client" | "archived";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Semua" },
   { key: "owned", label: "Milik saya" },
-  { key: "affiliate", label: "Affiliate" },
+  { key: "affiliate", label: offersId.affiliate },
   { key: "client", label: "Klien" },
   { key: "archived", label: "Diarsipkan" },
 ];
@@ -28,7 +29,10 @@ export default function OffersPage() {
   const [filter, setFilter] = React.useState<FilterKey>("all");
   const [search, setSearch] = React.useState("");
   const status = filter === "archived" ? "archived" : "active";
-  const { data, isLoading } = useOffers({ status, search });
+  const { data, isLoading, isError, isFetching, refetch } = useOffers({
+    status,
+    search,
+  });
 
   const items = (data?.items ?? []).filter((item) => {
     if (filter === "all" || filter === "archived") return true;
@@ -49,7 +53,7 @@ export default function OffersPage() {
         </div>
         <Link href="/offers/new">
           <Button size="sm">
-            <Plus className="h-3.5 w-3.5" />
+            <Plus aria-hidden="true" className="h-3.5 w-3.5" />
             Tambah Produk
           </Button>
         </Link>
@@ -57,13 +61,16 @@ export default function OffersPage() {
 
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--color-medium-gray)]" />
+          <Search
+            aria-hidden="true"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--color-medium-gray)]"
+          />
           <Input
             className="pl-8"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama produk atau penawaran…"
-            aria-label="Cari produk"
+            aria-label={offersId.searchLabel}
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -72,7 +79,8 @@ export default function OffersPage() {
               key={f.key}
               type="button"
               onClick={() => setFilter(f.key)}
-              className={`h-8 px-2.5 rounded-full text-xs font-medium border ${
+              aria-pressed={filter === f.key}
+              className={`min-h-11 sm:min-h-0 sm:h-8 px-3 sm:px-2.5 rounded-full text-xs font-medium border ${
                 filter === f.key
                   ? "bg-[var(--color-publiora-black)] text-white border-transparent"
                   : "bg-white text-[var(--color-medium-gray)] border-[var(--color-publiora-border)]"
@@ -84,8 +92,25 @@ export default function OffersPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+      {isError ? (
+        <Card>
+          <CardBody className="flex flex-col items-start gap-3" role="alert">
+            <p className="text-sm text-[var(--color-danger)]">
+              {offersId.loadError}
+            </p>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => void refetch()}
+              loading={isFetching}
+              disabled={isFetching}
+            >
+              {offersId.retry}
+            </Button>
+          </CardBody>
+        </Card>
+      ) : isLoading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2.5" aria-label="Memuat produk dan penawaran">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-36" />
           ))}
@@ -93,7 +118,7 @@ export default function OffersPage() {
       ) : items.length === 0 ? (
         <Card>
           <EmptyState
-            icon={<Package className="h-5 w-5" />}
+            icon={<Package aria-hidden="true" className="h-5 w-5" />}
             title="Belum ada produk atau penawaran."
             description="Tambahkan produk yang ingin Anda promosikan atau lengkapi dengan ebook."
             action={
