@@ -11,6 +11,7 @@ import {
   useCreditCosts,
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
+import { getUiErrorMessage } from "@/lib/i18n/id/errors";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
@@ -132,7 +133,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         <EmptyState
           icon={<FileText className="h-6 w-6" />}
           title="Outline belum ada"
-          description="Buat outline di tab Write dulu sebelum generate sections."
+          description="Buat outline di tahap Tulis sebelum menulis bagian."
         />
       </div>
     );
@@ -160,7 +161,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       if (!ok) {
         pushToast({
           title: "Simpan dulu",
-          description: "Perubahan section aktif belum tersimpan.",
+          description: "Perubahan bagian aktif belum tersimpan.",
           variant: "danger",
         });
         return;
@@ -194,7 +195,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         return;
       }
       pushToast({
-        title: "Generate gagal",
+        title: "Gagal menulis bagian",
         description: e?.message ?? "Coba generate ulang.",
         variant: "danger",
       });
@@ -208,7 +209,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       if (!ok) {
         pushToast({
           title: "Simpan dulu",
-          description: "Perubahan section aktif belum tersimpan.",
+          description: "Perubahan bagian aktif belum tersimpan.",
           variant: "danger",
         });
         return;
@@ -235,7 +236,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       if (!ok) {
         pushToast({
           title: "Simpan dulu",
-          description: "Perubahan section aktif belum tersimpan.",
+          description: "Perubahan bagian aktif belum tersimpan.",
           variant: "danger",
         });
         return;
@@ -266,7 +267,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         description:
           e?.code === "insufficient_credits"
             ? "Buka Billing untuk top-up."
-            : (e?.message ?? "Coba lagi."),
+            : getUiErrorMessage(err),
         variant: "danger",
       });
     }
@@ -303,11 +304,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       setReviewSuggestion(null);
       pushToast({ title: "Enhancement diterapkan", variant: "success" });
     } catch (err) {
-      const e = err as { message?: string };
-      setReviewError(
-        e?.message ??
-          "Gagal menyimpan enhancement. Dialog tetap terbuka — silakan coba lagi.",
-      );
+      setReviewError(getUiErrorMessage(err));
     } finally {
       setAccepting(false);
     }
@@ -333,8 +330,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       });
       setReviewSuggestion(result.suggestion);
     } catch (err) {
-      const e = err as { message?: string };
-      setReviewError(e?.message ?? "Regenerate gagal. Silakan coba lagi.");
+      setReviewError(getUiErrorMessage(err));
     } finally {
       setRegenerating(false);
     }
@@ -363,11 +359,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         variant: "success",
       });
     } catch (err) {
-      const e = err as { message?: string };
-      setReviewError(
-        e?.message ??
-          "Gagal mengembalikan konten. Dialog tetap terbuka — silakan coba lagi.",
-      );
+      setReviewError(getUiErrorMessage(err));
     } finally {
       setUndoing(false);
     }
@@ -378,7 +370,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       const ok = await flushRef.current();
       if (!ok) {
         pushToast({
-          title: "Belum bisa pindah section",
+          title: "Belum dapat berpindah bagian",
           description: "Gagal menyimpan perubahan. Coba lagi dulu.",
           variant: "danger",
         });
@@ -408,9 +400,11 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           <li key={os.id}>
             <button
               type="button"
+              role="option"
+              aria-selected={active}
               onClick={() => void selectSection(os.id, s?.id)}
               className={cn(
-                "w-full text-left p-2 rounded-lg transition-colors",
+                "w-full min-h-11 text-left p-2 rounded-lg transition-colors",
                 active
                   ? "bg-[var(--color-surface-2)]"
                   : "hover:bg-[var(--color-surface-2)]",
@@ -452,7 +446,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                     }}
                   >
                     <Sparkles className="h-3.5 w-3.5" />
-                    Generate
+                    Tulis
                   </Button>
                 </div>
               )}
@@ -468,7 +462,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       <aside className="hidden md:flex flex-col border-r border-[var(--color-publiora-border)] bg-white overflow-y-auto min-h-0">
         <div className="p-2.5 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 border-b border-[var(--color-publiora-border)]">
           <span className="text-sm font-semibold text-[var(--color-publiora-black)]">
-            Sections
+            Bagian
           </span>
           <Button
             size="sm"
@@ -493,11 +487,11 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-lg border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-2.5 py-2 text-left"
               aria-expanded={pickerOpen}
               aria-haspopup="listbox"
-              aria-label="Select section"
+              aria-label="Pilih bagian"
             >
               <span className="min-w-0">
                 <span className="block text-xs text-[var(--color-medium-gray)]">
-                  Section aktif
+                  Bagian aktif
                 </span>
                 <span className="block text-sm font-medium text-[var(--color-publiora-black)] truncate">
                   {currentLabel}
@@ -516,7 +510,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               onClick={() => void onGenerateAll()}
               loading={batchBusy}
               disabled={batchBusy}
-              aria-label="Generate semua section"
+              aria-label="Tulis semua bagian"
             >
               <Play className="h-3.5 w-3.5" />
             </Button>
@@ -554,8 +548,8 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           <div className="p-6">
             <EmptyState
               icon={<FileText className="h-6 w-6" />}
-              title="Belum ada section ter-generate"
-              description="Pilih section di navigator, lalu generate untuk mulai menulis."
+              title="Belum ada bagian yang ditulis"
+              description="Pilih bagian, lalu tulis untuk mulai menyunting."
             />
           </div>
         ) : (
@@ -728,12 +722,14 @@ function SectionEditor({
     <div className="p-3 space-y-3 max-w-3xl mx-auto">
       <div className="flex items-center gap-1.5 flex-wrap">
         <Input
+          aria-label="Judul bagian"
           value={draft.title}
           onChange={(e) => draft.setTitle(e.target.value)}
           className="text-sm font-semibold min-w-[10rem] flex-1"
         />
         <span
           className="text-[11px] text-[var(--color-medium-gray)] min-w-[6rem]"
+          role="status"
           aria-live="polite"
         >
           {statusText || `${wordCount} kata`}
@@ -753,7 +749,7 @@ function SectionEditor({
           onClick={onRegenerate}
         >
           <Sparkles className="h-4 w-4" />
-          Regenerate
+          Tulis ulang
         </Button>
         <Button
           size="sm"

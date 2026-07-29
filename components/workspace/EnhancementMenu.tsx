@@ -12,13 +12,13 @@ interface EnhancementActionDef {
 }
 
 const ENHANCEMENT_ACTIONS: EnhancementActionDef[] = [
-  { label: "Expand", description: "Perpanjang penjelasan dengan detail tambahan", action: "expand" },
-  { label: "Shorten", description: "Ringkas tulisan tanpa menghilangkan inti", action: "shorten" },
-  { label: "Simplify", description: "Sederhanakan bahasa agar lebih mudah dipahami", action: "simplify" },
-  { label: "More persuasive", description: "Perkuat argumen dengan bahasa persuasif", action: "persuasive" },
-  { label: "More professional", description: "Tingkatkan keformalan dan profesionalitas bahasa", action: "professional" },
-  { label: "Add examples", description: "Tambahkan contoh konkret untuk memperjelas", action: "add_examples" },
-  { label: "Add checklist", description: "Tambahkan checklist langkah atau poin penting", action: "add_checklist" },
+  { label: "Perluas", description: "Perpanjang penjelasan dengan detail tambahan", action: "expand" },
+  { label: "Ringkas", description: "Ringkas tulisan tanpa menghilangkan inti", action: "shorten" },
+  { label: "Sederhanakan", description: "Sederhanakan bahasa agar lebih mudah dipahami", action: "simplify" },
+  { label: "Lebih persuasif", description: "Perkuat argumen dengan bahasa persuasif", action: "persuasive" },
+  { label: "Lebih profesional", description: "Tingkatkan keformalan dan profesionalitas bahasa", action: "professional" },
+  { label: "Tambahkan contoh", description: "Tambahkan contoh konkret untuk memperjelas", action: "add_examples" },
+  { label: "Tambahkan daftar periksa", description: "Tambahkan daftar langkah atau poin penting", action: "add_checklist" },
 ];
 
 interface EnhancementMenuProps {
@@ -31,6 +31,7 @@ export function EnhancementMenu({ onAction, loading, disabled }: EnhancementMenu
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const itemRefs = React.useRef<Array<HTMLButtonElement | null>>([]);
   const menuId = React.useId();
 
   React.useEffect(() => {
@@ -55,6 +56,16 @@ export function EnhancementMenu({ onAction, loading, disabled }: EnhancementMenu
     };
   }, [open]);
 
+  React.useEffect(() => {
+    if (open) itemRefs.current[0]?.focus();
+  }, [open]);
+
+  const moveFocus = (index: number, key: string) => {
+    const last = ENHANCEMENT_ACTIONS.length - 1;
+    const next = key === "Home" ? 0 : key === "End" ? last : key === "ArrowDown" ? (index + 1) % (last + 1) : key === "ArrowUp" ? (index - 1 + last + 1) % (last + 1) : index;
+    itemRefs.current[next]?.focus();
+  };
+
   const canOpen = !disabled && !loading;
 
   return (
@@ -72,15 +83,15 @@ export function EnhancementMenu({ onAction, loading, disabled }: EnhancementMenu
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        aria-label="Enhance section"
-        title={disabled ? "Tidak ada konten section untuk di-enhance" : "Enhance section dengan AI"}
+        aria-label="Tingkatkan bagian"
+        title={disabled ? "Belum ada konten bagian untuk ditingkatkan" : "Tingkatkan bagian dengan AI"}
       >
         {loading ? (
           <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
         ) : (
           <Wand2 className="h-3.5 w-3.5" />
         )}
-        Enhance
+        Tingkatkan
         <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
       </button>
 
@@ -94,17 +105,24 @@ export function EnhancementMenu({ onAction, loading, disabled }: EnhancementMenu
         >
           <div className="px-3 py-2 border-b border-[var(--color-publiora-border)]">
             <p className="text-xs font-semibold text-[var(--color-publiora-black)]">
-              AI Enhancement
+              Peningkatan AI
             </p>
             <p className="text-[11px] text-[var(--color-medium-gray)] mt-0.5">
-              Terapkan ke seluruh section
+              Terapkan ke seluruh bagian
             </p>
           </div>
-          {ENHANCEMENT_ACTIONS.map((def) => (
+          {ENHANCEMENT_ACTIONS.map((def, index) => (
             <button
               key={def.action}
+              ref={(node) => { itemRefs.current[index] = node; }}
               type="button"
               role="menuitem"
+              onKeyDown={(event) => {
+                if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+                  event.preventDefault();
+                  moveFocus(index, event.key);
+                }
+              }}
               onClick={() => {
                 onAction(def.action);
                 setOpen(false);

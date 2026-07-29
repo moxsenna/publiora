@@ -24,6 +24,7 @@ import { ReviewPanel } from "@/components/workspace/ReviewPanel";
 import { PublishDialog } from "@/components/workspace/PublishDialog";
 import { PublishPanel } from "@/components/workspace/PublishPanel";
 import { deriveProjectWorkflow, parseWorkflowStep } from "@/lib/workflow/project-workflow";
+import { getWorkflowBlockerCopy, workflowStepLabelsId } from "@/lib/i18n/id/workspace";
 import {
   ArrowLeft,
   Trash2,
@@ -141,10 +142,10 @@ export default function WorkspacePage() {
   const onDelete = async () => {
     try {
       await del.mutateAsync(id);
-      pushToast({ title: "Project dihapus", variant: "default" });
+      pushToast({ title: "Proyek dihapus", variant: "default" });
       router.replace("/projects");
     } catch {
-      pushToast({ title: "Gagal hapus project", variant: "danger" });
+      pushToast({ title: "Gagal menghapus proyek", variant: "danger" });
     }
   };
 
@@ -158,7 +159,7 @@ export default function WorkspacePage() {
       <div className="flex-1 grid place-items-center p-8">
         <div className="text-center space-y-3">
           <h1 className="text-xl font-semibold text-[var(--color-publiora-black)]">
-            Project tidak ditemukan
+            Proyek tidak ditemukan
           </h1>
           <p className="text-sm text-[var(--color-medium-gray)]">
             ID tidak valid atau sudah dihapus.
@@ -166,7 +167,7 @@ export default function WorkspacePage() {
           <Link href="/projects">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4" />
-              Kembali ke projects
+              Kembali ke Proyek
             </Button>
           </Link>
         </div>
@@ -257,8 +258,8 @@ export default function WorkspacePage() {
       <Modal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        title="Hapus project?"
-        description={`"${project?.title ?? "Project"}" akan dihapus permanen. Outline, sections, dan chat ikut hilang.`}
+        title="Hapus proyek?"
+        description={`"${project?.title ?? "Proyek"}" akan dihapus permanen. Outline, bagian, dan percakapan juga akan dihapus.`}
         size="sm"
         footer={
           <>
@@ -273,7 +274,7 @@ export default function WorkspacePage() {
         }
       >
         <p className="text-sm text-[var(--color-medium-gray)]">
-          Aksi ini tidak bisa di-undo.
+          Tindakan ini tidak dapat dibatalkan.
         </p>
       </Modal>
     </div>
@@ -321,7 +322,7 @@ function StageContent({
           <div className="max-w-md space-y-3">
             <Lock className="h-8 w-8 mx-auto text-[var(--color-medium-gray)]" />
             <h3 className="text-base font-semibold text-[var(--color-publiora-black)]">
-              This stage is not available yet
+              Tahap ini belum tersedia
             </h3>
             <ul className="space-y-2 text-left">
               {displayBlockers.map((b) => (
@@ -331,14 +332,14 @@ function StageContent({
                 >
                   <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-gold)]" />
                   <div className="min-w-0 flex-1 space-y-1">
-                    <span>{b.message}</span>
+                    <span>{getWorkflowBlockerCopy(b.code).description}</span>
                     {b.targetStep !== step && (
                       <button
                         type="button"
                         onClick={() => onNavigate(b.targetStep)}
                         className="block text-xs font-medium text-[var(--color-publiora-blue)] hover:underline"
                       >
-                        Go to {b.targetStep}
+                        Buka {workflowStepLabelsId[b.targetStep]}
                       </button>
                     )}
                   </div>
@@ -346,7 +347,7 @@ function StageContent({
               ))}
             </ul>
             <p className="text-xs text-[var(--color-medium-gray)]">
-              Complete the previous stages to unlock this one.
+              Selesaikan tahap sebelumnya untuk melanjutkan.
             </p>
           </div>
         </div>

@@ -53,7 +53,7 @@ describe("id label maps", () => {
     expect(reviewId.strategy).toBe("Strategi");
     expect(publishId.publish).toBe("Terbitkan");
     expect(agentsId.generateSuggestions).toBe("Buat saran");
-    expect(workflowStepLabelsId.review).toBe("Review");
+    expect(workflowStepLabelsId.review).toBe("Tinjau");
   });
 
   it("does not expose raw English enum tokens as labels", () => {

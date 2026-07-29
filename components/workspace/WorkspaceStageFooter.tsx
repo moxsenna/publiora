@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { AlertTriangle, Rocket, ArrowRight } from "lucide-react";
 import type { ProjectWorkflowStep, ProjectWorkflowState } from "@/types/workflow";
+import { getWorkflowBlockerCopy, workspaceId } from "@/lib/i18n/id/workspace";
 
 const STEP_ORDER: ProjectWorkflowStep[] = [
   "strategy",
@@ -61,7 +62,7 @@ export function WorkspaceStageFooter({
           {currentBlockers.length > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-[var(--color-gold)] min-w-0">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{currentBlockers[0].message}</span>
+              <span className="truncate">{getWorkflowBlockerCopy(currentBlockers[0].code).description}</span>
             </div>
           )}
         </div>
@@ -100,9 +101,9 @@ function getPrimaryCta(
   switch (current) {
     case "strategy":
       cta = {
-        label: "Next: Create Outline",
+        label: workspaceId.generateOutline,
         disabled: !canAct,
-        disabledReason: "Complete the strategy chat first",
+        disabledReason: "Lengkapi strategi terlebih dahulu",
         action: () => onNavigate("outline"),
         icon: <ArrowRight className="h-3.5 w-3.5" />,
         variant: "primary",
@@ -111,9 +112,9 @@ function getPrimaryCta(
 
     case "outline":
       cta = {
-        label: "Next: Write Sections",
+        label: workspaceId.writeSections,
         disabled: !canAct,
-        disabledReason: "Approve the outline first",
+        disabledReason: "Setujui outline terlebih dahulu",
         action: () => onNavigate("write"),
         icon: <ArrowRight className="h-3.5 w-3.5" />,
         variant: "primary",
@@ -122,9 +123,9 @@ function getPrimaryCta(
 
     case "write":
       cta = {
-        label: "Next: Review Ebook",
+        label: workspaceId.reviewEbook,
         disabled: !canAct,
-        disabledReason: "Generate all sections first",
+        disabledReason: "Selesaikan semua bagian terlebih dahulu",
         action: () => onNavigate("review"),
         icon: <ArrowRight className="h-3.5 w-3.5" />,
         variant: "primary",
@@ -134,7 +135,7 @@ function getPrimaryCta(
     case "review":
       if (canPublish) {
         cta = {
-          label: "Publish Ebook",
+          label: workspaceId.publishEbook,
           disabled: false,
           action: onPublish,
           icon: <Rocket className="h-3.5 w-3.5" />,
@@ -142,9 +143,9 @@ function getPrimaryCta(
         };
       } else {
         cta = {
-          label: "Resolve Issues to Publish",
+          label: "Tinjau masalah",
           disabled: true,
-          disabledReason: "Fix blockers above before publishing",
+          disabledReason: "Selesaikan masalah sebelum menerbitkan",
           action: () => {},
           icon: <AlertTriangle className="h-3.5 w-3.5" />,
           variant: "outline",
@@ -154,9 +155,9 @@ function getPrimaryCta(
 
     case "publish":
       cta = {
-        label: "Publish Now",
+        label: workspaceId.publishEbook,
         disabled: !canPublish,
-        disabledReason: "Resolve all blockers before publishing",
+        disabledReason: "Selesaikan semua masalah sebelum menerbitkan",
         action: onPublish,
         icon: <Rocket className="h-3.5 w-3.5" />,
         variant: "gold",
@@ -165,7 +166,7 @@ function getPrimaryCta(
 
     default:
       cta = {
-        label: "Next",
+        label: "Lanjut",
         disabled: true,
         action: () => {},
       };
@@ -183,7 +184,7 @@ function getPrimaryCta(
       {cta.icon}
       <span className="hidden sm:inline">{cta.label}</span>
       <span className="sm:hidden">
-        {current === "publish" || current === "review" ? "Publish" : "Next"}
+        {current === "publish" || current === "review" ? "Publish" : "Lanjut"}
       </span>
     </Button>
   );

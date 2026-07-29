@@ -25,6 +25,25 @@ const workflow: ProjectWorkflowState = {
 };
 
 describe("WorkspaceStageFooter", () => {
+  it("maps blocker codes instead of rendering raw backend messages", () => {
+    render(
+      <WorkspaceStageFooter
+        current="outline"
+        workflow={{
+          ...workflow,
+          blockers: [{ code: "strategy_incomplete", message: "RAW BACKEND ERROR", targetStep: "outline" }],
+        }}
+        canAct={false}
+        onNavigate={vi.fn()}
+        onPublish={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Lengkapi strategi sebelum membuat outline.")).toBeVisible();
+    expect(screen.queryByText("RAW BACKEND ERROR")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Setujui outline terlebih dahulu" })).toBeDisabled();
+  });
+
   it("names the writing progress indicator in Indonesian", () => {
     render(
       <WorkspaceStageFooter
