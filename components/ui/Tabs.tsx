@@ -25,14 +25,15 @@ export function Tabs({ value, onChange, tabs, className, ariaLabel = "Pilihan ta
     onChange(target.value);
     refs.current.get(target.value)?.focus();
   };
-  const activeTab = tabs.find((tab) => tab.value === value);
+  const activeTab = enabledTabs.find((tab) => tab.value === value) ?? enabledTabs[0];
+  const effectiveValue = activeTab?.value;
   const tabId = (tab: TabItem) => `${baseId}-tab-${safeId(tab.value)}`;
   const panelId = (tab: TabItem) => `${baseId}-panel-${safeId(tab.value)}`;
 
   return <>
     <div role="tablist" aria-label={ariaLabel} className={cn("flex max-w-full overflow-x-auto no-scrollbar gap-0.5 p-0.5 rounded-[var(--radius-button)] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]", className)}>
       {tabs.map((tab) => {
-        const active = value === tab.value;
+        const active = effectiveValue === tab.value;
         return <button key={tab.value} ref={(node) => { if (node) refs.current.set(tab.value, node); else refs.current.delete(tab.value); }} id={tabId(tab)} type="button" role="tab" aria-selected={active} aria-controls={tab.content !== undefined ? panelId(tab) : undefined} tabIndex={active ? 0 : -1} disabled={tab.disabled} onClick={() => onChange(tab.value)} onKeyDown={(event) => onKeyDown(event, tab.value)} className={cn("min-h-11 px-2.5 sm:min-h-0 sm:h-8 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-50", active ? "bg-[var(--color-surface-1)] text-[var(--color-publiora-black)] shadow-sm" : "text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]")}>{tab.label}</button>;
       })}
     </div>

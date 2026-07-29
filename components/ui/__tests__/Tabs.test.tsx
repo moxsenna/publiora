@@ -31,6 +31,37 @@ describe("Tabs", () => {
     expect(screen.getByRole("tab", { name: expected })).toHaveFocus();
   });
 
+  it("falls back to first enabled tab for an unknown value", () => {
+    render(<Tabs value="tidak-ada" onChange={vi.fn()} tabs={tabs} />);
+    expect(screen.getByRole("tab", { name: "Satu" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Satu" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Panel satu");
+  });
+
+  it("falls back to first enabled tab when selected value is disabled", () => {
+    render(<Tabs value="satu" onChange={vi.fn()} tabs={[{ ...tabs[0], disabled: true }, tabs[1]]} />);
+    expect(screen.getByRole("tab", { name: "Satu" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "Satu" })).toHaveAttribute("tabindex", "-1");
+    expect(screen.getByRole("tab", { name: "Dua" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Dua" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Panel dua");
+  });
+
+  it("renders no focusable or selected tabs when empty", () => {
+    render(<Tabs value="satu" onChange={vi.fn()} tabs={[]} />);
+    expect(screen.queryAllByRole("tab")).toHaveLength(0);
+    expect(screen.queryByRole("tabpanel")).toBeNull();
+  });
+
+  it("renders no focusable or selected tabs when all are disabled", () => {
+    render(<Tabs value="satu" onChange={vi.fn()} tabs={tabs.map((tab) => ({ ...tab, disabled: true }))} />);
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab).toHaveAttribute("aria-selected", "false");
+      expect(tab).toHaveAttribute("tabindex", "-1");
+    }
+    expect(screen.queryByRole("tabpanel")).toBeNull();
+  });
+
   it("remains backward compatible when tab content is omitted", () => {
     render(<Tabs value="satu" onChange={vi.fn()} tabs={[{ value: "satu", label: "Satu" }]} />);
     expect(screen.queryByRole("tabpanel")).toBeNull();

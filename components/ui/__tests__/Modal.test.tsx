@@ -36,6 +36,28 @@ describe("Modal", () => {
     trigger.remove();
   });
 
+  it("keeps focus on rerender and Escape uses latest callback and policies", async () => {
+    const trigger = document.createElement("button");
+    document.body.append(trigger);
+    trigger.focus();
+    const firstClose = vi.fn();
+    const latestClose = vi.fn();
+    const { rerender } = render(<Fixture onClose={firstClose} closeOnEscape={false} />);
+    const second = screen.getByRole("button", { name: "Terakhir" });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Tutup dialog" })).toHaveFocus());
+    second.focus();
+
+    rerender(<Fixture onClose={() => latestClose()} closeOnEscape />);
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+
+    expect(second).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(firstClose).not.toHaveBeenCalled();
+    expect(latestClose).toHaveBeenCalledTimes(1);
+    expect(second).toHaveFocus();
+    trigger.remove();
+  });
+
   it("respects escape, backdrop, and preventClose policies", () => {
     const onClose = vi.fn();
     const { rerender } = render(<Fixture onClose={onClose} closeOnEscape={false} closeOnBackdrop={false} />);
