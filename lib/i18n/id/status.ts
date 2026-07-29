@@ -24,7 +24,7 @@ export const projectStatusCopyId = {
   outline_draft: { label: "Draf outline", tone: "warning" },
   approved: { label: "Disetujui", tone: "info" },
   generating: { label: "Sedang dibuat", tone: "info" },
-  generated: { label: "Selesai dibuat", tone: "success" },
+  generated: { label: "Siap ditinjau", tone: "warning" },
   publishing: { label: "Sedang diterbitkan", tone: "warning" },
   published: { label: "Terbit", tone: "success" },
   failed: { label: "Gagal", tone: "danger" },

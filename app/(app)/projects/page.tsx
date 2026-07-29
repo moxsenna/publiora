@@ -2,159 +2,137 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Folder, Plus, Search } from "lucide-react";
 import { useProjects } from "@/lib/api/hooks";
 import { Card, CardBody } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { ProjectStatusPill } from "@/components/ui/StatusPill";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/PageState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Plus, Search, Folder } from "lucide-react";
-import { formatRelativeTime } from "@/lib/utils";
-import type { ProjectStatus } from "@/types/project";
+import {
+  formatSectionCount,
+  projectFiltersId,
+  projectsId,
+  type ProjectFilter,
+} from "@/lib/i18n/id/projects";
+import { formatDashboardRelativeTime } from "@/lib/i18n/id/dashboard";
 
-const FILTERS: { id: "all" | ProjectStatus; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "draft", label: "Draft" },
-  { id: "outline_draft", label: "Outline" },
-  { id: "generating", label: "Generating" },
-  { id: "generated", label: "Generated" },
-  { id: "published", label: "Published" },
-];
+const primaryLinkClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-publiora-blue)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--color-publiora-blue-dark)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)]";
 
 export default function ProjectsPage() {
-  const { data: projects, isLoading } = useProjects();
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"all" | ProjectStatus>("all");
+  const { data: projects, isLoading, isError, refetch } = useProjects();
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<ProjectFilter>("all");
 
   const filtered = useMemo(() => {
     return (projects ?? [])
-      .filter((p) => {
-        if (status !== "all" && p.status !== status) return false;
-        const hay = `${p.title} ${p.niche} ${p.description}`.toLowerCase();
-        return hay.includes(q.toLowerCase());
+      .filter((project) => {
+        if (status !== "all" && project.status !== status) return false;
+        const haystack = `${project.title} ${project.niche} ${project.description}`.toLocaleLowerCase("id-ID");
+        return haystack.includes(query.toLocaleLowerCase("id-ID"));
       })
       .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
-  }, [projects, q, status]);
+  }, [projects, query, status]);
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-5 py-5 space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--color-publiora-black)]">Projects</h1>
-          <p className="text-sm text-[var(--color-medium-gray)] mt-0.5">
-            Semua project ebook Anda.
-            {!isLoading && projects ? ` · ${projects.length} total` : ""}
+    <div className="mx-auto max-w-7xl space-y-6 px-3 py-6 sm:px-5 sm:py-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-publiora-black)] sm:text-3xl">
+            {projectsId.title}
+          </h1>
+          <p className="mt-1 text-sm text-[var(--color-medium-gray)]">
+            {projectsId.description}
+            {!isLoading && !isError && projects ? ` · ${projects.length} ${projectsId.total}` : ""}
           </p>
         </div>
-        <Link href="/projects/new">
-          <Button size="sm">
-            <Plus className="h-3.5 w-3.5" />
-            New project
-          </Button>
+        <Link href="/projects/new" className={primaryLinkClass}>
+          <Plus aria-hidden="true" className="h-4 w-4" />
+          {projectsId.newProject}
         </Link>
-      </div>
+      </header>
 
-      <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center">
-        <div className="relative max-w-md flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--color-medium-gray)]" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Cari project…"
-            className="h-9 w-full pl-8 pr-3 rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white text-sm text-[var(--color-deep-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)]"
-          />
+      <section aria-label="Pencarian dan filter proyek" className="rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-white p-3 shadow-[var(--shadow-card)] sm:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1 sm:max-w-md">
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-medium-gray)]" />
+            <input
+              aria-label={projectsId.searchLabel}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={projectsId.searchPlaceholder}
+              className="min-h-11 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white pl-10 pr-3 text-sm text-[var(--color-deep-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)]"
+            />
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto pb-1" aria-label="Filter status proyek">
+            {projectFiltersId.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                aria-pressed={status === filter.id}
+                onClick={() => setStatus(filter.id)}
+                className={`min-h-11 shrink-0 rounded-full border px-3 text-sm font-medium transition-colors ${
+                  status === filter.id
+                    ? "border-[var(--color-publiora-black)] bg-[var(--color-publiora-black)] text-white"
+                    : "border-[var(--color-publiora-border)] bg-white text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)]"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-1 overflow-x-auto no-scrollbar pb-0.5">
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setStatus(f.id)}
-              className={
-                "px-2.5 h-8 rounded-full text-xs font-medium whitespace-nowrap border transition-colors " +
-                (status === f.id
-                  ? "bg-[var(--color-publiora-black)] text-white border-[var(--color-publiora-black)]"
-                  : "bg-white text-[var(--color-medium-gray)] border-[var(--color-publiora-border)] hover:bg-[var(--color-surface-2)]")
-              }
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      </section>
 
       {isLoading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-36" />
-          ))}
+        <div aria-label="Memuat proyek" className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-56" />)}
         </div>
+      ) : isError ? (
+        <Card>
+          <ErrorState description={projectsId.loadError} retryLabel={projectsId.retry} onRetry={() => void refetch()} />
+        </Card>
       ) : filtered.length === 0 ? (
         <Card>
           <EmptyState
-            icon={<Folder className="h-6 w-6" />}
-            title={q || status !== "all" ? "Tidak menemukan project" : "Belum ada project"}
-            description={
-              q || status !== "all"
-                ? "Coba kata kunci atau filter lain."
-                : "Mulai project pertama Anda sekarang."
-            }
-            action={
-              !q && status === "all" ? (
-                <Link href="/projects/new">
-                  <Button size="sm">New project</Button>
-                </Link>
-              ) : null
-            }
+            icon={<Folder aria-hidden="true" className="h-6 w-6" />}
+            title={query || status !== "all" ? projectsId.noResults : projectsId.empty}
+            description={query || status !== "all" ? projectsId.noResultsDescription : projectsId.emptyDescription}
+            action={!query && status === "all" ? <Link href="/projects/new" className={primaryLinkClass}>{projectsId.newProject}</Link> : null}
           />
         </Card>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {filtered.map((p) => {
-            const pct =
-              p.total_sections > 0
-                ? Math.round((p.sections_generated / p.total_sections) * 100)
-                : p.progress;
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((project) => {
+            const percentage = project.total_sections > 0
+              ? Math.round((project.sections_generated / project.total_sections) * 100)
+              : project.progress;
             return (
-              <Link key={p.id} href={`/projects/${p.id}`}>
-                <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform cursor-pointer h-full">
-                  <div
-                    className="h-20 rounded-t-[var(--radius-card)] flex items-end p-3 relative overflow-hidden"
-                    style={{ background: p.cover_color }}
-                  >
-                    <h3 className="text-white font-semibold text-base line-clamp-2 drop-shadow relative z-10">
-                      {p.title}
-                    </h3>
+              <Link key={project.id} href={`/projects/${project.id}`} className="min-w-0 rounded-[var(--radius-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)]">
+                <Card className="h-full min-w-0 cursor-pointer overflow-hidden transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]">
+                  <div className="relative flex h-28 items-end overflow-hidden p-4" style={{ background: project.cover_color }}>
+                    <div aria-hidden="true" className="absolute inset-0 bg-black/45" />
+                    <h2 className="relative z-10 line-clamp-2 min-w-0 break-words text-lg font-semibold text-white drop-shadow">
+                      {project.title}
+                    </h2>
                   </div>
-                  <CardBody>
-                    <div className="flex items-center justify-between gap-2">
-                      <ProjectStatusPill status={p.status} />
-                      <span className="text-xs text-[var(--color-medium-gray)] truncate">
-                        {p.niche}
-                      </span>
+                  <CardBody className="min-w-0">
+                    <div className="flex min-w-0 items-center justify-between gap-2">
+                      <ProjectStatusPill status={project.status} />
+                      <span className="min-w-0 truncate text-xs text-[var(--color-medium-gray)]">{project.niche}</span>
                     </div>
-                    <p className="mt-3 text-sm text-[var(--color-medium-gray)] line-clamp-2">
-                      {p.description}
-                    </p>
-                    <div className="mt-3 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs text-[var(--color-medium-gray)]">
-                        <span>
-                          {p.sections_generated}/{p.total_sections || "—"} sections
-                        </span>
-                        <span>{formatRelativeTime(p.updated_at)}</span>
+                    <p className="mt-3 line-clamp-2 break-words text-sm text-[var(--color-medium-gray)]">{project.description}</p>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-medium-gray)]">
+                        <span>{project.sections_generated}/{project.total_sections || "—"} · {formatSectionCount(project.total_sections)}</span>
+                        <span>{projectsId.updated} {formatDashboardRelativeTime(project.updated_at)}</span>
                       </div>
-                      {p.total_sections > 0 && (
-                        <ProgressBar
-                          value={pct}
-                          barClassName={
-                            p.status === "published"
-                              ? "bg-[var(--color-success)]"
-                              : p.status === "generating"
-                                ? "bg-[var(--color-publiora-blue)]"
-                                : "bg-[var(--color-soft-gray)]"
-                          }
-                        />
+                      {project.total_sections > 0 && (
+                        <div aria-label={`${projectsId.progress} ${project.title}`}>
+                          <ProgressBar value={percentage} barClassName={project.status === "published" ? "bg-[var(--color-success)]" : project.status === "generating" ? "bg-[var(--color-publiora-blue)]" : "bg-[var(--color-soft-gray)]"} />
+                        </div>
                       )}
                     </div>
                   </CardBody>

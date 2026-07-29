@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useProjects, usePublishedEbooks } from "@/lib/api/hooks";
 import { useAuthStore } from "@/store/authStore";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { ProjectStatusPill } from "@/components/ui/StatusPill";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -22,13 +21,16 @@ import {
   Coins,
 } from "lucide-react";
 import { useCreditBalance } from "@/lib/api/hooks";
-import { formatRelativeTime, greeting } from "@/lib/utils";
+import { greeting } from "@/lib/utils";
+import { dashboardId, formatClaimCount, formatCreditBalance, formatDashboardRelativeTime, formatReaderCount } from "@/lib/i18n/id/dashboard";
+import { formatSectionCount } from "@/lib/i18n/id/projects";
+import { ErrorState } from "@/components/ui/PageState";
 
 export default function DashboardPage() {
   const profile = useAuthStore((s) => s.profile);
-  const { data: projects, isLoading: lp } = useProjects();
-  const { data: published, isLoading: lpub } = usePublishedEbooks();
-  const { data: balance, isLoading: lb } = useCreditBalance();
+  const { data: projects, isLoading: lp, isError: ep, refetch: refetchProjects } = useProjects();
+  const { data: published, isLoading: lpub, isError: epub, refetch: refetchPublished } = usePublishedEbooks();
+  const { data: balance, isLoading: lb, isError: eb } = useCreditBalance();
 
   const recentProjects = [...(projects ?? [])]
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
@@ -47,15 +49,16 @@ export default function DashboardPage() {
             {greeting(profile?.name)}
           </h1>
           <p className="text-sm text-[var(--color-medium-gray)] mt-0.5">
-            Ringkasan aktivitas Publiora Anda.
-            {generating > 0 ? ` · ${generating} project sedang generate.` : ""}
+            {dashboardId.summary}
+            {generating > 0 ? ` · ${generating} proyek sedang dibuat.` : ""}
           </p>
         </div>
-        <Link href="/projects/new">
-          <Button size="sm">
-            <Plus className="h-3.5 w-3.5" />
-            New project
-          </Button>
+        <Link
+          href="/projects/new"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-publiora-blue)] px-4 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)]"
+        >
+          <Plus aria-hidden="true" className="h-4 w-4" />
+          {dashboardId.newProject}
         </Link>
       </div>
 
@@ -64,54 +67,55 @@ export default function DashboardPage() {
         <QuickAction
           href="/projects/new"
           icon={<Plus className="h-3.5 w-3.5" />}
-          title="Buat project"
-          desc="Mulai ebook baru dari brief"
+          title={dashboardId.createProject}
+          desc={dashboardId.createProjectDescription}
         />
         <QuickAction
           href="/settings/billing"
           icon={<CreditCard className="h-3.5 w-3.5" />}
-          title="Billing"
+          title={dashboardId.billing}
           desc={
             balance
-              ? `${balance.balance} kredit · plan ${balance.plan_id}`
-              : "Langganan & kredit generate"
+              ? `${formatCreditBalance(balance.balance)} · Paket ${balance.plan_id}`
+              : dashboardId.billingDescription
           }
         />
         <QuickAction
           href="/library"
           icon={<Gift className="h-3.5 w-3.5" />}
-          title="Library"
-          desc="Ebook yang sudah diklaim"
+          title={dashboardId.library}
+          desc={dashboardId.libraryDescription}
         />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5">
         <StatCard
-          label="Credits"
+          label={dashboardId.credit}
           value={balance?.balance ?? 0}
           icon={<Coins className="h-3.5 w-3.5" />}
           loading={lb}
+          error={eb}
         />
         <StatCard
-          label="Projects"
+          label={dashboardId.projects}
           value={projects?.length ?? 0}
           icon={<Folder className="h-3.5 w-3.5" />}
           loading={lp}
         />
         <StatCard
-          label="Published"
+          label={dashboardId.published}
           value={published?.length ?? 0}
           icon={<BookOpen className="h-3.5 w-3.5" />}
           loading={lpub}
         />
         <StatCard
-          label="Total readers"
+          label={dashboardId.totalReaders}
           value={totalReaders}
           icon={<Users className="h-3.5 w-3.5" />}
           loading={lpub}
         />
         <StatCard
-          label="Active claims"
+          label={dashboardId.activeClaims}
           value={activeClaims}
           icon={<Link2 className="h-3.5 w-3.5" />}
           loading={lpub}
@@ -121,7 +125,7 @@ export default function DashboardPage() {
       <section>
         <div className="flex items-center justify-between mb-2.5">
           <h2 className="text-base font-semibold text-[var(--color-publiora-black)]">
-            Recent projects
+            {dashboardId.recentProjects}
           </h2>
           <Link
             href="/projects"
@@ -136,15 +140,17 @@ export default function DashboardPage() {
               <Skeleton key={i} className="h-32" />
             ))}
           </div>
+        ) : ep ? (
+          <Card><ErrorState description={dashboardId.loadError} onRetry={() => void refetchProjects()} /></Card>
         ) : recentProjects.length === 0 ? (
           <Card>
             <EmptyState
               icon={<Folder className="h-5 w-5" />}
-              title="Belum ada project"
-              description="Mulai project pertama untuk membuat ebook."
+              title={dashboardId.noProjects}
+              description={dashboardId.noProjectsDescription}
               action={
                 <Link href="/projects/new">
-                  <Button size="sm">New project</Button>
+                  <span className="inline-flex min-h-11 items-center rounded-[var(--radius-button)] bg-[var(--color-publiora-blue)] px-4 text-sm font-semibold text-white">{dashboardId.newProject}</span>
                 </Link>
               }
             />
@@ -174,7 +180,7 @@ export default function DashboardPage() {
                       {p.title}
                     </h3>
                     <p className="text-xs text-[var(--color-medium-gray)] mt-1">
-                      Updated {formatRelativeTime(p.updated_at)}
+                      {dashboardId.updated} {formatDashboardRelativeTime(p.updated_at)}
                     </p>
                   </CardBody>
                 </Card>
@@ -187,7 +193,7 @@ export default function DashboardPage() {
       <section>
         <div className="flex items-center justify-between mb-2.5">
           <h2 className="text-base font-semibold text-[var(--color-publiora-black)]">
-            Published ebooks
+            {dashboardId.publishedEbooks}
           </h2>
         </div>
         {lpub ? (
@@ -196,12 +202,14 @@ export default function DashboardPage() {
               <Skeleton key={i} className="h-28" />
             ))}
           </div>
+        ) : epub ? (
+          <Card><ErrorState description={dashboardId.loadError} onRetry={() => void refetchPublished()} /></Card>
         ) : recentPublished.length === 0 ? (
           <Card>
             <EmptyState
               icon={<TrendingUp className="h-5 w-5" />}
-              title="Belum ada ebook terpublished"
-              description="Generate project hingga semua section siap, lalu publish."
+              title={dashboardId.noPublished}
+              description={dashboardId.noPublishedDescription}
             />
           </Card>
         ) : (
@@ -223,9 +231,9 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardBody className="pt-0">
                     <div className="flex items-center gap-3 text-xs text-[var(--color-medium-gray)]">
-                      <span>{p.total_readers} readers</span>
-                      <span>{p.active_claims} claims</span>
-                      <span>{p.sections.length} sections</span>
+                      <span>{formatReaderCount(p.total_readers)}</span>
+                      <span>{formatClaimCount(p.active_claims)}</span>
+                      <span>{formatSectionCount(p.sections.length)}</span>
                     </div>
                   </CardBody>
                 </Card>
@@ -274,11 +282,13 @@ function StatCard({
   value,
   icon,
   loading,
+  error,
 }: {
   label: string;
   value: number;
   icon: React.ReactNode;
   loading?: boolean;
+  error?: boolean;
 }) {
   return (
     <Card>
@@ -294,6 +304,8 @@ function StatCard({
         <div className="mt-1.5">
           {loading ? (
             <Skeleton className="h-6 w-12" />
+          ) : error ? (
+            <span className="text-sm font-semibold text-[var(--color-danger)]">—</span>
           ) : (
             <div className="text-xl font-bold tabular-nums text-[var(--color-publiora-black)]">
               {value}
