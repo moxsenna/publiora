@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "vitest run",
     "test:i18n": "vitest run lib/i18n",
+    "check:ui-copy": "vitest run lib/i18n/id/ui-copy-regression.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:e2e": "playwright test",

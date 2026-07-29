@@ -7,7 +7,6 @@ export type UiCopyDebtEntry = {
 
 // Temporary exact baseline. Task 13 removes entries as visible copy migrates.
 export const uiCopyDebt: readonly UiCopyDebtEntry[] = [
-  { file: "app/(app)/dashboard/layout.tsx", matchedPhrase: "Dashboard", line: 4, column: 10 },
   { file: "app/(app)/dashboard/page.tsx", matchedPhrase: "New Project", line: 57, column: 13 },
   { file: "app/(app)/dashboard/page.tsx", matchedPhrase: "Billing", line: 73, column: 17 },
   { file: "app/(app)/dashboard/page.tsx", matchedPhrase: "Library", line: 83, column: 17 },
@@ -23,13 +22,11 @@ export const uiCopyDebt: readonly UiCopyDebtEntry[] = [
   { file: "app/(app)/dashboard/page.tsx", matchedPhrase: "Generate", line: 204, column: 27 },
   { file: "app/(app)/dashboard/page.tsx", matchedPhrase: "Readers", line: 226, column: 47 },
   { file: "app/(app)/dashboard/page.tsx", matchedPhrase: "Claims", line: 227, column: 47 },
-  { file: "app/(app)/library/layout.tsx", matchedPhrase: "Library", line: 4, column: 10 },
   { file: "app/(app)/library/page.tsx", matchedPhrase: "Library", line: 29, column: 78 },
   { file: "app/(app)/library/page.tsx", matchedPhrase: "Library", line: 46, column: 19 },
   { file: "app/(app)/library/page.tsx", matchedPhrase: "Dashboard", line: 50, column: 35 },
   { file: "app/(app)/library/page.tsx", matchedPhrase: "Section", line: 83, column: 29 },
   { file: "app/(app)/projects/[id]/page.tsx", matchedPhrase: "Projects", line: 169, column: 15 },
-  { file: "app/(app)/projects/layout.tsx", matchedPhrase: "Projects", line: 4, column: 10 },
   { file: "app/(app)/projects/page.tsx", matchedPhrase: "Draft", line: 18, column: 25 },
   { file: "app/(app)/projects/page.tsx", matchedPhrase: "Published", line: 22, column: 29 },
   { file: "app/(app)/projects/page.tsx", matchedPhrase: "Projects", line: 44, column: 80 },
@@ -42,8 +39,6 @@ export const uiCopyDebt: readonly UiCopyDebtEntry[] = [
   { file: "app/(app)/published/[id]/page.tsx", matchedPhrase: "Reader", line: 250, column: 43 },
   { file: "app/(app)/published/[id]/page.tsx", matchedPhrase: "Created", line: 386, column: 49 },
   { file: "app/(app)/published/[id]/page.tsx", matchedPhrase: "Download", line: 399, column: 59 },
-  { file: "app/(app)/settings/billing/layout.tsx", matchedPhrase: "Billing", line: 4, column: 10 },
-  { file: "app/(app)/settings/billing/layout.tsx", matchedPhrase: "Credits", line: 4, column: 10 },
   { file: "app/(app)/settings/billing/page.tsx", matchedPhrase: "Billing", line: 158, column: 11 },
   { file: "app/(app)/settings/billing/page.tsx", matchedPhrase: "Credits", line: 158, column: 11 },
   { file: "app/(app)/settings/billing/page.tsx", matchedPhrase: "Section", line: 161, column: 11 },
@@ -56,7 +51,6 @@ export const uiCopyDebt: readonly UiCopyDebtEntry[] = [
   { file: "app/(app)/settings/billing/page.tsx", matchedPhrase: "Popular", line: 307, column: 63 },
   { file: "app/(app)/settings/billing/page.tsx", matchedPhrase: "Current", line: 308, column: 60 },
   { file: "app/(app)/settings/billing/page.tsx", matchedPhrase: "Generate", line: 408, column: 30 },
-  { file: "app/billing/return/layout.tsx", matchedPhrase: "Loading", line: 13, column: 71 },
   { file: "app/billing/return/page.tsx", matchedPhrase: "Billing", line: 94, column: 19 },
   { file: "app/billing/return/page.tsx", matchedPhrase: "Billing", line: 107, column: 19 },
   { file: "app/billing/return/page.tsx", matchedPhrase: "Billing", line: 126, column: 19 },
