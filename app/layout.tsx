@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { metadataId } from "@/lib/i18n/id/metadata";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,11 +19,12 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "Publiora — AI publishing platform",
-    template: "%s · Publiora",
+    default: metadataId.root.title,
+    template: metadataId.root.titleTemplate,
   },
-  description: "Create, publish, and distribute marketing ebooks with AI.",
+  description: metadataId.root.description,
   applicationName: "Publiora",
   icons: {
     icon: [
@@ -30,8 +34,9 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "Publiora — AI publishing platform",
-    description: "Create, publish, and distribute marketing ebooks with AI.",
+    title: metadataId.root.title,
+    description: metadataId.root.description,
+    locale: metadataId.root.openGraphLocale,
     type: "website",
   },
 };
@@ -43,7 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="id"
       className={`${inter.variable} ${plusJakartaSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

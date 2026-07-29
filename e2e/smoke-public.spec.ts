@@ -13,7 +13,8 @@ test.describe('@smoke public pages', () => {
 
   test('home page loads with marketing content', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/Publiora/i);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'id');
+    await expect(page).toHaveTitle('Publiora — Platform Penerbitan Ebook Berbasis AI');
 
     // Hero heading
     await expect(page.getByRole('heading', { name: /Buat ebook marketing/i })).toBeVisible();
@@ -41,6 +42,8 @@ test.describe('@smoke public pages', () => {
 
   test('login page loads with sign-in form', async ({ page }) => {
     await page.goto('/login');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'id');
+    await expect(page).toHaveTitle('Masuk | Publiora');
 
     // Title
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
