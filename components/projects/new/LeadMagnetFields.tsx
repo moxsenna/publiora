@@ -104,10 +104,12 @@ export function LeadMagnetFields({
         <Input
           id="idea_text"
           placeholder="Contoh: Checklist 7 hari untuk audit funnel SaaS"
+          aria-invalid={!!errors.idea_text}
+          aria-describedby={errors.idea_text ? "idea_text-error" : undefined}
           {...register("idea_text")}
         />
         {errors.idea_text && (
-          <p className="mt-1 text-xs text-red-600">{errors.idea_text.message}</p>
+          <p id="idea_text-error" className="mt-1 text-xs text-red-600">{errors.idea_text.message}</p>
         )}
       </div>
 
@@ -128,7 +130,9 @@ export function LeadMagnetFields({
         <Label htmlFor="lead_goal">Tujuan Lead Magnet</Label>
         <select
           id="lead_goal"
-          className="h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
+          className="h-11 sm:h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
+          aria-invalid={!!errors.lead_goal}
+          aria-describedby={errors.lead_goal ? "lead_goal-error" : undefined}
           {...register("lead_goal")}
         >
           <option value="">Pilih tujuan…</option>
@@ -139,7 +143,9 @@ export function LeadMagnetFields({
           ))}
         </select>
         {errors.lead_goal && (
-          <p className="mt-1 text-xs text-red-600">{errors.lead_goal.message}</p>
+          <p id="lead_goal-error" className="mt-1 text-xs text-red-600">
+            {errors.lead_goal.message}
+          </p>
         )}
       </div>
 
@@ -147,7 +153,7 @@ export function LeadMagnetFields({
         <Label htmlFor="traffic_source">Sumber traffic (opsional)</Label>
         <select
           id="traffic_source"
-          className="h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
+          className="h-11 sm:h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
           {...register("traffic_source")}
         >
           <option value="">Belum ditentukan</option>
@@ -163,7 +169,7 @@ export function LeadMagnetFields({
         <Label htmlFor="post_read_action">Aksi setelah membaca (opsional)</Label>
         <select
           id="post_read_action"
-          className="h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
+          className="h-11 sm:h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
           {...register("post_read_action")}
         >
           <option value="">Ikuti tujuan lead / tentukan nanti</option>
@@ -181,10 +187,14 @@ export function LeadMagnetFields({
           <Input
             id="cta_url"
             placeholder="https://…"
+            aria-invalid={!!errors.cta_url}
+            aria-describedby={errors.cta_url ? "cta_url-error" : undefined}
             {...register("cta_url")}
           />
           {errors.cta_url && (
-            <p className="mt-1 text-xs text-red-600">{errors.cta_url.message}</p>
+            <p id="cta_url-error" className="mt-1 text-xs text-red-600">
+              {errors.cta_url.message}
+            </p>
           )}
         </div>
       ) : null}

@@ -79,6 +79,52 @@ describe("NewProjectWizard", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows Indonesian ebook label in summary and never raw enum", async () => {
+    const user = userEvent.setup();
+    render(<NewProjectWizard />);
+
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    await user.type(screen.getByLabelText("Ide lead magnet"), "Checklist akuisisi");
+    await user.click(screen.getByRole("button", { name: /Belum ada produk/i }));
+    await user.selectOptions(screen.getByLabelText("Tujuan Lead Magnet"), "collect_email");
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+
+    expect(await screen.findByText("Tipe: Lead Magnet")).toBeInTheDocument();
+    expect(screen.queryByText(/lead_magnet/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Tanpa template/ })).toBeInTheDocument();
+  });
+
+  it("shows safe actionable error instead of backend message", async () => {
+    const user = userEvent.setup();
+    mutateAsyncMock.mockRejectedValueOnce(new Error("duplicate key value violates unique constraint projects_pkey"));
+    render(<NewProjectWizard />);
+
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    await user.type(screen.getByLabelText("Ide lead magnet"), "Checklist akuisisi");
+    await user.click(screen.getByRole("button", { name: /Belum ada produk/i }));
+    await user.selectOptions(screen.getByLabelText("Tujuan Lead Magnet"), "collect_email");
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    await user.click(screen.getByRole("button", { name: "Buat Proyek" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Proyek belum dapat dibuat. Periksa data Anda lalu coba lagi.");
+    expect(screen.queryByText(/duplicate key/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Kembali" }));
+    expect(screen.getByLabelText("Ide lead magnet")).toHaveValue("Checklist akuisisi");
+  });
+
+  it("focuses validation summary and links field error accessibly", async () => {
+    const user = userEvent.setup();
+    render(<NewProjectWizard />);
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+
+    const summary = await screen.findByRole("alert");
+    expect(summary).toHaveFocus();
+    const idea = screen.getByLabelText("Ide lead magnet");
+    expect(idea).toHaveAttribute("aria-invalid", "true");
+    expect(idea).toHaveAttribute("aria-describedby", expect.stringContaining("error"));
+  });
+
   it("builds V3 lead payload without offer", () => {
     const payload = toCreateProjectV3({
       ebook_type: "lead_magnet",

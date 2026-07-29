@@ -12,6 +12,18 @@ export const projectFiltersId = [
   ...visibleFilterStatuses.map((id) => ({ id, label: getProjectStatusCopy(id).label })),
 ] as const satisfies readonly { id: ProjectCollectionFilter; label: string }[];
 
+export const ebookTypeLabelsId = {
+  lead_magnet: "Lead Magnet",
+  bonus_product: "Bonus Pembelian",
+  sellable_ebook: "Ebook Berbayar",
+} as const;
+
+export const projectWizardId = {
+  createError: "Proyek belum dapat dibuat. Periksa data Anda lalu coba lagi.",
+  validationSummary: "Perbaiki bidang yang ditandai sebelum lanjut.",
+  noTemplate: "Tanpa template",
+} as const;
+
 export const projectsId = {
   title: "Proyek",
   description: "Semua proyek ebook Anda.",

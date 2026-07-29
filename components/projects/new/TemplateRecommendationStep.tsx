@@ -6,6 +6,7 @@ import { SYSTEM_TEMPLATES } from "@/lib/templates-catalog";
 import { TemplateOptionCard } from "@/components/projects/new/TemplateOptionCard";
 import type { WizardFormValues } from "@/components/projects/new/wizard-types";
 import type { EbookType } from "@/types/project";
+import { projectWizardId } from "@/lib/i18n/id/projects";
 
 export function TemplateRecommendationStep({
   values,
@@ -68,9 +69,9 @@ export function TemplateRecommendationStep({
               : "border-[var(--color-publiora-border)]"
           }`}
         >
-          <div className="text-sm font-semibold">Blank</div>
+          <div className="text-sm font-semibold">{projectWizardId.noTemplate}</div>
           <p className="mt-1 text-xs text-[var(--color-medium-gray)]">
-            Mulai dari kosong tanpa struktur default.
+            Mulai tanpa struktur bawaan.
           </p>
         </button>
       </div>

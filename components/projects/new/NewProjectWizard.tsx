@@ -31,6 +31,7 @@ import {
 import type { EbookType } from "@/types/project";
 import type { Offer } from "@/types/offer";
 import type { FieldOrigin } from "@/lib/offers/prefill";
+import { ebookTypeLabelsId, projectWizardId } from "@/lib/i18n/id/projects";
 
 export function NewProjectWizard() {
   const router = useRouter();
@@ -176,7 +177,7 @@ export function NewProjectWizard() {
     if (step === 1) {
       const ok = await trigger("ebook_type");
       if (!ok) {
-        errorSummaryRef.current?.focus();
+        requestAnimationFrame(() => errorSummaryRef.current?.focus());
         return;
       }
       setStep(2);
@@ -185,7 +186,7 @@ export function NewProjectWizard() {
     if (step === 2) {
       const ok = await trigger(step2FieldsForType(ebookType));
       if (!ok) {
-        errorSummaryRef.current?.focus();
+        requestAnimationFrame(() => errorSummaryRef.current?.focus());
         return;
       }
       setStep(3);
@@ -204,12 +205,10 @@ export function NewProjectWizard() {
       const project = await create.mutateAsync(payload);
       pushToast({ title: "Proyek berhasil dibuat", variant: "success" });
       router.push(`/projects/${project.id}?stage=strategy`);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Gagal membuat proyek";
-      setSubmitError(message);
-      pushToast({ title: "Gagal membuat project", variant: "danger" });
-      errorSummaryRef.current?.focus();
+    } catch {
+      setSubmitError(projectWizardId.createError);
+      pushToast({ title: projectWizardId.createError, variant: "danger" });
+      requestAnimationFrame(() => errorSummaryRef.current?.focus());
     }
   });
 
@@ -218,6 +217,10 @@ export function NewProjectWizard() {
     Object.keys(errors).some((k) =>
       step2FieldsForType(ebookType).includes(k as keyof WizardFormValues),
     );
+
+  React.useEffect(() => {
+    if (hasStepErrors || submitError) errorSummaryRef.current?.focus();
+  }, [hasStepErrors, submitError]);
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-5 py-5 space-y-5 overflow-x-hidden">
@@ -246,7 +249,7 @@ export function NewProjectWizard() {
           role="alert"
           className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
         >
-          {submitError ?? "Perbaiki field yang wajib diisi sebelum lanjut."}
+          {submitError ?? projectWizardId.validationSummary}
         </div>
       )}
 
@@ -329,7 +332,7 @@ export function NewProjectWizard() {
               />
               <div className="rounded-lg border border-[var(--color-publiora-border)] p-3 text-sm space-y-1">
                 <div className="font-medium">Ringkasan</div>
-                <div>Tipe: {ebookType}</div>
+                <div>Tipe: {ebookTypeLabelsId[ebookType]}</div>
                 {selectedOffer ? (
                   <div>Produk: {selectedOffer.name}</div>
                 ) : (
