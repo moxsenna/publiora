@@ -17,7 +17,12 @@ import { LEAD_GOALS } from "@/types/project";
 import type { WizardFormValues } from "@/components/projects/new/wizard-types";
 import { OfferPicker } from "@/components/offers/OfferPicker";
 import type { Offer } from "@/types/offer";
-import { applyOfferPrefill, buildOfferPrefill, type FieldOrigin } from "@/lib/offers/prefill";
+import {
+  applyOfferPrefill,
+  buildOfferPrefill,
+  clearOfferDerivedFields,
+  type FieldOrigin,
+} from "@/lib/offers/prefill";
 
 const CTA_GOALS = Object.keys(CTA_GOAL_LABELS_ID) as CtaGoal[];
 
@@ -30,6 +35,8 @@ export function LeadMagnetFields({
   onSelectedOfferChange,
   fieldOrigins,
   setFieldOrigins,
+  offerLocked = false,
+  onOfferUnlock,
 }: {
   register: UseFormRegister<WizardFormValues>;
   errors: FieldErrors<WizardFormValues>;
@@ -45,6 +52,8 @@ export function LeadMagnetFields({
           prev: Partial<Record<string, FieldOrigin>>,
         ) => Partial<Record<string, FieldOrigin>>),
   ) => void;
+  offerLocked?: boolean;
+  onOfferUnlock?: () => void;
 }) {
   const postRead = watch("post_read_action");
   const needsUrl =
@@ -55,6 +64,22 @@ export function LeadMagnetFields({
   const handleOffer = (offer: Offer | null) => {
     onSelectedOfferChange(offer);
     if (!offer) {
+      const cleared = clearOfferDerivedFields({
+        current: {
+          audience: watch("audience"),
+          primary_problem: watch("primary_problem"),
+          niche: watch("niche"),
+          cta_url: watch("cta_url"),
+          product_or_offer: watch("next_offer"),
+        },
+        origins: fieldOrigins as never,
+      });
+      setValue("audience", cleared.values.audience ?? "");
+      setValue("primary_problem", cleared.values.primary_problem ?? "");
+      setValue("niche", cleared.values.niche ?? "");
+      setValue("cta_url", cleared.values.cta_url ?? "");
+      setValue("next_offer", cleared.values.product_or_offer ?? "");
+      setFieldOrigins(cleared.origins as never);
       setValue("selected_offer_id", null);
       setValue("offer_mode", "none");
       setValue("no_offer", true);
@@ -119,6 +144,8 @@ export function LeadMagnetFields({
         onChange={handleOffer}
         allowNone
         noneLabel="Belum ada produk"
+        locked={offerLocked}
+        onUnlock={onOfferUnlock}
       />
       {noOffer && !selectedOffer ? (
         <p className="text-xs text-[var(--color-medium-gray)]">

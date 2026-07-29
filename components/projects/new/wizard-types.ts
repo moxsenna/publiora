@@ -134,7 +134,7 @@ export const wizardFormSchema = z
         );
         if (requiresUrl) {
           const url = val.cta_url?.trim() ?? "";
-          if (url && !isValidCtaUrl(url)) {
+          if (!isValidCtaUrl(url)) {
             ctx.addIssue({
               code: "custom",
               path: ["cta_url"],

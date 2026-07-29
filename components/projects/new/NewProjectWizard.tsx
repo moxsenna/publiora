@@ -30,7 +30,11 @@ import {
 } from "@/components/projects/new/wizard-types";
 import type { EbookType } from "@/types/project";
 import type { Offer } from "@/types/offer";
-import type { FieldOrigin } from "@/lib/offers/prefill";
+import {
+  applyOfferPrefill,
+  buildOfferPrefill,
+  type FieldOrigin,
+} from "@/lib/offers/prefill";
 import { ebookTypeLabelsId, projectWizardId } from "@/lib/i18n/id/projects";
 
 export function NewProjectWizard() {
@@ -127,13 +131,31 @@ export function NewProjectWizard() {
     setOfferLocked(true);
     setValue("selected_offer_id", offer.id);
     setValue("offer_mode", "existing");
-    setValue("parent_product", offer.name);
-    setValue("next_offer", offer.name);
-    if (offer.target_audience) setValue("audience", offer.target_audience);
-    if (offer.niche) setValue("niche", offer.niche);
-    if (offer.destination_url) setValue("cta_url", offer.destination_url);
-    if (offer.primary_problem) setValue("primary_problem", offer.primary_problem);
-  }, [presetOfferData, selectedOffer, setValue]);
+    const applied = applyOfferPrefill({
+      current: {
+        audience: getValues("audience"),
+        primary_problem: getValues("primary_problem"),
+        niche: getValues("niche"),
+        cta_url: getValues("cta_url"),
+        product_or_offer:
+          getValues("ebook_type") === "bonus_product"
+            ? getValues("parent_product")
+            : getValues("next_offer"),
+      },
+      origins: fieldOrigins as never,
+      prefill: buildOfferPrefill(offer),
+    });
+    setValue("audience", applied.values.audience ?? "");
+    setValue("primary_problem", applied.values.primary_problem ?? "");
+    setValue("niche", applied.values.niche ?? "");
+    setValue("cta_url", applied.values.cta_url ?? "");
+    if (getValues("ebook_type") === "bonus_product") {
+      setValue("parent_product", applied.values.product_or_offer ?? "");
+    } else {
+      setValue("next_offer", applied.values.product_or_offer ?? "");
+    }
+    setFieldOrigins(applied.origins as never);
+  }, [presetOfferData, selectedOffer, setValue, getValues, fieldOrigins]);
 
   const applyTypeChange = (next: EbookType) => {
     const current = getValues();
@@ -282,6 +304,8 @@ export function NewProjectWizard() {
                   }}
                   fieldOrigins={fieldOrigins}
                   setFieldOrigins={setFieldOrigins as never}
+                  offerLocked={offerLocked}
+                  onOfferUnlock={() => setOfferLocked(false)}
                 />
               )}
               {ebookType === "bonus_product" && (
@@ -297,6 +321,8 @@ export function NewProjectWizard() {
                   }}
                   fieldOrigins={fieldOrigins}
                   setFieldOrigins={setFieldOrigins as never}
+                  offerLocked={offerLocked}
+                  onOfferUnlock={() => setOfferLocked(false)}
                 />
               )}
               {ebookType === "sellable_ebook" && (
@@ -310,6 +336,8 @@ export function NewProjectWizard() {
                     setOfferLocked(false);
                     setSelectedOffer(o);
                   }}
+                  offerLocked={offerLocked}
+                  onOfferUnlock={() => setOfferLocked(false)}
                 />
               )}
               <CommonBriefFields

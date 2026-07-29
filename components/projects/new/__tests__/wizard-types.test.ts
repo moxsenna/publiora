@@ -46,13 +46,27 @@ describe("wizardFormSchema", () => {
     expect(r.success).toBe(true);
   });
 
-  it("accepts lead without CTA URL when offer not required", () => {
+  it.each([
+    ["empty", ""],
+    ["invalid", "notaurl"],
+    ["unsafe protocol", "javascript:alert(1)"],
+  ])("rejects %s CTA URL when selected action requires one", (_label, cta_url) => {
     const r = wizardFormSchema.safeParse(
-      base({ cta_url: "", post_read_action: "join_whatsapp" }),
+      base({ cta_url, post_read_action: "visit_product" }),
     );
-    // V3: CTA URL may be deferred; invalid URL only when provided
-    expect(r.success).toBe(true);
+    expect(r.success).toBe(false);
   });
+
+  it.each(["http://example.com", "https://example.com/path"])(
+    "accepts valid HTTP(S) CTA URL %s",
+    (cta_url) => {
+      expect(
+        wizardFormSchema.safeParse(
+          base({ cta_url, post_read_action: "visit_product" }),
+        ).success,
+      ).toBe(true);
+    },
+  );
 
   it("accepts bonus with selected offer", () => {
     const r = wizardFormSchema.safeParse(

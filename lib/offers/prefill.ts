@@ -101,7 +101,7 @@ export function applyOfferPrefill(params: {
       currentVal == null ||
       (typeof currentVal === "string" && currentVal.trim() === "");
 
-    if (isEmpty || origin === "empty") {
+    if (isEmpty) {
       values[key] = nextVal;
       origins[key] = "offer";
       continue;

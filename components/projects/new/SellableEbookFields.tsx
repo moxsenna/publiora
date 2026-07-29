@@ -40,6 +40,8 @@ export function SellableEbookFields({
   setValue,
   selectedOffer,
   onSelectedOfferChange,
+  offerLocked = false,
+  onOfferUnlock,
 }: {
   register: UseFormRegister<WizardFormValues>;
   errors: FieldErrors<WizardFormValues>;
@@ -47,6 +49,8 @@ export function SellableEbookFields({
   setValue: UseFormSetValue<WizardFormValues>;
   selectedOffer: Offer | null;
   onSelectedOfferChange: (offer: Offer | null) => void;
+  offerLocked?: boolean;
+  onOfferUnlock?: () => void;
 }) {
   const mode = watch("sellable_mode");
   const needsOffer = mode === "bundle_component" || mode === "entry_to_offer";
@@ -108,6 +112,8 @@ export function SellableEbookFields({
             setValue("offer_mode", offer ? "existing" : "none");
           }}
           allowNone={false}
+          locked={offerLocked}
+          onUnlock={onOfferUnlock}
         />
       ) : null}
 

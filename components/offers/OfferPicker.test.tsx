@@ -24,6 +24,24 @@ vi.mock("@/lib/api/hooks", () => ({
 vi.mock("@/lib/hooks/useDebouncedValue", () => ({ useDebouncedValue: (value: string) => value }));
 
 describe("OfferPicker", () => {
+  it("keeps preset selection locked until explicit Ganti", async () => {
+    const user = userEvent.setup();
+    const onUnlock = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <OfferPicker
+        value={offers[0]}
+        onChange={onChange}
+        locked
+        onUnlock={onUnlock}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Ganti" }));
+    expect(onUnlock).toHaveBeenCalledOnce();
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
   it("keeps aria-selected on selected value while active descendant tracks highlight", async () => {
     const user = userEvent.setup();
     render(<OfferPicker value={null} onChange={vi.fn()} />);

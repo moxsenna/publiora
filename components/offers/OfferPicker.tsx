@@ -16,6 +16,7 @@ type Props = {
   allowNone?: boolean;
   noneLabel?: string;
   locked?: boolean;
+  onUnlock?: () => void;
   label?: string;
 };
 
@@ -25,6 +26,7 @@ export function OfferPicker({
   allowNone = false,
   noneLabel = "Belum ada produk",
   locked = false,
+  onUnlock,
   label = "Produk atau penawaran",
 }: Props) {
   const [search, setSearch] = React.useState("");
@@ -84,16 +86,13 @@ export function OfferPicker({
         </div>
         <OfferSelectedCard
           offer={value}
-          locked={locked}
-          onChange={
-            locked
-              ? undefined
-              : () => {
-                  onChange(null);
-                  setOpenList(true);
-                  queueMicrotask(() => inputRef.current?.focus());
-                }
-          }
+          locked={false}
+          onChange={() => {
+            if (locked) onUnlock?.();
+            onChange(null);
+            setOpenList(true);
+            queueMicrotask(() => inputRef.current?.focus());
+          }}
         />
       </div>
     );

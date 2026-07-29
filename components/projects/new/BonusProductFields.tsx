@@ -41,6 +41,8 @@ export function BonusProductFields({
   onSelectedOfferChange,
   fieldOrigins,
   setFieldOrigins,
+  offerLocked = false,
+  onOfferUnlock,
 }: {
   register: UseFormRegister<WizardFormValues>;
   errors: FieldErrors<WizardFormValues>;
@@ -56,6 +58,8 @@ export function BonusProductFields({
           prev: Partial<Record<string, FieldOrigin>>,
         ) => Partial<Record<string, FieldOrigin>>),
   ) => void;
+  offerLocked?: boolean;
+  onOfferUnlock?: () => void;
 }) {
   const bonusIntent = watch("bonus_intent");
 
@@ -102,6 +106,8 @@ export function BonusProductFields({
         value={selectedOffer}
         onChange={handleOffer}
         allowNone={false}
+        locked={offerLocked}
+        onUnlock={onOfferUnlock}
       />
       {errors.selected_offer_id && (
         <p className="text-xs text-red-600">

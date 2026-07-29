@@ -37,6 +37,17 @@ describe("prefill", () => {
     expect(applied.origins.niche).toBe("offer");
   });
 
+  it("preserves non-empty fields when legacy origin metadata is missing", () => {
+    const applied = applyOfferPrefill({
+      current: { audience: "Typed before preset loaded" },
+      origins: {},
+      prefill: buildOfferPrefill(offer),
+    });
+
+    expect(applied.values.audience).toBe("Typed before preset loaded");
+    expect(applied.origins.audience).toBeUndefined();
+  });
+
   it("replaces offer-derived when requested", () => {
     const prefill = buildOfferPrefill({
       ...offer,
