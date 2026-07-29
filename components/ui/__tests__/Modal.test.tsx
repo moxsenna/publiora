@@ -1,0 +1,65 @@
+// @vitest-environment jsdom
+
+import "@testing-library/jest-dom/vitest";
+
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { Modal } from "@/components/ui/Modal";
+
+afterEach(() => { document.body.style.overflow = ""; });
+
+function Fixture(props: Partial<React.ComponentProps<typeof Modal>> = {}) {
+  return <Modal open onClose={vi.fn()} title="Dialog" {...props}><button>Pertama</button><button>Terakhir</button></Modal>;
+}
+
+describe("Modal", () => {
+  it("focuses first control, traps focus both ways, locks body, and restores trigger", async () => {
+    const user = userEvent.setup();
+    const trigger = document.createElement("button");
+    trigger.textContent = "Buka";
+    document.body.append(trigger);
+    trigger.focus();
+    document.body.style.overflow = "scroll";
+    const view = render(<Fixture />);
+    const first = screen.getByRole("button", { name: "Tutup dialog" });
+    const last = screen.getByRole("button", { name: "Terakhir" });
+    await waitFor(() => expect(first).toHaveFocus());
+    expect(document.body.style.overflow).toBe("hidden");
+    await user.tab({ shift: true });
+    expect(last).toHaveFocus();
+    await user.tab();
+    expect(first).toHaveFocus();
+    view.unmount();
+    expect(document.body.style.overflow).toBe("scroll");
+    expect(trigger).toHaveFocus();
+    trigger.remove();
+  });
+
+  it("respects escape, backdrop, and preventClose policies", () => {
+    const onClose = vi.fn();
+    const { rerender } = render(<Fixture onClose={onClose} closeOnEscape={false} closeOnBackdrop={false} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByTestId("modal-backdrop"));
+    expect(onClose).not.toHaveBeenCalled();
+
+    rerender(<Fixture onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByTestId("modal-backdrop"));
+    expect(onClose).toHaveBeenCalledTimes(2);
+
+    onClose.mockClear();
+    rerender(<Fixture onClose={onClose} preventClose />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByTestId("modal-backdrop"));
+    fireEvent.click(screen.getByRole("button", { name: "Tutup dialog" }));
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("uses one dvh scroll container and mobile close target", () => {
+    render(<Fixture />);
+    expect(screen.getByRole("dialog").className).toContain("max-h-[calc(100dvh-2rem)]");
+    expect(screen.getByRole("dialog").className).toContain("overflow-y-auto");
+    expect(screen.getByRole("button", { name: "Tutup dialog" }).className).toContain("min-h-11");
+  });
+});

@@ -24,6 +24,21 @@
   --color-surface-2: #F5F5F2;
   --color-surface-3: #EFEFEC;
 
+  /* Semantic UI tokens */
+  --color-border-subtle: var(--color-publiora-border);
+  --color-focus-ring: var(--color-publiora-blue);
+  --color-success-surface: #ECFDF3;
+  --color-success-border: #A7E9C5;
+  --color-warning-surface: #FFFAEB;
+  --color-warning-border: #FCD9A0;
+  --color-danger-surface: #FEF2F2;
+  --color-danger-border: #FCBABA;
+  --color-info-surface: #EFF4FF;
+  --color-info-border: #C5D4F8;
+  --color-gold-surface: #F8F1DC;
+  --color-gold-border: #E9D9A8;
+  --color-gold-text: #8B6B14;
+
   /* Font families — CSS variables injected by next/font/google in layout.tsx */
   --font-heading: var(--font-plus-jakarta-sans), sans-serif;
   --font-body: var(--font-inter), sans-serif;
