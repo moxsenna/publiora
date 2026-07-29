@@ -82,7 +82,7 @@ describe("ContextualQuickReplies", () => {
       />,
     );
 
-    await user.click(screen.getByText("Jawab A"));
+    await user.click(screen.getByRole("button", { name: "1. Jawab A" }));
 
     expect(onSelect).toHaveBeenCalledTimes(1);
     const calledWith = onSelect.mock.calls[0][0] as StrategySuggestedReply;
@@ -139,7 +139,7 @@ describe("ContextualQuickReplies", () => {
       />,
     );
 
-    const button = screen.getByText("Enter me");
+    const button = screen.getByRole("button", { name: "1. Enter me" });
     button.focus();
     expect(button).toHaveFocus();
 
@@ -172,7 +172,7 @@ describe("ContextualQuickReplies", () => {
       />,
     );
 
-    const button = screen.getByText("Space me");
+    const button = screen.getByRole("button", { name: "1. Space me" });
     button.focus();
     expect(button).toHaveFocus();
 
@@ -226,7 +226,7 @@ describe("ContextualQuickReplies", () => {
       />,
     );
 
-    const button = screen.getByText("Short");
+    const button = screen.getByRole("button", { name: "1. Short" });
     expect(button).toHaveAttribute("title", "This is a much longer full message.");
   });
 
@@ -249,7 +249,7 @@ describe("ContextualQuickReplies", () => {
       />,
     );
 
-    const button = screen.getByText("Same text");
+    const button = screen.getByRole("button", { name: "1. Same text" });
     // title may be undefined (not rendered) or equal to label — both fine
     const title = button.getAttribute("title");
     expect(title === null || title === "Same text").toBe(true);

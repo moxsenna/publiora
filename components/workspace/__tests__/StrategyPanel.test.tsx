@@ -69,7 +69,7 @@ vi.mock("@/lib/workflow/strategy-copy", () => {
 const COPY = {
   assistantName: "Asisten Strategi",
   emptyTitle: "Mulai susun strategi ebook",
-  composerPlaceholder: "Tulis jawaban atau ceritakan konteks Anda\u2026",
+  composerPlaceholder: STRATEGY_COPY_ID.composerPlaceholder,
   sendAriaLabel: "Kirim pesan",
   sendError: "Pesan gagal dikirim.",
   sending: "Mengirim pesan\u2026",
@@ -182,6 +182,7 @@ function mockPatchHook(overrides: Record<string, unknown> = {}) {
 // ---------------------------------------------------------------------------
 
 import { StrategyPanel } from "@/components/workspace/StrategyPanel";
+import { STRATEGY_COPY_ID } from "@/lib/workflow/strategy-copy";
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -189,6 +190,7 @@ import { StrategyPanel } from "@/components/workspace/StrategyPanel";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sendMutateAsyncMock.mockReset().mockResolvedValue({});
 
   // Default: strategy loaded with missing fields, messages with content
   useMessagesMock.mockReturnValue(mockMessagesData());
@@ -493,8 +495,8 @@ describe("contextual suggestions from metadata", () => {
     render(<StrategyPanel projectId="proj-1" />);
 
     // Chips should be visible
-    expect(screen.getByText(CTX_REPLIES[0].label)).toBeInTheDocument();
-    expect(screen.getByText(CTX_REPLIES[1].label)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: `1. ${CTX_REPLIES[0].label}` })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: `2. ${CTX_REPLIES[1].label}` })).toBeInTheDocument();
   });
 
   it("clicking a contextual chip calls send.mutateAsync with suggestion.message", async () => {
@@ -514,7 +516,7 @@ describe("contextual suggestions from metadata", () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const chip = screen.getByText(CTX_REPLIES[0].label);
+    const chip = screen.getByRole("button", { name: `1. ${CTX_REPLIES[0].label}` });
     await user.click(chip);
 
     expect(sendMutateAsyncMock).toHaveBeenCalledWith({
@@ -640,8 +642,8 @@ describe("latest-only behavior", () => {
     render(<StrategyPanel projectId="proj-1" />);
 
     // Latest chips visible
-    expect(screen.getByText("New chip X")).toBeInTheDocument();
-    expect(screen.getByText("New chip Y")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1. New chip X" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "2. New chip Y" })).toBeInTheDocument();
 
     // Earlier chips NOT visible
     expect(screen.queryByText("Old chip A")).not.toBeInTheDocument();

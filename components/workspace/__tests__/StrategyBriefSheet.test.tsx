@@ -64,6 +64,7 @@ vi.mock("@/lib/workflow/strategy-copy", () => {
 // ---------------------------------------------------------------------------
 
 import { StrategyPanel } from "@/components/workspace/StrategyPanel";
+import { STRATEGY_COPY_ID } from "@/lib/workflow/strategy-copy";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -337,7 +338,7 @@ describe("layout structure", () => {
   it("composer is rendered and usable", () => {
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText("Tulis jawaban atau ceritakan konteks Anda\u2026");
+    const textarea = screen.getByLabelText(STRATEGY_COPY_ID.composerPlaceholder);
     expect(textarea).toBeInTheDocument();
     expect(textarea).not.toBeDisabled();
 
@@ -348,7 +349,7 @@ describe("layout structure", () => {
   it("composer container has shrink-0 class (sticky behavior)", () => {
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText("Tulis jawaban atau ceritakan konteks Anda\u2026");
+    const textarea = screen.getByLabelText(STRATEGY_COPY_ID.composerPlaceholder);
     // Navigate to the composer wrapper
     const composerWrapper = textarea.closest(".border-t");
     expect(composerWrapper).not.toBeNull();
@@ -357,7 +358,7 @@ describe("layout structure", () => {
   it("conversation column has flex-1 min-h-0 min-w-0", () => {
     render(<StrategyPanel projectId="proj-1" />);
 
-    const textarea = screen.getByLabelText("Tulis jawaban atau ceritakan konteks Anda\u2026");
+    const textarea = screen.getByLabelText(STRATEGY_COPY_ID.composerPlaceholder);
     // The conversation column is the parent flex container
     const convCol = textarea.closest(".flex.flex-col.flex-1");
     expect(convCol).not.toBeNull();
