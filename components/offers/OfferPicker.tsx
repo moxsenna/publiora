@@ -153,7 +153,7 @@ export function OfferPicker({
               setOpenList(true);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Cari nama produk atau penawaran..."
+            placeholder="Cari nama produk atau penawaran…"
             aria-label="Cari produk"
             role="combobox"
             aria-expanded={openList}

@@ -1,4 +1,4 @@
-// Seed dataset for the mock DB — realistic demo content so every screen has data.
+// Local seed dataset for local dev fallback so every screen has data.
 
 import type {
   ChatMessage,
@@ -23,9 +23,9 @@ import { SYSTEM_TEMPLATES } from "@/lib/templates-catalog";
 
 export const seedProfile: Profile[] = [
   {
-    id: "usr_demo",
-    name: "Mox Demo",
-    email: "mox@publiora.demo",
+    id: "usr_local",
+    name: "Mox Senna",
+    email: "mox@publiora.app",
     avatar_url: null,
     role: "user",
     plan: "creator",
@@ -37,9 +37,9 @@ export const seedProfile: Profile[] = [
 export const seedProjects: Project[] = [
   {
     id: "prj_content_system",
-    owner_id: "usr_demo",
+    owner_id: "usr_local",
     title: "The Content Engine Playbook",
-    author: "Mox Demo",
+    author: "Mox Senna",
     subtitle: "Build a perpetual audience growth machine",
     description:
       "Proses membangun content machine untuk brand B2B SaaS. Panduan step-by-step dari strategi sampai automated distribution.",
@@ -62,9 +62,9 @@ export const seedProjects: Project[] = [
   },
   {
     id: "prj_lead_magnet",
-    owner_id: "usr_demo",
+    owner_id: "usr_local",
     title: "12 Lead Magnet yang Konversi",
-    author: "Mox Demo",
+    author: "Mox Senna",
     subtitle: null,
     description:
       "Kumpulan format lead magnet terbaik dengan template pembuatan, KPI, dan contoh landing page.",
@@ -87,9 +87,9 @@ export const seedProjects: Project[] = [
   },
   {
     id: "prj_ai_ethics",
-    owner_id: "usr_demo",
+    owner_id: "usr_local",
     title: "AI Ethics for Product Teams",
-    author: "Mox Demo",
+    author: "Mox Senna",
     subtitle: "Framework keputusan produk AI yang aman",
     description:
       "Framework ringan untuk PM & desainer membangun produk AI dengan guardrails dan accountability.",
@@ -112,9 +112,9 @@ export const seedProjects: Project[] = [
   },
   {
     id: "prj_brand_story",
-    owner_id: "usr_demo",
+    owner_id: "usr_local",
     title: "Brand Story Sprint",
-    author: "Mox Demo",
+    author: "Mox Senna",
     subtitle: "5 hari untuk narasi brand yang melekat",
     description:
       "Workshop sprint minggu singkat untuk menyusun pesan inti brand.",
@@ -533,7 +533,7 @@ export const seedPublished: PublishedEbook[] = [
     project_id: "prj_content_system",
     slug: "content-engine-playbook",
     title: "The Content Engine Playbook",
-    author: "Mox Demo",
+    author: "Mox Senna",
     subtitle: "Build a perpetual audience growth machine",
     cover_color: "#0A0A0A",
     is_public: true,
@@ -645,24 +645,24 @@ export const seedClaimEvents: ClaimEvent[] = [
 
 export const seedEntitlements: Entitlement[] = [
   {
-    id: "ent_demo_1",
-    reader_id: "reader@publiora.demo",
+    id: "ent_local_1",
+    reader_id: "reader@publiora.app",
     ebook_id: "pub_content_system",
     ebook_title: "The Content Engine Playbook",
     ebook_slug: "content-engine-playbook",
     cover_color: "#0A0A0A",
-    author: "Mox Demo",
+    author: "Mox Senna",
     claim_link_id: "clnk_main_launch",
     created_at: "2026-06-15T12:00:00.000Z",
   },
   {
-    id: "ent_demo_2",
-    reader_id: "reader@publiora.demo",
-    ebook_id: "pub_second_demo",
+    id: "ent_local_2",
+    reader_id: "reader@publiora.app",
+    ebook_id: "pub_second_ebook",
     ebook_title: "Newsletter Operating System",
     ebook_slug: "newsletter-operating-system",
     cover_color: "#2563EB",
-    author: "Mox Demo",
+    author: "Mox Senna",
     claim_link_id: null,
     created_at: "2026-05-20T09:00:00.000Z",
   },
@@ -671,11 +671,11 @@ export const seedEntitlements: Entitlement[] = [
 export const seedReadingProgress: ReadingProgress[] = [
   {
     id: "rp1",
-    reader_id: "reader@publiora.demo",
+    reader_id: "reader@publiora.app",
     ebook_id: "pub_content_system",
     ebook_title: "The Content Engine Playbook",
     cover_color: "#0A0A0A",
-    author: "Mox Demo",
+    author: "Mox Senna",
     progress: 34,
     current_section: 3,
     total_sections: 6,
@@ -683,11 +683,11 @@ export const seedReadingProgress: ReadingProgress[] = [
   },
   {
     id: "rp2",
-    reader_id: "reader@publiora.demo",
-    ebook_id: "pub_second_demo",
+    reader_id: "reader@publiora.app",
+    ebook_id: "pub_second_ebook",
     ebook_title: "Newsletter Operating System",
     cover_color: "#2563EB",
-    author: "Mox Demo",
+    author: "Mox Senna",
     progress: 92,
     current_section: 8,
     total_sections: 9,
@@ -720,7 +720,7 @@ export const seedExports: ExportJob[] = [
   },
   {
     id: "xp3",
-    ebook_id: "pub_second_demo",
+    ebook_id: "pub_second_ebook",
     ebook_title: "Newsletter Operating System",
     format: "pdf",
     status: "complete",
@@ -809,7 +809,7 @@ export const seedCreditPacks: CreditPack[] = [
 ];
 
 export const seedCreditBalance: CreditBalance = {
-  user_id: "usr_demo",
+  user_id: "usr_local",
   plan_id: "creator",
   balance: 382,
   period_grant: 500,
@@ -820,7 +820,7 @@ export const seedCreditBalance: CreditBalance = {
 };
 
 export const seedSubscription: Subscription = {
-  user_id: "usr_demo",
+  user_id: "usr_local",
   plan_id: "creator",
   status: "active",
   renews_at: "2026-08-01T00:00:00.000Z",
@@ -830,7 +830,7 @@ export const seedSubscription: Subscription = {
 export const seedCreditTxns: CreditTransaction[] = [
   {
     id: "ctx_1",
-    user_id: "usr_demo",
+    user_id: "usr_local",
     type: "grant",
     amount: 500,
     balance_after: 500,
@@ -839,7 +839,7 @@ export const seedCreditTxns: CreditTransaction[] = [
   },
   {
     id: "ctx_2",
-    user_id: "usr_demo",
+    user_id: "usr_local",
     type: "spend",
     amount: -5,
     balance_after: 495,
@@ -849,7 +849,7 @@ export const seedCreditTxns: CreditTransaction[] = [
   },
   {
     id: "ctx_3",
-    user_id: "usr_demo",
+    user_id: "usr_local",
     type: "spend",
     amount: -60,
     balance_after: 435,
@@ -859,7 +859,7 @@ export const seedCreditTxns: CreditTransaction[] = [
   },
   {
     id: "ctx_4",
-    user_id: "usr_demo",
+    user_id: "usr_local",
     type: "spend",
     amount: -30,
     balance_after: 405,
@@ -869,7 +869,7 @@ export const seedCreditTxns: CreditTransaction[] = [
   },
   {
     id: "ctx_5",
-    user_id: "usr_demo",
+    user_id: "usr_local",
     type: "spend",
     amount: -5,
     balance_after: 400,
@@ -879,7 +879,7 @@ export const seedCreditTxns: CreditTransaction[] = [
   },
   {
     id: "ctx_6",
-    user_id: "usr_demo",
+    user_id: "usr_local",
     type: "spend",
     amount: -18,
     balance_after: 382,

@@ -62,7 +62,7 @@ export default function OffersPage() {
             className="pl-8"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari nama produk atau penawaran..."
+            placeholder="Cari nama produk atau penawaran…"
             aria-label="Cari produk"
           />
         </div>

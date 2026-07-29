@@ -10,12 +10,6 @@ import { useUiStore } from "@/store/projectStore";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
-import { Sparkles } from "lucide-react";
-
-const DEMO_EMAIL = "mox@publiora.demo";
-const DEMO_PASSWORD = "demo1234";
-/** Opt-in only — never default on in live. */
-const showDemoLogin = process.env.NEXT_PUBLIC_DEMO_LOGIN === "true";
 
 export function LoginForm() {
   const router = useRouter();
@@ -27,7 +21,6 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
-    setValue,
     getValues,
     formState: { errors },
   } = useForm<LoginInput>({
@@ -40,7 +33,7 @@ export function LoginForm() {
     setError(null);
     try {
       await signIn(email, password);
-      pushToast({ title: "Welcome back", variant: "success" });
+      pushToast({ title: "Selamat datang kembali", variant: "success" });
       router.replace("/dashboard");
     } catch (err) {
       const message =
@@ -65,7 +58,6 @@ export function LoginForm() {
   const onButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    // Fallback path if form submit handler is not wired yet.
     const values = getValues();
     const parsed = loginSchema.safeParse(values);
     if (!parsed.success) {
@@ -74,12 +66,6 @@ export function LoginForm() {
       return;
     }
     await doLogin(parsed.data.email, parsed.data.password);
-  };
-
-  const fillDemo = async () => {
-    setValue("email", DEMO_EMAIL, { shouldValidate: true });
-    setValue("password", DEMO_PASSWORD, { shouldValidate: true });
-    await doLogin(DEMO_EMAIL, DEMO_PASSWORD);
   };
 
   return (
@@ -95,8 +81,9 @@ export function LoginForm() {
         <Input
           id="email"
           type="email"
-          placeholder="you@example.com"
+          placeholder="nama@perusahaan.com…"
           autoComplete="email"
+          spellCheck={false}
           {...register("email")}
           className={errors.email ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
         />
@@ -133,7 +120,10 @@ export function LoginForm() {
         )}
       </div>
       {error && (
-        <p className="text-sm text-[var(--color-danger)] p-3 rounded-xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/15">
+        <p
+          className="text-sm text-[var(--color-danger)] p-3 rounded-xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/15"
+          aria-live="polite"
+        >
           {error}
         </p>
       )}
@@ -143,26 +133,8 @@ export function LoginForm() {
         loading={submitting}
         onClick={onButtonClick}
       >
-        Sign in
+        Masuk ke workspace
       </Button>
-      {showDemoLogin && (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          loading={submitting}
-          onClick={fillDemo}
-        >
-          <Sparkles className="h-4 w-4 text-[var(--color-gold)]" />
-          Masuk sebagai demo
-        </Button>
-      )}
-      {showDemoLogin && (
-        <p className="text-xs text-[var(--color-medium-gray)] text-center leading-relaxed">
-          Demo credentials (butuh user di Supabase):{" "}
-          <code className="text-[var(--color-medium-gray)]">{DEMO_EMAIL}</code>
-        </p>
-      )}
     </form>
   );
 }

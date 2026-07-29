@@ -72,11 +72,13 @@ export function ForgotPasswordForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          placeholder="nama@perusahaan.com…"
+          autoComplete="email"
+          spellCheck={false}
         />
       </div>
       <Button type="submit" className="w-full" loading={loading}>
-        Kirim reset link
+        Kirim link reset
       </Button>
     </form>
   );

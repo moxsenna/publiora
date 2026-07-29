@@ -19,10 +19,10 @@ export function AuthShell({
     <div className="min-h-full grid md:grid-cols-2 bg-white">
       <div className="flex flex-col justify-between p-5 sm:p-8">
         <Logo size="sm" href="/" />
-        <div className="my-8 sm:my-10 max-w-md">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-publiora-black)]">{title}</h1>
+        <div className="my-8 sm:my-10 max-w-md w-full">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-balance text-[var(--color-publiora-black)]">{title}</h1>
           {description && (
-            <p className="mt-2 text-sm text-[var(--color-medium-gray)]">{description}</p>
+            <p className="mt-2 text-sm text-pretty text-[var(--color-medium-gray)]">{description}</p>
           )}
           <div className="mt-6">{children}</div>
         </div>
@@ -36,11 +36,11 @@ export function AuthShell({
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-gold)]" />
             AI-native publishing
           </div>
-          <blockquote className="mt-8 text-3xl font-semibold leading-tight max-w-lg">
+          <blockquote className="mt-8 text-3xl font-semibold leading-tight max-w-lg text-balance">
             &ldquo;Publiora mengubah satu brief menjadi ebook yang siap dibagikan — outline, tulisan, dan distribusi dalam satu workspace.&rdquo;
           </blockquote>
           <div className="mt-6 text-sm text-white/70">
-            — Demo preview MVP
+            Tim Publiora
           </div>
         </div>
         <div className="absolute -right-24 top-12 h-80 w-80 rounded-full bg-[var(--color-gold)]/20 blur-3xl" />

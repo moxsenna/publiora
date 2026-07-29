@@ -317,16 +317,16 @@ function CreateClaimDialog({ open, onClose, ebookId }: { open: boolean; onClose:
       <div className="space-y-3">
         <div>
           <Label htmlFor="label">Label</Label>
-          <Input id="label" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Launch newsletter" />
+          <Input id="label" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Mis. Launch newsletter…" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label htmlFor="max">Max uses (opsional)</Label>
-            <Input id="max" type="number" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder="Unlimited" />
+            <Input id="max" type="number" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder="Tanpa batas" />
           </div>
           <div>
             <Label htmlFor="exp">Expires (hari)</Label>
-            <Input id="exp" type="number" value={expiresIn} onChange={(e) => setExpiresIn(e.target.value)} placeholder="Never" />
+            <Input id="exp" type="number" value={expiresIn} onChange={(e) => setExpiresIn(e.target.value)} placeholder="Tidak pernah" />
           </div>
         </div>
       </div>

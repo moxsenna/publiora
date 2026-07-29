@@ -23,7 +23,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-full flex flex-col">
       <header className="border-b border-[var(--color-publiora-border)] bg-white/90 backdrop-blur sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-12 flex items-center justify-between gap-2">
-          <Logo size="sm" href="/" className="[&>span]:hidden sm:[&>span]:inline" />
+          <Logo size="sm" href="/" />
           <nav className="hidden md:flex items-center gap-4 text-sm font-medium text-[var(--color-medium-gray)]">
             {nav.map((n) => (
               <Link

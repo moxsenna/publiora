@@ -190,7 +190,7 @@ export function OutlinePanel({
                 value={userInstruction}
                 onChange={(e) => setUserInstruction(e.target.value)}
                 rows={2}
-                placeholder="Optional instruction for the outline generator (e.g. focus on beginner-friendly tone, add more examples)"
+                placeholder="Instruksi opsional untuk generator outline (mis. fokus tone ramah pemula, tambah contoh)…"
               />
 
               <Button
@@ -329,7 +329,7 @@ export function OutlinePanel({
             value={userInstruction}
             onChange={(e) => setUserInstruction(e.target.value)}
             rows={1}
-            placeholder="Optional instruction for re-generating..."
+            placeholder="Instruksi opsional untuk generate ulang…"
             className="flex-1"
           />
           <Button

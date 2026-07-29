@@ -210,13 +210,13 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
       {/* URL field (conditionally required) */}
       <div>
         <label className="block text-xs font-medium text-[var(--color-deep-gray)] mb-1">
-          Destination URL {urlRequired ? "(required)" : "(optional)"}
+          URL tujuan {urlRequired ? "(wajib)" : "(opsional)"}
         </label>
         <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder={urlRequired ? "https://example.com" : "Optional URL"}
+          placeholder={urlRequired ? "https://situs-anda.com…" : "URL opsional…"}
           className={`h-9 w-full rounded-[var(--radius-input)] border bg-white px-3 text-sm text-[var(--color-deep-gray)] placeholder:text-[var(--color-medium-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] transition-colors ${
             urlError
               ? "border-[var(--color-danger)]"
@@ -225,7 +225,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
         />
         {urlError && (
           <p className="text-xs text-[var(--color-danger)] mt-1">
-            Please enter a valid HTTP or HTTPS URL.
+            Masukkan URL HTTP atau HTTPS yang valid.
           </p>
         )}
       </div>
@@ -233,12 +233,12 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
       {/* CTA text editing */}
       <div>
         <label className="block text-xs font-medium text-[var(--color-deep-gray)] mb-1">
-          CTA Text
+          Teks CTA
         </label>
         <textarea
           value={ctaText}
           onChange={(e) => setCtaText(e.target.value)}
-          placeholder="e.g. Download your free bonus guide now"
+          placeholder="Mis. Unduh panduan bonus gratis Anda sekarang…"
           rows={3}
           className="w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-deep-gray)] placeholder:text-[var(--color-medium-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] transition-colors resize-y"
         />

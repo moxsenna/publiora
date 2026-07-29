@@ -7,11 +7,11 @@ export default function RegisterPage() {
     <>
       <AuthRedirect />
       <AuthShell
-        title="Create your account"
+        title="Buat akun Publiora"
         description="Gratis untuk mulai. Plan Free dapat 50 kredit generate tiap bulan."
       >
         <RegisterForm />
-        <AuthSwitch question="Sudah punya akun?" href="/login" label="Sign in" />
+        <AuthSwitch question="Sudah punya akun?" href="/login" label="Masuk" />
       </AuthShell>
     </>
   );

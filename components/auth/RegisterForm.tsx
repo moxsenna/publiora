@@ -78,7 +78,7 @@ export function RegisterForm() {
         <Label htmlFor="name">Nama</Label>
         <Input
           id="name"
-          placeholder="Mox Demo"
+          placeholder="Nama lengkap Anda…"
           autoComplete="name"
           {...register("name")}
           className={errors.name ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
@@ -94,8 +94,9 @@ export function RegisterForm() {
         <Input
           id="email"
           type="email"
-          placeholder="you@example.com"
+          placeholder="nama@perusahaan.com…"
           autoComplete="email"
+          spellCheck={false}
           {...register("email")}
           className={errors.email ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
         />
@@ -110,7 +111,7 @@ export function RegisterForm() {
         <Input
           id="password"
           type="password"
-          placeholder="min 8 karakter"
+          placeholder="Minimal 8 karakter…"
           autoComplete="new-password"
           {...register("password")}
           className={errors.password ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
@@ -122,7 +123,10 @@ export function RegisterForm() {
         )}
       </div>
       {error && (
-        <p className="text-sm text-[var(--color-danger)] p-3 rounded-xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/15">
+        <p
+          className="text-sm text-[var(--color-danger)] p-3 rounded-xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/15"
+          aria-live="polite"
+        >
           {error}
         </p>
       )}
@@ -132,7 +136,7 @@ export function RegisterForm() {
         loading={submitting}
         onClick={onButtonClick}
       >
-        Create account
+        Buat akun
       </Button>
     </form>
   );

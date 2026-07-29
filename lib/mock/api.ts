@@ -72,7 +72,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
   const id = newId("prj");
   const project: Project = {
     id,
-    owner_id: "usr_demo",
+    owner_id: "usr_local",
     title: input.title,
     author: input.author,
     subtitle: input.subtitle ?? null,

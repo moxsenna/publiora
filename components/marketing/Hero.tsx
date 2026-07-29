@@ -27,7 +27,7 @@ export function Hero() {
             </Link>
             <Link href="/read/content-engine-playbook">
               <Button size="lg" variant="outline">
-                Lihat demo ebook
+                Lihat contoh ebook
               </Button>
             </Link>
           </div>

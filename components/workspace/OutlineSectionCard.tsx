@@ -108,7 +108,7 @@ export function OutlineSectionCard({
               <Input
                 value={section.title}
                 onChange={(e) => onChange(section.id, { title: e.target.value })}
-                placeholder="Judul section"
+                placeholder="Judul section…"
                 disabled={disabled}
               />
               <Textarea
@@ -117,7 +117,7 @@ export function OutlineSectionCard({
                   onChange(section.id, { summary: e.target.value })
                 }
                 rows={2}
-                placeholder="Ringkasan isi section"
+                placeholder="Ringkasan isi section…"
                 disabled={disabled}
               />
               <div className="flex items-center justify-between gap-2 min-w-0">

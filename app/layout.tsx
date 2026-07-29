@@ -22,6 +22,13 @@ export const metadata: Metadata = {
   },
   description: "Create, publish, and distribute marketing ebooks with AI.",
   applicationName: "Publiora",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
   openGraph: {
     title: "Publiora — AI publishing platform",
     description: "Create, publish, and distribute marketing ebooks with AI.",

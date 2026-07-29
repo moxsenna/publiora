@@ -7,12 +7,12 @@ export default function LoginPage() {
     <>
       <AuthRedirect />
       <AuthShell
-        title="Sign in"
-        description="Masuk ke workspace Publiora Anda."
+        title="Masuk ke Publiora"
+        description="Selamat datang kembali. Lanjutkan ebook Anda dari workspace."
         footer={null}
       >
         <LoginForm />
-        <AuthSwitch question="Belum punya akun?" href="/register" label="Buat baru" />
+        <AuthSwitch question="Belum punya akun?" href="/register" label="Buat akun baru" />
       </AuthShell>
     </>
   );

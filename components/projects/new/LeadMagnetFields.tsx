@@ -180,7 +180,7 @@ export function LeadMagnetFields({
           <Label htmlFor="cta_url">URL tujuan</Label>
           <Input
             id="cta_url"
-            placeholder="https://..."
+            placeholder="https://…"
             {...register("cta_url")}
           />
           {errors.cta_url && (

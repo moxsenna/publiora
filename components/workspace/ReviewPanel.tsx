@@ -129,13 +129,13 @@ export function ReviewPanel({
             <div className="space-y-2">
               <div>
                 <label className="block text-xs font-medium text-[var(--color-deep-gray)] mb-1">
-                  Title
+                  Judul
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ebook title"
+                  placeholder="Judul ebook…"
                   className="h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm text-[var(--color-deep-gray)] placeholder:text-[var(--color-medium-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] transition-colors"
                 />
               </div>
@@ -147,7 +147,7 @@ export function ReviewPanel({
                   type="text"
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder="Optional subtitle"
+                  placeholder="Subtitle opsional…"
                   className="h-9 w-full rounded-[var(--radius-input)] border border-[var(--color-publiora-border)] bg-white px-3 text-sm text-[var(--color-deep-gray)] placeholder:text-[var(--color-medium-gray)] focus:border-[var(--color-publiora-blue)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-publiora-blue)] transition-colors"
                 />
               </div>

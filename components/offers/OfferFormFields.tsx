@@ -109,7 +109,7 @@ export function OfferFormFields({
           id={`${idPrefix}-url`}
           value={value.destination_url}
           onChange={(e) => set("destination_url", e.target.value)}
-          placeholder="https://..."
+          placeholder="https://…"
           aria-invalid={!!errors.destination_url}
           aria-describedby={
             errors.destination_url ? `${idPrefix}-url-err` : undefined

@@ -138,13 +138,13 @@ export function CommonBriefFields({
             <Label htmlFor="audience">Target pembaca (opsional)</Label>
             <Input
               id="audience"
-              placeholder="Bisa diisi dari produk"
+              placeholder="Bisa diisi dari produk…"
               {...reg("audience")}
             />
           </div>
           <div>
             <Label htmlFor="niche">Niche (opsional)</Label>
-            <Input id="niche" placeholder="Bisa diisi dari produk" {...reg("niche")} />
+            <Input id="niche" placeholder="Bisa diisi dari produk…" {...reg("niche")} />
           </div>
         </div>
       )}
@@ -178,7 +178,7 @@ export function CommonBriefFields({
             <Label htmlFor="working_title">Judul sementara (opsional)</Label>
             <Input
               id="working_title"
-              placeholder="Anda dapat membuat dan mengganti judul dengan AI di tahap berikutnya."
+              placeholder="Bisa diisi atau dibuat AI di tahap berikutnya…"
               {...reg("working_title")}
             />
           </div>
@@ -198,7 +198,7 @@ export function CommonBriefFields({
             <Textarea
               id="additional_notes"
               rows={3}
-              placeholder="Tambahkan batasan, pengalaman, contoh, atau konteks yang perlu diketahui AI."
+              placeholder="Tambahkan batasan, pengalaman, atau konteks untuk AI…"
               {...reg("additional_notes")}
             />
           </div>

@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { AuthShell, AuthSwitch } from "@/components/layout/AuthShell";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import { AuthRedirect } from "@/components/auth/AuthRedirect";
+
+export const metadata: Metadata = {
+  title: "Reset password",
+};
 
 export default function ForgotPasswordPage() {
   return (

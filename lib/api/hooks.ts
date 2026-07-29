@@ -53,7 +53,7 @@ import type {
   SyncProjectOfferInput,
 } from "@/lib/offers/schemas";
 
-const READER_ID = "reader@publiora.demo";
+const READER_ID = "reader@publiora.app";
 
 // Projects
 export function useProjects() {
