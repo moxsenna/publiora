@@ -1,14 +1,16 @@
 import type { ProjectStatus } from "@/types/project";
 import { getProjectStatusCopy } from "./status";
 
-export type ProjectFilter = "all" | ProjectStatus;
-
 const visibleFilterStatuses = ["draft", "generating", "generated", "published"] as const satisfies readonly ProjectStatus[];
+
+/** Curated collection filters; omitted statuses remain visible under `all`. */
+export type ProjectCollectionFilter = "all" | (typeof visibleFilterStatuses)[number];
+export type ProjectFilter = ProjectCollectionFilter;
 
 export const projectFiltersId = [
   { id: "all", label: "Semua" },
   ...visibleFilterStatuses.map((id) => ({ id, label: getProjectStatusCopy(id).label })),
-] as const satisfies readonly { id: ProjectFilter; label: string }[];
+] as const satisfies readonly { id: ProjectCollectionFilter; label: string }[];
 
 export const projectsId = {
   title: "Proyek",

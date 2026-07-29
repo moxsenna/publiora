@@ -30,7 +30,7 @@ export default function DashboardPage() {
   const profile = useAuthStore((s) => s.profile);
   const { data: projects, isLoading: lp, isError: ep, refetch: refetchProjects } = useProjects();
   const { data: published, isLoading: lpub, isError: epub, refetch: refetchPublished } = usePublishedEbooks();
-  const { data: balance, isLoading: lb, isError: eb } = useCreditBalance();
+  const { data: balance, isLoading: lb, isError: eb, refetch: refetchBalance } = useCreditBalance();
 
   const recentProjects = [...(projects ?? [])]
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
@@ -95,30 +95,39 @@ export default function DashboardPage() {
           icon={<Coins className="h-3.5 w-3.5" />}
           loading={lb}
           error={eb}
+          onRetry={() => void refetchBalance()}
         />
         <StatCard
           label={dashboardId.projects}
           value={projects?.length ?? 0}
           icon={<Folder className="h-3.5 w-3.5" />}
           loading={lp}
+          error={ep}
+          onRetry={() => void refetchProjects()}
         />
         <StatCard
           label={dashboardId.published}
           value={published?.length ?? 0}
           icon={<BookOpen className="h-3.5 w-3.5" />}
           loading={lpub}
+          error={epub}
+          onRetry={() => void refetchPublished()}
         />
         <StatCard
           label={dashboardId.totalReaders}
           value={totalReaders}
           icon={<Users className="h-3.5 w-3.5" />}
           loading={lpub}
+          error={epub}
+          onRetry={() => void refetchPublished()}
         />
         <StatCard
           label={dashboardId.activeClaims}
           value={activeClaims}
           icon={<Link2 className="h-3.5 w-3.5" />}
           loading={lpub}
+          error={epub}
+          onRetry={() => void refetchPublished()}
         />
       </div>
 
@@ -169,6 +178,7 @@ export default function DashboardPage() {
                         <div className="absolute bottom-0 inset-x-0 px-3 pb-2">
                           <ProgressBar
                             value={p.progress}
+                            aria-label={`Progres pembuatan ${p.title}`}
                             barClassName="bg-[var(--color-gold)]"
                           />
                         </div>
@@ -283,15 +293,17 @@ function StatCard({
   icon,
   loading,
   error,
+  onRetry,
 }: {
   label: string;
   value: number;
   icon: React.ReactNode;
   loading?: boolean;
   error?: boolean;
+  onRetry?: () => void;
 }) {
   return (
-    <Card>
+    <Card role="article">
       <CardBody className="py-2.5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[11px] font-medium text-[var(--color-medium-gray)] uppercase tracking-wide">
@@ -305,7 +317,17 @@ function StatCard({
           {loading ? (
             <Skeleton className="h-6 w-12" />
           ) : error ? (
-            <span className="text-sm font-semibold text-[var(--color-danger)]">—</span>
+            <div className="space-y-1">
+              <span className="block text-xs font-semibold text-[var(--color-danger)]">Data tidak tersedia</span>
+              <button
+                type="button"
+                aria-label={`Coba lagi ${label}`}
+                onClick={onRetry}
+                className="text-xs font-medium text-[var(--color-publiora-blue)] hover:underline"
+              >
+                Coba lagi
+              </button>
+            </div>
           ) : (
             <div className="text-xl font-bold tabular-nums text-[var(--color-publiora-black)]">
               {value}

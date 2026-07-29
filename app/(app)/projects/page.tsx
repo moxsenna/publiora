@@ -130,9 +130,11 @@ export default function ProjectsPage() {
                         <span>{projectsId.updated} {formatDashboardRelativeTime(project.updated_at)}</span>
                       </div>
                       {project.total_sections > 0 && (
-                        <div aria-label={`${projectsId.progress} ${project.title}`}>
-                          <ProgressBar value={percentage} barClassName={project.status === "published" ? "bg-[var(--color-success)]" : project.status === "generating" ? "bg-[var(--color-publiora-blue)]" : "bg-[var(--color-soft-gray)]"} />
-                        </div>
+                        <ProgressBar
+                          value={percentage}
+                          aria-label={`${projectsId.progress} ${project.title}`}
+                          barClassName={project.status === "published" ? "bg-[var(--color-success)]" : project.status === "generating" ? "bg-[var(--color-publiora-blue)]" : "bg-[var(--color-soft-gray)]"}
+                        />
                       )}
                     </div>
                   </CardBody>

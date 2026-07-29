@@ -1,8 +1,7 @@
 import { cn } from "@/lib/utils";
 
-interface ProgressBarProps {
+interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
   value: number;
-  className?: string;
   barClassName?: string;
   size?: "sm" | "md";
 }
@@ -12,6 +11,7 @@ export function ProgressBar({
   className,
   barClassName,
   size = "sm",
+  ...props
 }: ProgressBarProps) {
   const pct = Math.max(0, Math.min(100, value));
   return (
@@ -25,6 +25,7 @@ export function ProgressBar({
       aria-valuenow={pct}
       aria-valuemin={0}
       aria-valuemax={100}
+      {...props}
     >
       <div
         className={cn(
