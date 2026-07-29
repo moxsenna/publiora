@@ -24,6 +24,24 @@ describe("Indonesian UI copy scanner", () => {
     );
   });
 
+  it("scans static custom JSX copy props", () => {
+    const findings = findForbiddenUiCopy(
+      'const x = <Card description="Generate an outline from your approved strategy." label={`Save`} />',
+      "components/Props.tsx",
+    );
+    expect(findings.map((finding) => finding.matchedPhrase)).toEqual([
+      "Generate an outline from your approved strategy.",
+      "Save",
+    ]);
+  });
+
+  it("gates common English UI markers without phrase registration", () => {
+    expect(findForbiddenUiCopy("const x = <><p>Try again</p><p>Generate outline</p></>", "components/Markers.tsx")
+      .map((finding) => finding.matchedPhrase)).toEqual(["Try again", "Generate"]);
+    expect(findForbiddenUiCopy("const x = <><p>Coba lagi</p><p>lead magnet</p></>", "components/Id.tsx"))
+      .toEqual([]);
+  });
+
   it("allows only normalized exact allowlist strings", () => {
     expect(findForbiddenUiCopy("const x = <p>  lead   magnet </p>", "components/Allowed.tsx")).toEqual([]);
     expect(findForbiddenUiCopy("const x = <p>lead magnet Dashboard</p>", "components/Superset.tsx"))

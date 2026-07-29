@@ -9,8 +9,18 @@ export const forbiddenUiCopy = [
   "Dashboard", "Projects", "Library", "Billing", "New Project", "Workspace",
   "Published", "Sign out", "Password", "Section", "Reader", "Publish Now",
   "Cancel", "Save", "Generate failed", "No outline yet", "Outline created",
-  "Strategy not ready", "Regenerate and reset",
-  "Generate an outline from your approved strategy.",
+  "Strategy not ready", "Regenerate and reset", "Regenerate",
+  "Draft", "Write", "Approve gagal", "Try again", "Original", "Suggested",
+  "Preview", "Delete project", "Save CTA", "Save Title", "Save failed",
+  "Loading editor", "Generate an outline from your approved strategy.",
+] as const;
+
+export const englishUiMarkers = [
+  "generate", "regenerate", "draft", "write", "approve", "approved", "failed",
+  "save", "cancel", "preview", "delete", "loading", "original", "suggested",
+  "next", "current", "popular", "subscription", "renews", "plans", "credits",
+  "readers", "claims", "public", "private", "warnings", "visibility", "download",
+  "created", "sign", "password", "try",
 ] as const;
 
 export const uiCopyAllowlist = [
@@ -23,7 +33,10 @@ const copyProperties = new Set([
   "label", "title", "description", "message", "helperText", "emptyText",
   "loadingText", "errorText",
 ]);
-const copyAttributes = new Set(["aria-label", "title", "placeholder", "alt"]);
+const copyAttributes = new Set([
+  "title", "description", "label", "message", "helperText", "emptyText",
+  "loadingText", "errorText", "aria-label", "placeholder", "alt",
+]);
 const excludedAttributes = new Set(["className", "id", "name", "href", "src"]);
 const notificationCalls = /^(toast|notify|notification|pushToast|addToast|showToast)$/i;
 const allowlistNormalized = new Set(uiCopyAllowlist.map(normalizeText));
@@ -60,10 +73,18 @@ function staticText(node: ts.Node | undefined): string | null {
 
 function canonicalMatches(text: string): string[] {
   if (allowlistNormalized.has(text)) return [];
-  return forbiddenUiCopy.filter((phrase) => {
+  const matches: string[] = forbiddenUiCopy.filter((phrase) => {
     const escaped = escapeRegExp(phrase).replace(/\\ /g, "\\s+");
     return new RegExp(`(^|[^\\p{L}\\p{N}_])${escaped}(?=$|[^\\p{L}\\p{N}_])`, "iu").test(text);
   });
+  for (const marker of englishUiMarkers) {
+    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}_])${escapeRegExp(marker)}(?=$|[^\\p{L}\\p{N}_])`, "iu");
+    const canonical = marker[0].toUpperCase() + marker.slice(1);
+    if (pattern.test(text) && !matches.some((phrase) => phrase.toLowerCase().includes(marker))) {
+      matches.push(canonical);
+    }
+  }
+  return matches;
 }
 
 export function findForbiddenUiCopy(source: string, file: string): UiCopyFinding[] {
