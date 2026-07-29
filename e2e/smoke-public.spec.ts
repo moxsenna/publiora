@@ -53,13 +53,13 @@ test.describe('@smoke public pages', () => {
     await expect(page).toHaveTitle('Publiora — Platform Penerbitan Ebook Berbasis AI');
 
     // Hero heading
-    await expect(page.getByRole('heading', { name: /Buat ebook marketing/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Dari gagasan menjadi ebook/i })).toBeVisible();
 
     // Primary CTA
     await expect(page.getByRole('link', { name: /Mulai gratis/i }).first()).toBeVisible();
 
     // Secondary CTA
-    await expect(page.getByRole('link', { name: /Lihat demo ebook/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Lihat contoh ebook/i })).toBeVisible();
   });
 
   test('home page has navigation link to login', async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe('@smoke public pages', () => {
     await expect(page).toHaveTitle('Masuk | Publiora');
 
     // Title
-    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Masuk ke Publiora' })).toBeVisible();
 
     // Email field
     const emailInput = page.locator('#email');
@@ -95,13 +95,34 @@ test.describe('@smoke public pages', () => {
     await expect(passwordInput).toHaveAttribute('type', 'password');
 
     // Submit button
-    await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Masuk' })).toBeVisible();
 
     // Forgot password link
-    await expect(page.getByRole('link', { name: /Lupa password/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Lupa kata sandi/i })).toBeVisible();
 
     // Auth switch: register link
-    await expect(page.getByRole('link', { name: /Buat baru/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Buat akun baru/i })).toBeVisible();
+  });
+
+
+  for (const authCase of [
+    { path: "/register", heading: "Buat akun Publiora", button: "Daftar" },
+    { path: "/forgot-password", heading: "Atur ulang kata sandi", button: "Kirim tautan pengaturan ulang" },
+  ] as const) {
+    test(`${authCase.path} uses Indonesian auth copy without overflow`, async ({ page }) => {
+      await page.goto(authCase.path);
+      await expect(page.getByRole("heading", { name: authCase.heading })).toBeVisible();
+      await expect(page.getByRole("button", { name: authCase.button })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(2);
+    });
+  }
+
+  test("public UI omits forbidden copy outside example content", async ({ page }) => {
+    for (const path of ["/", "/login", "/register", "/forgot-password"]) {
+      await page.goto(path);
+      const uiText = await page.locator("header, nav, main, footer").allTextContents();
+      expect(uiText.join(" ")).not.toMatch(/(?:Password|Workspace|Generate|Billing|Sign in)/i);
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -135,10 +156,10 @@ test.describe('@smoke public pages', () => {
   test('login page is reachable and renders correctly', async ({ page }) => {
     await page.goto('/login');
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Masuk ke Publiora' })).toBeVisible();
     await expect(page.locator('#email')).toBeVisible();
     await expect(page.locator('#password')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Masuk' })).toBeVisible();
   });
 
   // ---------------------------------------------------------------------------

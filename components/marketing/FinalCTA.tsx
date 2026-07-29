@@ -1,28 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
 import { ArrowRight } from "lucide-react";
-
-export function FinalCTA() {
-  return (
-    <section className="bg-[var(--color-publiora-black)] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16 text-center relative overflow-hidden">
-        <div className="absolute -top-12 right-10 h-56 w-56 rounded-full bg-[var(--color-gold)]/20 blur-3xl" />
-        <div className="absolute -bottom-12 left-10 h-56 w-56 rounded-full bg-[var(--color-publiora-blue)]/20 blur-3xl" />
-        <div className="relative">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-pretty">
-            Mulai publikasi ebook marketing pertama Anda.
-          </h2>
-          <p className="mt-3 text-white/70 max-w-xl mx-auto text-base">
-            Gratis untuk mulai. Dapat 50 kredit generate di plan Free — upgrade kapan saja.
-          </p>
-          <Link href="/register" className="inline-block mt-6">
-            <Button size="lg" variant="gold">
-              Buat akun gratis
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
+import { Button } from "@/components/ui/Button";
+import { marketingId } from "@/lib/i18n/id/marketing";
+export function FinalCTA() { return <section className="bg-[var(--color-publiora-black)] text-white"><div className="relative mx-auto max-w-7xl overflow-hidden px-4 py-16 text-center sm:px-6 md:py-24"><div aria-hidden="true" className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[var(--color-gold)]/15 blur-3xl" /><div className="relative mx-auto max-w-3xl"><h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">{marketingId.finalCta.title}</h2><p className="mx-auto mt-4 max-w-xl leading-relaxed text-white/70">{marketingId.finalCta.description}</p><Link href="/register" className="mt-8 inline-block"><Button size="lg" variant="gold" className="min-h-11">{marketingId.finalCta.action}<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button></Link></div></div></section>; }

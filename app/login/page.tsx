@@ -8,7 +8,7 @@ export default function LoginPage() {
       <AuthRedirect />
       <AuthShell
         title="Masuk ke Publiora"
-        description="Selamat datang kembali. Lanjutkan ebook Anda dari workspace."
+        description="Selamat datang kembali. Lanjutkan karya Anda dari ruang kerja editorial."
         footer={null}
       >
         <LoginForm />

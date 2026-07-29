@@ -1,70 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { marketingId } from "@/lib/i18n/id/marketing";
 
 export function Hero() {
-  return (
-    <section className="relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 grid md:grid-cols-2 gap-8 md:gap-10 items-center">
-        <div className="animate-fade-in">
-          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-gold)] bg-[#F8F1DC] border border-[#E9D9A8] px-2.5 py-1 rounded-full">
-            <Sparkles className="h-3 w-3" />
-            Platform publishing berbasis AI
-          </div>
-          <h1 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-pretty text-[var(--color-publiora-black)]">
-            Buat ebook marketing.{" "}
-            <span className="text-[var(--color-publiora-blue)]">Bagikan.</span> Distribusi otomatis.
-          </h1>
-          <p className="mt-4 text-base text-[var(--color-medium-gray)] max-w-lg leading-relaxed">
-            Satu workspace: brief → outline → tulisan → publish → claim link. Langganan + kredit generate — bayar hanya yang dipakai.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-2.5">
-            <Link href="/register">
-              <Button size="lg">
-                Mulai gratis
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
-            <Link href="/read/content-engine-playbook">
-              <Button size="lg" variant="outline">
-                Lihat contoh ebook
-              </Button>
-            </Link>
-          </div>
-          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-[var(--color-medium-gray)]">
-            <span>Kredit generate</span>
-            <span className="text-[var(--color-medium-gray)]" aria-hidden="true">•</span>
-            <span>Distribusi claim link</span>
-            <span className="text-[var(--color-medium-gray)]" aria-hidden="true">•</span>
-            <span>Export PDF + EPUB</span>
-          </div>
-        </div>
-        <div className="relative max-w-full overflow-hidden">
-          <div className="pointer-events-none absolute inset-4 sm:inset-0 bg-[var(--color-gold-soft)] rounded-[28px] blur-3xl opacity-40 md:rotate-3" />
-          <div className="relative max-w-full rounded-[20px] border border-[var(--color-publiora-border)] bg-white shadow-[var(--shadow-pop)] p-3.5 md:rotate-1 md:hover:rotate-0 transition-transform duration-300">
-            <div className="rounded-xl bg-[var(--color-publiora-black)] text-white p-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--color-gold)]">Workspace</div>
-              <h3 className="mt-1.5 text-lg font-semibold">The Content Engine Playbook</h3>
-              <div className="mt-3 space-y-0.5">
-                {[
-                  "§ 1. Mengapa content engine",
-                  "§ 2. Strategi pillar topik",
-                  "§ 3. Production loop mingguan",
-                  "§ 4. Multiplex content",
-                ].map((t) => (
-                  <div key={t} className="text-sm text-white/80 py-1.5 border-t border-white/10">
-                    {t}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-[var(--color-gold)]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-gold)] animate-pulse-soft" />
-                Menyusun outline…
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  return <section className="relative overflow-hidden"><div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.08fr_.92fr] md:py-24">
+    <div className="animate-fade-in motion-reduce:animate-none"><p className="inline-flex items-center gap-2 rounded-full border border-[#E9D9A8] bg-[#F8F1DC] px-3 py-1.5 text-xs font-semibold text-[var(--color-gold)]"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" />{marketingId.hero.eyebrow}</p><h1 className="mt-5 max-w-3xl text-4xl font-bold leading-[1.04] tracking-tight text-balance text-[var(--color-publiora-black)] sm:text-5xl lg:text-6xl">{marketingId.hero.title}</h1><p className="mt-5 max-w-xl text-base leading-relaxed text-pretty text-[var(--color-medium-gray)] sm:text-lg">{marketingId.hero.description}</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/register"><Button size="lg" className="w-full min-h-11 sm:w-auto">{marketingId.hero.primaryCta}<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button></Link><Link href="/read/content-engine-playbook"><Button size="lg" variant="outline" className="w-full min-h-11 sm:w-auto">{marketingId.hero.secondaryCta}</Button></Link></div><ul className="mt-7 flex flex-col gap-2 text-sm text-[var(--color-deep-gray)] sm:flex-row sm:flex-wrap sm:gap-x-5">{["Mulai tanpa biaya", "Ekspor PDF dan EPUB", "Kendali editorial tetap pada Anda"].map((item) => <li key={item} className="flex items-center gap-2"><Check aria-hidden="true" className="h-4 w-4 text-[var(--color-success)]" />{item}</li>)}</ul></div>
+    <div className="relative min-w-0" aria-label="Contoh alur penyusunan ebook"><div aria-hidden="true" className="pointer-events-none absolute inset-6 rounded-[2rem] bg-[var(--color-gold-soft)] opacity-50 blur-3xl" /><div className="relative rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-white p-4 shadow-[var(--shadow-pop)] sm:p-6"><div className="rounded-2xl bg-[var(--color-publiora-black)] p-5 text-white sm:p-7"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-gold)]">Ruang kerja editorial</p><h2 className="mt-3 text-xl font-semibold">The Content Engine Playbook</h2><ol className="mt-6 space-y-3">{["Mengapa content engine", "Strategi pillar topik", "Ritme produksi mingguan", "Distribusi ulang konten"].map((item, index) => <li key={item} className="flex gap-3 border-t border-white/10 pt-3 text-sm text-white/75"><span className="text-[var(--color-gold)]">0{index + 1}</span>{item}</li>)}</ol><p role="status" className="mt-6 text-xs text-white/60">Kerangka siap ditinjau</p></div></div></div>
+  </div></section>;
 }

@@ -7,11 +7,11 @@ export default function ForgotPasswordPage() {
     <>
       <AuthRedirect />
       <AuthShell
-        title="Reset password"
-        description="Kami akan kirim link reset ke email Anda."
+        title="Atur ulang kata sandi"
+        description="Masukkan email akun Anda. Kami akan mengirim petunjuk pengaturan ulang bila alamat tersebut terdaftar."
       >
         <ForgotPasswordForm />
-        <AuthSwitch question="Sudah ingat password?" href="/login" label="Kembali ke login" />
+        <AuthSwitch question="Sudah ingat kata sandi?" href="/login" label="Kembali untuk masuk" />
       </AuthShell>
     </>
   );
