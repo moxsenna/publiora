@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
-import { Button } from "@/components/ui/Button";
 import { useAuthStore } from "@/store/authStore";
 import { navigationId } from "@/lib/i18n/id/navigation";
 
@@ -52,7 +51,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
             {nav.map((item) => <Link key={item.href} href={item.href} className="rounded-md hover:text-[var(--color-publiora-black)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2">{item.label}</Link>)}
           </nav>
           <div className="flex items-center gap-1.5">
-            {profile ? <Link href="/dashboard"><Button size="sm" variant="primary">{navigationId.dashboard}</Button></Link> : <><Link href="/login" className="hidden sm:block"><Button size="sm" variant="ghost">Masuk</Button></Link><Link href="/register" className="hidden sm:block"><Button size="sm" variant="primary">Mulai gratis</Button></Link></>}
+            {profile ? <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-publiora-black)] px-2.5 text-xs font-medium text-[var(--color-publiora-white)] shadow-sm transition-colors hover:bg-[var(--color-deep-gray)] focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-0 sm:h-8">{navigationId.dashboard}</Link> : <><Link href="/login" className="hidden min-h-11 items-center justify-center rounded-[var(--radius-button)] px-2.5 text-xs font-medium text-[var(--color-deep-gray)] transition-colors hover:bg-[var(--color-surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2 sm:inline-flex sm:min-h-0 sm:h-8">Masuk</Link><Link href="/register" className="hidden min-h-11 items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-publiora-black)] px-2.5 text-xs font-medium text-[var(--color-publiora-white)] shadow-sm transition-colors hover:bg-[var(--color-deep-gray)] focus-visible:outline-2 focus-visible:outline-offset-2 sm:inline-flex sm:min-h-0 sm:h-8">Mulai gratis</Link></>}
             <button ref={triggerRef} type="button" className="md:hidden min-h-11 min-w-11 grid place-items-center rounded-lg text-[var(--color-medium-gray)] hover:bg-[var(--color-surface-2)] focus-visible:outline-2 focus-visible:outline-offset-2" onClick={() => setOpen((value) => !value)} aria-label={open ? "Tutup menu navigasi" : "Buka menu navigasi"} aria-expanded={open} aria-controls={MOBILE_NAV_ID}>
               {open ? <X aria-hidden="true" className="h-4 w-4" /> : <Menu aria-hidden="true" className="h-4 w-4" />}
             </button>

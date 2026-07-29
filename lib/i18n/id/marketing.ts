@@ -16,6 +16,12 @@ export const marketingId = {
     eyebrow: "Harga",
     title: "Pilih kapasitas yang sesuai dengan ritme penerbitan Anda.",
     description: "Setiap paket mencakup kuota kredit bulanan untuk bantuan AI. Kredit tambahan tersedia saat kebutuhan meningkat.",
+    creditCosts: [
+      "Outline menggunakan 5 kredit.",
+      "Setiap bagian menggunakan 10 kredit.",
+      "Judul atau CTA menggunakan 2 kredit.",
+    ],
+    topUp: "Perlu kapasitas tambahan? Tambah kredit kapan saja melalui Tagihan.",
     monthly: "/bulan",
   },
   finalCta: { title: "Terbitkan ebook pertama Anda dengan arah yang lebih jelas.", description: "Mulai gratis dengan 50 kredit bulanan. Tingkatkan paket saat kebutuhan penerbitan bertambah.", action: "Buat akun gratis" },

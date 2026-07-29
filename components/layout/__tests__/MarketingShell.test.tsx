@@ -103,4 +103,13 @@ describe("MarketingShell mobile disclosure", () => {
     expect(screen.getAllByRole("link", { name: "Dasbor" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Buat, terbitkan, dan distribusikan ebook pemasaran dengan AI.")).toBeInTheDocument();
   });
+
+  it("renders desktop CTA links without nested buttons", () => {
+    render(<MarketingShell><p>Isi</p></MarketingShell>);
+    for (const name of ["Masuk", "Mulai gratis"]) {
+      const link = screen.getAllByRole("link", { name })[0];
+      expect(link).toHaveClass("min-h-11");
+      expect(link.querySelector("button")).toBeNull();
+    }
+  });
 });

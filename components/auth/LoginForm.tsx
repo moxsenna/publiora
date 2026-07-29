@@ -18,6 +18,10 @@ export function LoginForm() {
   const pushToast = useUiStore((s) => s.pushToast);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const errorRef = React.useRef<HTMLParagraphElement>(null);
+  React.useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
   const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" }, shouldFocusError: true,
   });
@@ -49,7 +53,7 @@ export function LoginForm() {
         <Input id="password" type="password" placeholder="Masukkan kata sandi" autoComplete="current-password" aria-invalid={errors.password ? true : undefined} aria-describedby={errors.password ? "password-error" : undefined} {...register("password")} />
         {errors.password && <p id="password-error" className="mt-1.5 text-xs font-medium text-[var(--color-danger)]">{errors.password.message}</p>}
       </div>
-      {error && <p role="alert" className="rounded-xl border border-[var(--color-danger)]/15 bg-[var(--color-danger)]/5 p-3 text-sm text-[var(--color-danger)]">{error}</p>}
+      {error && <p ref={errorRef} role="alert" tabIndex={-1} className="rounded-xl border border-[var(--color-danger)]/15 bg-[var(--color-danger)]/5 p-3 text-sm text-[var(--color-danger)] focus-visible:outline-2 focus-visible:outline-offset-2">{error}</p>}
       <Button type="submit" className="w-full min-h-11" loading={submitting} disabled={submitting}>{authId.signIn}</Button>
     </form>
   );

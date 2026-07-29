@@ -20,6 +20,10 @@ const fields = [
 export function RegisterForm() {
   const router = useRouter(); const signUp = useAuthStore((s) => s.signUp); const pushToast = useUiStore((s) => s.pushToast);
   const [submitting, setSubmitting] = React.useState(false); const [error, setError] = React.useState<string | null>(null); const [confirmation, setConfirmation] = React.useState(false);
+  const messageRef = React.useRef<HTMLParagraphElement>(null);
+  React.useEffect(() => {
+    if (error || confirmation) messageRef.current?.focus();
+  }, [error, confirmation]);
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema), shouldFocusError: true });
   const onSubmit = async (data: RegisterInput) => {
     if (submitting) return; setSubmitting(true); setError(null); setConfirmation(false);
@@ -34,8 +38,8 @@ export function RegisterForm() {
         <Input id={field.name} type={field.type} placeholder={field.placeholder} autoComplete={field.autoComplete} spellCheck={field.name === "email" ? false : undefined} aria-invalid={fieldError ? true : undefined} aria-describedby={fieldError ? errorId : undefined} {...register(field.name)} />
         {fieldError && <p id={errorId} className="mt-1.5 text-xs font-medium text-[var(--color-danger)]">{fieldError.message}</p>}
       </div>; })}
-      {confirmation && <p role="status" className="rounded-xl border border-[var(--color-success)]/20 bg-[var(--color-success)]/5 p-3 text-sm text-[var(--color-deep-gray)]">{authId.confirmationRequired}</p>}
-      {error && <p role="alert" className="rounded-xl border border-[var(--color-danger)]/15 bg-[var(--color-danger)]/5 p-3 text-sm text-[var(--color-danger)]">{error}</p>}
+      {confirmation && <p ref={messageRef} role="status" tabIndex={-1} className="rounded-xl border border-[var(--color-success)]/20 bg-[var(--color-success)]/5 p-3 text-sm text-[var(--color-deep-gray)] focus-visible:outline-2 focus-visible:outline-offset-2">{authId.confirmationRequired}</p>}
+      {error && <p ref={messageRef} role="alert" tabIndex={-1} className="rounded-xl border border-[var(--color-danger)]/15 bg-[var(--color-danger)]/5 p-3 text-sm text-[var(--color-danger)] focus-visible:outline-2 focus-visible:outline-offset-2">{error}</p>}
       <Button type="submit" className="w-full min-h-11" loading={submitting} disabled={submitting}>{authId.signUp}</Button>
     </form>
   );

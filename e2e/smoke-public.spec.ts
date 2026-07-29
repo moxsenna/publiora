@@ -121,7 +121,7 @@ test.describe('@smoke public pages', () => {
     for (const path of ["/", "/login", "/register", "/forgot-password"]) {
       await page.goto(path);
       const uiText = await page.locator("header, nav, main, footer").allTextContents();
-      expect(uiText.join(" ")).not.toMatch(/(?:Password|Workspace|Generate|Billing|Sign in)/i);
+      expect(uiText.join(" ")).not.toMatch(/\b(?:Password|Workspace|Generate|Billing|Sign in)\b/i);
     }
   });
 

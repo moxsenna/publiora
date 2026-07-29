@@ -30,7 +30,21 @@ describe("ForgotPasswordForm", () => {
     await userEvent.type(screen.getByLabelText("Email"), "tidakada@contoh.id");
     await userEvent.click(screen.getByRole("button", { name: "Kirim tautan pengaturan ulang" }));
     await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledWith("tidakada@contoh.id", { redirectTo: `${window.location.origin}/login` }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Jika alamat tersebut terdaftar, petunjuk pengaturan ulang sudah dikirim melalui email.");
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("Jika alamat tersebut terdaftar, petunjuk pengaturan ulang sudah dikirim melalui email.");
+    expect(status).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(status).toHaveFocus());
     expect(screen.queryByText("User not found")).not.toBeInTheDocument();
+  });
+
+  it("keeps rejected reset requests enumeration-safe and focuses resulting message", async () => {
+    resetPasswordForEmail.mockRejectedValue(new Error("provider unavailable"));
+    render(<ForgotPasswordForm />);
+    await userEvent.type(screen.getByLabelText("Email"), "nama@contoh.id");
+    await userEvent.click(screen.getByRole("button", { name: "Kirim tautan pengaturan ulang" }));
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("Jika alamat tersebut terdaftar, petunjuk pengaturan ulang sudah dikirim melalui email.");
+    await waitFor(() => expect(status).toHaveFocus());
+    expect(screen.queryByText("provider unavailable")).not.toBeInTheDocument();
   });
 });

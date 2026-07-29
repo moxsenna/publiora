@@ -32,7 +32,10 @@ describe("RegisterForm", () => {
     render(<RegisterForm />);
     await fillForm();
     await userEvent.click(screen.getByRole("button", { name: "Daftar" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Akun berhasil dibuat. Periksa email untuk mengonfirmasi akun sebelum masuk.");
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("Akun berhasil dibuat. Periksa email untuk mengonfirmasi akun sebelum masuk.");
+    expect(status).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(status).toHaveFocus());
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -41,7 +44,10 @@ describe("RegisterForm", () => {
     render(<RegisterForm />);
     await fillForm();
     await userEvent.click(screen.getByRole("button", { name: "Daftar" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Akun belum dapat dibuat. Coba lagi beberapa saat lagi.");
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Akun belum dapat dibuat. Coba lagi beberapa saat lagi.");
+    expect(alert).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(screen.queryByText(/constraint users_email_key/i)).not.toBeInTheDocument();
   });
 

@@ -30,7 +30,10 @@ describe("LoginForm", () => {
     await userEvent.type(screen.getByLabelText("Email"), "nama@contoh.id");
     await userEvent.type(screen.getByLabelText("Kata sandi"), "rahasia");
     await userEvent.click(screen.getByRole("button", { name: "Masuk" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Email atau kata sandi salah.");
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Email atau kata sandi salah.");
+    expect(alert).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(screen.queryByText("Invalid login credentials")).not.toBeInTheDocument();
   });
 
