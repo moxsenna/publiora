@@ -15,6 +15,7 @@ import {
 import { CTA_URL_REQUIRED_GOALS, type CtaGoal } from "@/types/ai-suggestions";
 import { LEAD_GOALS } from "@/types/project";
 import type { WizardFormValues } from "@/components/projects/new/wizard-types";
+import { registerOriginAware } from "@/components/projects/new/useOriginAwareField";
 import { OfferPicker } from "@/components/offers/OfferPicker";
 import type { Offer } from "@/types/offer";
 import {
@@ -210,7 +211,7 @@ export function LeadMagnetFields({
         </select>
       </div>
 
-      {needsUrl && !selectedOffer?.destination_url ? (
+      {needsUrl ? (
         <div>
           <Label htmlFor="cta_url">URL tujuan</Label>
           <Input
@@ -218,7 +219,7 @@ export function LeadMagnetFields({
             placeholder="https://…"
             aria-invalid={!!errors.cta_url}
             aria-describedby={errors.cta_url ? "cta_url-error" : undefined}
-            {...register("cta_url")}
+            {...registerOriginAware(register, setFieldOrigins, "cta_url")}
           />
           {errors.cta_url && (
             <p id="cta_url-error" className="mt-1 text-xs text-red-600">

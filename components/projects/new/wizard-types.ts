@@ -6,6 +6,7 @@ import {
 } from "@/types/ai-suggestions";
 import type { EbookType } from "@/types/project";
 import type { Offer, ProjectOfferRelationship } from "@/types/offer";
+import type { FieldOrigin } from "@/lib/offers/prefill";
 
 const ctaGoalSchema = z.enum([
   "visit_product",
@@ -242,21 +243,30 @@ export function step2FieldsForType(
 export function hasTypeSpecificDirty(
   values: WizardFormValues,
   ebookType: EbookType,
+  preset?: {
+    locked: boolean;
+    origins: Partial<Record<string, FieldOrigin>>;
+  },
 ): boolean {
+  const isOfferDerived = (field: string) =>
+    preset?.locked === true && preset.origins[field] === "offer";
+  const hasAttachedOffer =
+    hasSelectValue(values.selected_offer_id) && preset?.locked !== true;
+
   if (ebookType === "lead_magnet") {
     return Boolean(
       hasSelectValue(values.lead_goal) ||
         values.traffic_source?.trim() ||
-        hasSelectValue(values.selected_offer_id) ||
-        values.next_offer?.trim() ||
+        hasAttachedOffer ||
+        (values.next_offer?.trim() && !isOfferDerived("product_or_offer")) ||
         hasSelectValue(values.post_read_action) ||
-        values.cta_url?.trim(),
+        (values.cta_url?.trim() && !isOfferDerived("cta_url")),
     );
   }
   if (ebookType === "bonus_product") {
     return Boolean(
-      hasSelectValue(values.selected_offer_id) ||
-        values.parent_product?.trim() ||
+      hasAttachedOffer ||
+        (values.parent_product?.trim() && !isOfferDerived("product_or_offer")) ||
         values.bonus_intent?.trim() ||
         hasSelectValue(values.bonus_role) ||
         values.usage_moment?.trim(),
@@ -265,7 +275,7 @@ export function hasTypeSpecificDirty(
   return Boolean(
     hasSelectValue(values.sellable_mode) ||
       hasSelectValue(values.sales_positioning) ||
-      hasSelectValue(values.selected_offer_id) ||
+      hasAttachedOffer ||
       values.buyer_objections_text?.trim(),
   );
 }

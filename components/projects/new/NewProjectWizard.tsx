@@ -211,7 +211,12 @@ export function NewProjectWizard() {
 
   const onSelectType = (next: EbookType) => {
     if (next === ebookType) return;
-    if (hasTypeSpecificDirty(getValues(), ebookType)) {
+    if (
+      hasTypeSpecificDirty(getValues(), ebookType, {
+        locked: offerLocked,
+        origins: fieldOrigins,
+      })
+    ) {
       setPendingType(next);
       return;
     }

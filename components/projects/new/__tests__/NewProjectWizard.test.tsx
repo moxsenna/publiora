@@ -5,14 +5,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import * as React from "react";
+import type { Offer } from "@/types/offer";
 
 const pushMock = vi.fn();
 const mutateAsyncMock = vi.fn();
 const pushToastMock = vi.fn();
 let mockSearchParams = new URLSearchParams();
 let mockOfferData: { offer: ReturnType<typeof makeOffer> } | undefined;
+let mockOffers: ReturnType<typeof makeOffer>[] = [];
 
-function makeOffer() {
+function makeOffer(overrides: Partial<Offer> = {}): Offer {
   return {
     id: "offer-a",
     owner_id: "u1",
@@ -28,6 +30,7 @@ function makeOffer() {
     destination_url: "https://example.com",
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
   };
 }
 
@@ -58,7 +61,7 @@ vi.mock("@/lib/api/hooks", () => ({
     },
   }),
   useOffer: () => ({ data: mockOfferData, isLoading: false }),
-  useOffers: () => ({ data: { items: [], next_cursor: null }, isLoading: false }),
+  useOffers: () => ({ data: { items: mockOffers, next_cursor: null }, isLoading: false }),
   useCreateOffer: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
@@ -77,6 +80,7 @@ describe("NewProjectWizard", () => {
     vi.clearAllMocks();
     mockSearchParams = new URLSearchParams();
     mockOfferData = undefined;
+    mockOffers = [];
     mutateAsyncMock.mockResolvedValue({ id: "proj-new-1" });
   });
 
@@ -169,7 +173,7 @@ describe("NewProjectWizard", () => {
     expect(screen.getByRole("button", { name: "Ganti" })).toBeInTheDocument();
   });
 
-  it("reapplies retained locked offer after lead to bonus type switch", async () => {
+  it("switches directly with only a locked preset and reapplies the offer", async () => {
     const user = userEvent.setup();
     mockSearchParams = new URLSearchParams("offer_id=offer-a&ebook_type=lead_magnet");
     mockOfferData = { offer: makeOffer() };
@@ -178,15 +182,59 @@ describe("NewProjectWizard", () => {
     expect(await screen.findByText("Growth Audit")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Kembali" }));
 
-    await user.click(
-      screen.getByRole("button", { name: /Bonus Pembelian/ }),
-    );
-    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    await user.click(screen.getByRole("button", { name: /Bonus Pembelian/ }));
 
+    expect(screen.queryByRole("heading", { name: "Ganti tipe ebook?" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Bonus Pembelian/ })).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
     expect(await screen.findByText("Growth Audit")).toBeInTheDocument();
-    expect(screen.getByLabelText("Target pembaca (opsional)")).toHaveValue(
-      "Founder SaaS",
-    );
+    expect(screen.getByLabelText("Target pembaca (opsional)")).toHaveValue("Founder SaaS");
+  });
+
+  it("requires confirmation when genuine type-specific user data exists", async () => {
+    const user = userEvent.setup();
+    mockSearchParams = new URLSearchParams("offer_id=offer-a&ebook_type=lead_magnet");
+    mockOfferData = { offer: makeOffer() };
+    render(<NewProjectWizard />);
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    await user.selectOptions(screen.getByLabelText("Tujuan Lead Magnet"), "collect_email");
+    await user.click(screen.getByRole("button", { name: "Kembali" }));
+
+    await user.click(screen.getByRole("button", { name: /Bonus Pembelian/ }));
+    expect(await screen.findByRole("heading", { name: "Ganti tipe ebook?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Lead Magnet/ })).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(screen.getByRole("button", { name: "Ganti tipe" }));
+    expect(screen.queryByRole("heading", { name: "Ganti tipe ebook?" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Bonus Pembelian/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("preserves edited CTA URL when replacing and detaching offers", async () => {
+    const user = userEvent.setup();
+    const offerA = makeOffer();
+    const offerB = makeOffer({
+      id: "offer-b",
+      name: "Scale Audit",
+      destination_url: "https://offer-b.example.com",
+    });
+    mockOffers = [offerA, offerB];
+    render(<NewProjectWizard />);
+    await user.click(screen.getByRole("button", { name: "Lanjutkan" }));
+    await user.selectOptions(screen.getByLabelText("Aksi setelah membaca (opsional)"), "visit_product");
+    await user.click(screen.getByRole("button", { name: "Pilih produk atau penawaran" }));
+    await user.click(await screen.findByRole("option", { name: /Growth Audit/ }));
+
+    const ctaUrl = await screen.findByLabelText("URL tujuan");
+    expect(ctaUrl).toHaveValue("https://example.com");
+    await user.clear(ctaUrl);
+    await user.type(ctaUrl, "https://custom.example.com");
+    await user.click(screen.getByRole("button", { name: "Ganti" }));
+    expect(screen.getByLabelText("URL tujuan")).toHaveValue("https://custom.example.com");
+    await user.click(await screen.findByRole("option", { name: /Scale Audit/ }));
+    expect(screen.getByLabelText("URL tujuan")).toHaveValue("https://custom.example.com");
+
+    await user.click(screen.getByRole("button", { name: "Ganti" }));
+    expect(screen.getByLabelText("URL tujuan")).toHaveValue("https://custom.example.com");
   });
 
   it("builds V3 lead payload without offer", () => {
