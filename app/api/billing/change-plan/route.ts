@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError } from "@/lib/api/errors";
 import { BILLING_PLANS } from "@/lib/billing/plans";
 import { grantCredits, mapCreditBalance } from "@/lib/credits";
-import { useMockBilling } from "@/lib/paycore/config";
+import { useMockBilling as shouldUseMockBilling } from "@/lib/paycore/config";
 import { resolvePlanProduct } from "@/lib/paycore/catalog";
 import { startCheckout } from "@/lib/paycore/orders";
 import type { CreditBalance, PlanId, Subscription } from "@/types/billing";
@@ -194,7 +194,7 @@ export async function POST(req: Request) {
     }
 
     // Paid plan via PayCore
-    if (!useMockBilling()) {
+    if (!shouldUseMockBilling()) {
       const product = resolvePlanProduct(plan.id);
       if (!product) {
         return jsonError("Plan price not configured", 500, "config_error");

@@ -92,6 +92,15 @@ export function OutlinePanel({
     },
   });
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
   // ---- Computed ----
   const validSectionCount = React.useMemo(() => {
     return draft.sections.filter((s) => s.title && s.title.trim().length > 0)
@@ -248,15 +257,6 @@ export function OutlinePanel({
   };
 
   const saveLabel = outlineSaveStateLabel(draft.saveState);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

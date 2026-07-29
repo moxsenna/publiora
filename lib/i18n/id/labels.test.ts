@@ -4,6 +4,7 @@ import {
   commonId,
   ebookTypeLabelsId,
   generationId,
+  navigationId,
   publishId,
   reviewId,
   sectionStatusLabelsId,
@@ -22,6 +23,25 @@ describe("id label maps", () => {
     expect(Object.keys(ebookTypeLabelsId).sort()).toEqual(
       ["bonus_product", "lead_magnet", "sellable_ebook"].sort(),
     );
+  });
+
+  it("defines exact Indonesian navigation labels", () => {
+    expect(navigationId).toEqual({
+      dashboard: "Dasbor",
+      projects: "Proyek",
+      offers: "Produk & Penawaran",
+      library: "Pustaka",
+      billing: "Tagihan",
+      newProject: "Proyek Baru",
+      workspace: "Ruang Kerja",
+      published: "Terbit",
+      signOut: "Keluar",
+      openMenu: "Buka menu",
+      closeMenu: "Tutup menu",
+      collapseSidebar: "Ciutkan panel samping",
+      expandSidebar: "Bentangkan panel samping",
+      guest: "Pengguna",
+    });
   });
 
   it("has non-empty Indonesian strings for key modules", () => {
