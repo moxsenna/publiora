@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { metadataId } from "./metadata";
 
@@ -18,6 +20,9 @@ describe("metadataId", () => {
       projects: { title: "Proyek", description: "Kelola proyek ebook Anda di Publiora." },
       newProject: { title: "Proyek Baru", description: "Mulai proyek ebook baru di Publiora." },
       offers: { title: "Produk & Penawaran", description: "Kelola produk dan penawaran untuk ebook Anda." },
+      newOffer: { title: "Penawaran Baru", description: "Buat penawaran baru untuk ebook Anda." },
+      offerDetail: { title: "Detail Penawaran", description: "Lihat dan kelola detail penawaran ebook Anda." },
+      projectWorkspace: { title: "Ruang Kerja Proyek", description: "Susun dan terbitkan ebook Anda di ruang kerja proyek." },
       library: { title: "Pustaka", description: "Baca dan kelola koleksi ebook Anda di Publiora." },
       published: { title: "Publikasi", description: "Kelola publikasi ebook Anda di Publiora." },
       billing: { title: "Tagihan & Kredit", description: "Kelola langganan, kredit, dan tagihan Publiora Anda." },
@@ -25,5 +30,15 @@ describe("metadataId", () => {
       claim: { title: "Klaim Ebook", description: "Klaim ebook Anda melalui Publiora." },
       reader: { title: "Baca Ebook", description: "Baca ebook yang diterbitkan melalui Publiora." },
     });
+  });
+
+  it("menjaga metadata lupa kata sandi hanya di layout", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "app", "forgot-password", "page.tsx"),
+      "utf8",
+    );
+
+    expect(source).not.toMatch(/export\s+const\s+metadata\b/);
+    expect(source).not.toMatch(/import\s+type\s+\{\s*Metadata\s*\}\s+from\s+["']next["']/);
   });
 });

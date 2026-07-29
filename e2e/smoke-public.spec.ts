@@ -7,6 +7,42 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('@smoke public pages', () => {
+  const publicMetadataCases = [
+    {
+      path: '/',
+      title: 'Publiora — Platform Penerbitan Ebook Berbasis AI',
+      description: 'Buat, terbitkan, dan distribusikan ebook pemasaran dengan bantuan AI.',
+    },
+    { path: '/login', title: 'Masuk | Publiora', description: 'Masuk ke akun Publiora Anda.' },
+    {
+      path: '/register',
+      title: 'Buat Akun | Publiora',
+      description: 'Buat akun Publiora untuk mulai menerbitkan ebook.',
+    },
+    {
+      path: '/forgot-password',
+      title: 'Lupa Kata Sandi | Publiora',
+      description: 'Atur ulang kata sandi akun Publiora Anda.',
+    },
+    {
+      path: '/billing/return',
+      title: 'Status Pembayaran | Publiora',
+      description: 'Periksa status pembayaran Publiora Anda.',
+    },
+  ] as const;
+
+  for (const metadataCase of publicMetadataCases) {
+    test(`${metadataCase.path} uses Indonesian document metadata`, async ({ page }) => {
+      await page.goto(metadataCase.path);
+      await expect(page.locator('html')).toHaveAttribute('lang', 'id');
+      await expect(page).toHaveTitle(metadataCase.title);
+      await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+        'content',
+        metadataCase.description,
+      );
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Home page
   // ---------------------------------------------------------------------------
