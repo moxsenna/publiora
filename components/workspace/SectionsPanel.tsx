@@ -34,7 +34,7 @@ import {
   estimateGenerationCost,
   useSequentialSectionGeneration,
 } from "@/components/workspace/useSequentialSectionGeneration";
-import { Sparkles, FileText, Play, Save, ChevronDown } from "lucide-react";
+import { Sparkles, FileText, Play, Save } from "lucide-react";
 import type { Section } from "@/types/section";
 import type { EnhancementAction, EnhancementSuggestion } from "@/types/ai-suggestions";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,12 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   const [rejecting, setRejecting] = React.useState(false);
   const [regenerating, setRegenerating] = React.useState(false);
   const [undoing, setUndoing] = React.useState(false);
+  const [acceptedUndo, setAcceptedUndo] = React.useState<{
+    sectionId: string;
+    priorHtml: string;
+    acceptedUpdatedAt: string;
+  } | null>(null);
+  const [editorRevision, setEditorRevision] = React.useState(0);
 
   const [dirty, setDirty] = React.useState(false);
   const flushRef = React.useRef<(() => Promise<boolean>) | null>(null);
@@ -147,7 +153,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     outline.sections.find((os) => os.id === current?.outline_section_id) ??
     outline.sections[0];
   const currentLabel =
-    current?.title ?? currentOutline?.title ?? "Pilih section";
+    current?.title ?? currentOutline?.title ?? "Pilih bagian";
 
   const onGenerateAll = async () => {
     if (
@@ -196,7 +202,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       }
       pushToast({
         title: "Gagal menulis bagian",
-        description: e?.message ?? "Coba generate ulang.",
+        description: getUiErrorMessage(err),
         variant: "danger",
       });
     }
@@ -279,9 +285,8 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     setReviewError(null);
     try {
       const section = sections?.find((s) => s.id === reviewSectionId);
-      // Best-effort revision snapshot before enhancement overwrite (no AI credit).
       if (section && sectionHasReplaceableContent(section)) {
-        await fetch(
+        const revisionResponse = await fetch(
           `/api/projects/${projectId}/sections/${reviewSectionId}/revisions`,
           {
             method: "POST",
@@ -289,9 +294,12 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             credentials: "same-origin",
             body: JSON.stringify({ source: "before_enhancement_accept" }),
           },
-        ).catch(() => null);
+        );
+        if (!revisionResponse.ok) {
+          throw new Error("revision_snapshot_failed");
+        }
       }
-      await updateSection.mutateAsync({
+      const saved = await updateSection.mutateAsync({
         id: reviewSectionId,
         projectId,
         patch: {
@@ -299,6 +307,14 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           expected_updated_at: section?.updated_at,
         },
       });
+      if (section) {
+        setAcceptedUndo({
+          sectionId: reviewSectionId,
+          priorHtml: section.content_html,
+          acceptedUpdatedAt: saved.updated_at,
+        });
+      }
+      setEditorRevision((value) => value + 1);
       setDirty(false);
       setReviewOpen(false);
       setReviewSuggestion(null);
@@ -337,29 +353,30 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
   };
 
   const handleSessionUndo = async () => {
-    if (!reviewSectionId || !priorHtml || !projectId) return;
+    if (!acceptedUndo || !projectId) return;
     setUndoing(true);
-    setReviewError(null);
     try {
-      const section = sections?.find((s) => s.id === reviewSectionId);
       await updateSection.mutateAsync({
-        id: reviewSectionId,
+        id: acceptedUndo.sectionId,
         projectId,
         patch: {
-          content_html: priorHtml,
-          expected_updated_at: section?.updated_at,
+          content_html: acceptedUndo.priorHtml,
+          expected_updated_at: acceptedUndo.acceptedUpdatedAt,
         },
       });
+      setEditorRevision((value) => value + 1);
       setDirty(false);
-      setReviewOpen(false);
-      setReviewSuggestion(null);
-      setPriorHtml(null);
+      setAcceptedUndo(null);
       pushToast({
         title: "Konten dikembalikan ke versi sebelumnya",
         variant: "success",
       });
     } catch (err) {
-      setReviewError(getUiErrorMessage(err));
+      pushToast({
+        title: "Konten belum dapat dikembalikan",
+        description: getUiErrorMessage(err),
+        variant: "danger",
+      });
     } finally {
       setUndoing(false);
     }
@@ -391,66 +408,31 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     balanceAmount != null && queueCost > balanceAmount && sequential.queue.length > 0;
 
   const sectionList = (
-    <ul className="p-1.5 space-y-0.5">
+    <ul className="p-1.5 space-y-0.5" aria-label="Daftar bagian">
       {outline.sections.map((os) => {
-        const s = sectionsByOutline.get(os.id);
-        const active =
-          current?.id === s?.id || (!current && os.id === currentOutline?.id);
+        const section = sectionsByOutline.get(os.id);
+        const active = current?.id === section?.id || (!current && os.id === currentOutline?.id);
         return (
-          <li key={os.id}>
-            <button
-              type="button"
-              role="option"
-              aria-selected={active}
-              onClick={() => void selectSection(os.id, s?.id)}
-              className={cn(
-                "w-full min-h-11 text-left p-2 rounded-lg transition-colors",
-                active
-                  ? "bg-[var(--color-surface-2)]"
-                  : "hover:bg-[var(--color-surface-2)]",
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[var(--color-medium-gray)]">
-                  {os.position}
+          <li key={os.id} className="rounded-lg hover:bg-[var(--color-surface-2)]">
+            <div className="flex items-stretch gap-1">
+              <button
+                type="button"
+                aria-current={active ? "true" : undefined}
+                onClick={() => void selectSection(os.id, section?.id)}
+                className={cn("flex-1 min-h-11 text-left p-2 rounded-lg", active && "bg-[var(--color-surface-2)]")}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[var(--color-medium-gray)]">{os.position}</span>
+                  <span className="text-sm font-medium text-[var(--color-deep-gray)] line-clamp-1 flex-1">{section?.title ?? os.title}</span>
+                  {section ? <Badge variant={section.status === "edited" ? "info" : "success"}>{section.word_count} kata</Badge> : <Badge variant="default">{sectionStatusLabelsId.pending}</Badge>}
                 </span>
-                <span className="text-sm font-medium text-[var(--color-deep-gray)] line-clamp-1 flex-1">
-                  {s?.title ?? os.title}
-                </span>
-                {s ? (
-                  <>
-                    <Badge
-                      variant={s.status === "edited" ? "info" : "success"}
-                    >
-                      {s.word_count}w
-                    </Badge>
-                    <span className="text-[11px] text-[var(--color-medium-gray)]">
-                      {sectionStatusLabelsId[s.status] ?? s.status}
-                    </span>
-                  </>
-                ) : (
-                  <Badge variant="default">{sectionStatusLabelsId.pending}</Badge>
-                )}
-              </div>
-              {!s && (
-                <div className="mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    loading={generate.isPending}
-                    disabled={generate.isPending || batchBusy}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void onGenerateOne(os.id);
-                    }}
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Tulis
-                  </Button>
-                </div>
+              </button>
+              {!section && (
+                <Button size="sm" variant="outline" loading={generate.isPending} disabled={generate.isPending || batchBusy} onClick={() => void onGenerateOne(os.id)} aria-label={`Tulis ${os.title}`}>
+                  <Sparkles className="h-3.5 w-3.5" /> Tulis
+                </Button>
               )}
-            </button>
+            </div>
           </li>
         );
       })}
@@ -481,48 +463,24 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
       <div className="overflow-y-auto bg-[var(--color-surface-2)] min-h-0 flex flex-col">
         <div className="md:hidden sticky top-0 z-20 border-b border-[var(--color-publiora-border)] bg-white">
           <div className="p-2.5 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPickerOpen((v) => !v)}
-              className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-lg border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-2.5 py-2 text-left"
-              aria-expanded={pickerOpen}
-              aria-haspopup="listbox"
+            <select
               aria-label="Pilih bagian"
+              value={currentOutline?.id ?? ""}
+              onChange={(event) => {
+                const outlineId = event.target.value;
+                const section = sectionsByOutline.get(outlineId);
+                void selectSection(outlineId, section?.id);
+              }}
+              className="flex-1 min-h-11 rounded-lg border border-[var(--color-publiora-border)] bg-white px-3 text-sm"
             >
-              <span className="min-w-0">
-                <span className="block text-xs text-[var(--color-medium-gray)]">
-                  Bagian aktif
-                </span>
-                <span className="block text-sm font-medium text-[var(--color-publiora-black)] truncate">
-                  {currentLabel}
-                </span>
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 shrink-0 text-[var(--color-medium-gray)] transition-transform",
-                  pickerOpen && "rotate-180",
-                )}
-              />
-            </button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => void onGenerateAll()}
-              loading={batchBusy}
-              disabled={batchBusy}
-              aria-label="Tulis semua bagian"
-            >
+              {outline.sections.map((os) => (
+                <option key={os.id} value={os.id}>{os.position}. {sectionsByOutline.get(os.id)?.title ?? os.title}</option>
+              ))}
+            </select>
+            <Button size="sm" variant="outline" onClick={() => void onGenerateAll()} loading={batchBusy} disabled={batchBusy} aria-label="Tulis semua bagian">
               <Play className="h-3.5 w-3.5" />
             </Button>
           </div>
-          {pickerOpen && (
-            <div
-              role="listbox"
-              className="max-h-[50vh] overflow-y-auto border-t border-[var(--color-publiora-border)] bg-white overscroll-contain"
-            >
-              {sectionList}
-            </div>
-          )}
         </div>
 
         {(sequential.phase === "running" ||
@@ -554,7 +512,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           </div>
         ) : (
           <SectionEditor
-            key={current.id}
+            key={`${current.id}:${editorRevision}`}
             section={current}
             projectId={projectId}
             onRegenerate={() => void onGenerateOne(current.outline_section_id)}
@@ -568,6 +526,15 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           />
         )}
       </div>
+
+      {acceptedUndo && (
+        <div role="status" className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-[var(--color-publiora-border)] bg-white px-4 py-3 shadow-lg">
+          <span className="text-sm">Saran telah diterapkan.</span>
+          <Button variant="outline" size="sm" onClick={() => void handleSessionUndo()} loading={undoing}>
+            Urungkan penerapan
+          </Button>
+        </div>
+      )}
 
       <EnhancementReviewDialog
         open={reviewOpen}
@@ -610,6 +577,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         insufficient={insufficient}
         onCancel={() => sequential.reset()}
         onStart={() => {
+          if (insufficient) return;
           void sequential.start();
         }}
       />
@@ -758,7 +726,7 @@ function SectionEditor({
           onClick={() => void draft.flushSave()}
         >
           <Save className="h-4 w-4" />
-          {draft.saveState === "error" ? "Coba lagi" : "Save"}
+          {draft.saveState === "error" ? "Coba lagi" : "Simpan"}
         </Button>
       </div>
       {draft.saveState === "error" && (

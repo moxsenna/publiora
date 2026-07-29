@@ -242,6 +242,9 @@ export function useUpdateSection() {
         body: JSON.stringify(patch),
       }),
     onSuccess: (data) => {
+      qc.setQueryData<Section[]>(qk.sections(data.project_id), (current) =>
+        current?.map((section) => (section.id === data.id ? data : section)),
+      );
       qc.invalidateQueries({ queryKey: qk.sections(data.project_id) });
     },
   });
