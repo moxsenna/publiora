@@ -58,6 +58,9 @@ build-out.txt
 
 deploy/.env.production
 
+# audience export artifacts (server/local-only, never committed)
+.local/
+
 # local agent / browser noise
 .playwright-mcp/
 .vscode/
