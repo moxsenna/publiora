@@ -22,8 +22,17 @@ import {
 // All redirects are closed-set (app /register) — user input never becomes
 // a redirect target.
 
-async function forwardToRegister(): Promise<Response> {
-  return NextResponse.redirect(buildAppUrl("/register"));
+async function forwardToRegister(returnPath?: string): Promise<Response> {
+  return NextResponse.redirect(registerUrl(returnPath));
+}
+
+// The return path is already validated server-side at context creation, so
+// echoing it into the query is safe: the register page re-approves it before
+// navigating, and anything non-claim falls back to /dashboard.
+function registerUrl(returnPath?: string): URL {
+  const url = new URL(buildAppUrl("/register"));
+  if (returnPath) url.searchParams.set("return_to", returnPath);
+  return url;
 }
 
 export async function GET(req: Request) {
@@ -133,7 +142,7 @@ async function createContextAndRedirect({
     return forwardToRegister();
   }
 
-  return NextResponse.redirect(buildAppUrl("/register"), {
+  return NextResponse.redirect(registerUrl(returnPath), {
     headers: {
       "Set-Cookie": buildSignupContextCookie(ctx.token, {
         domain: resolveAuthCookieDomain(),

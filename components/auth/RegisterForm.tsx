@@ -7,137 +7,48 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/projectStore";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
+import { authId, isRegistrationConfirmation, mapSafeAuthError } from "@/lib/i18n/id/auth";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 
-export function RegisterForm() {
-  const router = useRouter();
-  const signUp = useAuthStore((s) => s.signUp);
-  const pushToast = useUiStore((s) => s.pushToast);
-  const [submitting, setSubmitting] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+const fields = [
+  { name: "name", label: authId.name, type: "text", placeholder: "Nama lengkap", autoComplete: "name" },
+  { name: "email", label: authId.email, type: "email", placeholder: "nama@contoh.id", autoComplete: "email" },
+  { name: "password", label: authId.password, type: "password", placeholder: "Minimal 8 karakter", autoComplete: "new-password" },
+] as const;
 
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors },
-  } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema) });
-
-  const doRegister = async (data: RegisterInput) => {
-    setSubmitting(true);
-    setError(null);
-    try {
-      await signUp(data.name, data.email, data.password);
-      pushToast({ title: "Account dibuat", variant: "success" });
-      router.replace("/dashboard");
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Register gagal. Coba lagi.";
-      setError(message);
-      // email-confirm path throws after account create — not hard fail toast
-      if (message.includes("Cek email")) {
-        pushToast({ title: message, variant: "success" });
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
+export function RegisterForm({ returnTo = "/dashboard" }: { returnTo?: string }) {
+  const router = useRouter(); const signUp = useAuthStore((s) => s.signUp); const pushToast = useUiStore((s) => s.pushToast);
+  const [submitting, setSubmitting] = React.useState(false); const [error, setError] = React.useState<string | null>(null); const [confirmation, setConfirmation] = React.useState(false);
+  const [marketingConsent, setMarketingConsent] = React.useState(false);
+  const messageRef = React.useRef<HTMLParagraphElement>(null);
+  React.useEffect(() => {
+    if (error || confirmation) messageRef.current?.focus();
+  }, [error, confirmation]);
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema), shouldFocusError: true });
   const onSubmit = async (data: RegisterInput) => {
-    await doRegister(data);
+    if (submitting) return; setSubmitting(true); setError(null); setConfirmation(false);
+    try { await signUp(data.name, data.email, data.password, marketingConsent); pushToast({ title: "Akun berhasil dibuat", variant: "success" }); router.replace(returnTo); }
+    catch (err) { if (isRegistrationConfirmation(err)) setConfirmation(true); else setError(mapSafeAuthError(err, "register")); }
+    finally { setSubmitting(false); }
   };
-
-  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    void handleSubmit(onSubmit)(e);
-  };
-
-  const onButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const values = getValues();
-    const parsed = registerSchema.safeParse(values);
-    if (!parsed.success) {
-      void handleSubmit(onSubmit)();
-      return;
-    }
-    await doRegister(parsed.data);
-  };
-
   return (
-    <form
-      method="post"
-      action="/register"
-      onSubmit={onFormSubmit}
-      className="space-y-3"
-      noValidate
-    >
-      <div>
-        <Label htmlFor="name">Nama</Label>
-        <Input
-          id="name"
-          placeholder="Nama lengkap Anda…"
-          autoComplete="name"
-          {...register("name")}
-          className={errors.name ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
-        />
-        {errors.name && (
-          <p className="text-xs text-[var(--color-danger)] mt-1.5 font-medium">
-            {errors.name.message}
-          </p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="nama@perusahaan.com…"
-          autoComplete="email"
-          spellCheck={false}
-          {...register("email")}
-          className={errors.email ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
-        />
-        {errors.email && (
-          <p className="text-xs text-[var(--color-danger)] mt-1.5 font-medium">
-            {errors.email.message}
-          </p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="Minimal 8 karakter…"
-          autoComplete="new-password"
-          {...register("password")}
-          className={errors.password ? "border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/20" : ""}
-        />
-        {errors.password && (
-          <p className="text-xs text-[var(--color-danger)] mt-1.5 font-medium">
-            {errors.password.message}
-          </p>
-        )}
-      </div>
-      {error && (
-        <p
-          className="text-sm text-[var(--color-danger)] p-3 rounded-xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/15"
-          aria-live="polite"
-        >
-          {error}
-        </p>
-      )}
-      <Button
-        type="submit"
-        className="w-full"
-        loading={submitting}
-        onClick={onButtonClick}
-      >
-        Buat akun
-      </Button>
+    <form method="post" action="/register" onSubmit={(event) => { event.preventDefault(); event.stopPropagation(); void handleSubmit(onSubmit)(event); }} className="space-y-4" noValidate>
+      {fields.map((field) => { const fieldError = errors[field.name]; const errorId = `${field.name}-error`; return <div key={field.name}>
+        <Label htmlFor={field.name}>{field.label}</Label>
+        <Input id={field.name} type={field.type} placeholder={field.placeholder} autoComplete={field.autoComplete} spellCheck={field.name === "email" ? false : undefined} aria-invalid={fieldError ? true : undefined} aria-describedby={fieldError ? errorId : undefined} {...register(field.name)} />
+        {fieldError && <p id={errorId} className="mt-1.5 text-xs font-medium text-[var(--color-danger)]">{fieldError.message}</p>}
+      </div>; })}
+      <label className="flex items-start gap-2.5 text-sm text-[var(--color-medium-gray)]" htmlFor="marketing-consent">
+        <span className="relative mt-0.5 h-4 w-4 shrink-0">
+          <input id="marketing-consent" type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)} className="peer absolute inset-0 m-0 h-full w-full cursor-pointer opacity-0" />
+          <span aria-hidden="true" className={marketingConsent ? "pointer-events-none grid h-4 w-4 place-items-center rounded border-2 border-[var(--color-publiora-black)] bg-[var(--color-publiora-black)] text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-publiora-blue)]" : "pointer-events-none grid h-4 w-4 place-items-center rounded border-2 border-[var(--color-medium-gray)] bg-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-publiora-blue)]"}>{marketingConsent ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-2.5 w-2.5"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}</span>
+        </span>
+        <span className="min-w-0">{authId.marketingConsentLabel}</span>
+      </label>
+      {confirmation && <p ref={messageRef} role="status" tabIndex={-1} className="rounded-xl border border-[var(--color-success)]/20 bg-[var(--color-success)]/5 p-3 text-sm text-[var(--color-deep-gray)] focus-visible:outline-2 focus-visible:outline-offset-2">{authId.confirmationRequired}</p>}
+      {error && <p ref={messageRef} role="alert" tabIndex={-1} className="rounded-xl border border-[var(--color-danger)]/15 bg-[var(--color-danger)]/5 p-3 text-sm text-[var(--color-danger)] focus-visible:outline-2 focus-visible:outline-offset-2">{error}</p>}
+      <Button type="submit" className="w-full min-h-11" loading={submitting} disabled={submitting}>{authId.signUp}</Button>
     </form>
   );
 }

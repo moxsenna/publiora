@@ -23,7 +23,12 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   setInitialized: (v: boolean) => void;
   signIn: (email: string, password: string) => Promise<Profile>;
-  signUp: (name: string, email: string, password: string) => Promise<Profile>;
+  signUp: (
+    name: string,
+    email: string,
+    password: string,
+    marketingEmailConsent?: boolean
+  ) => Promise<Profile>;
   signOut: () => Promise<void>;
   /** Restore session from Supabase on first load. */
   initFromStorage: () => Promise<void>;
@@ -151,6 +156,47 @@ async function applySession(
   set({ user: toAuthUser(user), profile });
 }
 
+/**
+ * Finalize the immutable signup context after a session exists.
+ * Best-effort: a missing/expired context is ignored, and a network failure
+ * must not roll back an otherwise successful sign-up/sign-in.
+ */
+async function completeSignupContext(marketingEmailConsent: boolean): Promise<void> {
+  try {
+    await fetch("/api/auth/complete-signup-context", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ marketing_email_consent: marketingEmailConsent }),
+    });
+  } catch (err) {
+    console.error("complete-signup-context failed", err);
+  }
+}
+
+// Email-confirm signups have no session yet, so the consent checkbox is kept
+// here until the first successful sign-in completes the context.
+const PENDING_CONSENT_KEY = "publiora_pending_marketing_consent";
+
+function stashPendingConsent(consent: boolean): void {
+  try {
+    window.localStorage.setItem(PENDING_CONSENT_KEY, consent ? "1" : "0");
+  } catch {
+    // storage unavailable — consent falls back to unchecked on sign-in
+  }
+}
+
+function takePendingConsent(): boolean | null {
+  try {
+    const raw = window.localStorage.getItem(PENDING_CONSENT_KEY);
+    window.localStorage.removeItem(PENDING_CONSENT_KEY);
+    if (raw === null) return null;
+    return raw === "1";
+  } catch {
+    return null;
+  }
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
@@ -171,6 +217,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw new Error(mapAuthError(error));
       if (!data.user) throw new Error("Login gagal: user kosong");
+      // A pending context from an email-confirmed signup is finalized here,
+      // carrying the consent choice made at registration (if any).
+      await completeSignupContext(takePendingConsent() ?? false);
       const profile = await fetchProfile(data.user);
       set({ user: toAuthUser(data.user), profile });
       return profile;
@@ -179,7 +228,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signUp: async (name, email, password) => {
+  signUp: async (name, email, password, marketingEmailConsent = false) => {
     if (!hasSupabaseEnv()) {
       throw new Error("Supabase belum dikonfigurasi. Isi NEXT_PUBLIC_SUPABASE_URL dan ANON_KEY.");
     }
@@ -194,15 +243,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (error) throw new Error(mapAuthError(error));
       if (!data.user) throw new Error("Register gagal: user kosong");
 
-      // Email confirm may leave session null — still hydrate if session present
+      // Email confirm may leave session null — still hydrate if session present,
+      // and finalize the signup context with the consent choice.
       if (data.session) {
+        await completeSignupContext(marketingEmailConsent);
         const profile = await fetchProfile(data.user);
         set({ user: toAuthUser(data.user), profile });
         return profile;
       }
 
       const profile = minimalProfileFromUser(data.user);
-      // no session yet (confirm email on) — clear auth UI state
+      // no session yet (confirm email on) — clear auth UI state and keep the
+      // context cookie alive for completion after the first login.
+      stashPendingConsent(marketingEmailConsent);
       set({ user: null, profile: null });
       throw new Error(
         "Akun dibuat. Cek email untuk konfirmasi, lalu login."

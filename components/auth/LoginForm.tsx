@@ -11,7 +11,7 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 
-export function LoginForm() {
+export function LoginForm({ returnTo = "/dashboard" }: { returnTo?: string }) {
   const router = useRouter();
   const signIn = useAuthStore((s) => s.signIn);
   const pushToast = useUiStore((s) => s.pushToast);
@@ -34,7 +34,7 @@ export function LoginForm() {
     try {
       await signIn(email, password);
       pushToast({ title: "Selamat datang kembali", variant: "success" });
-      router.replace("/dashboard");
+      router.replace(returnTo);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Login gagal. Coba lagi.";

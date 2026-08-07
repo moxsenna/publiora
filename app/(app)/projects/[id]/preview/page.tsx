@@ -97,7 +97,7 @@ export default async function ProjectPreviewPage({
             Pratinjau belum tersedia
           </h1>
           <p className="mt-3 text-sm text-[var(--color-medium-gray)]">
-            Tulis minimal satu section untuk membuka mode pembaca.
+            Tulis minimal satu bagian untuk membuka mode pembaca.
           </p>
           <Link href={`/projects/${id}`} className="mt-6 inline-block">
             <Button>Kembali ke proyek</Button>

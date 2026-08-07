@@ -52,3 +52,40 @@ export function approveClaimReturnPath(
 
   return `${CLAIM_PREFIX}${normalized}`;
 }
+
+/**
+ * Approve a post-auth redirect target for register/login pages.
+ * Accepts only the claim journey (`/claim/:token`) and `/dashboard`;
+ * everything else falls back to `/dashboard` (no open redirects).
+ */
+export function approveSignupReturnPath(
+  rawPath: string | undefined | null,
+): string {
+  if (!rawPath || typeof rawPath !== "string") return "/dashboard";
+  if (rawPath === "/dashboard") return "/dashboard";
+  const claim = approveClaimReturnPath(rawPath, null);
+  return claim ?? "/dashboard";
+}
+
+/** Append a non-default return path to an auth switch href. */
+export function withSignupReturnPath(base: string, returnPath: string): string {
+  return returnPath && returnPath !== "/dashboard"
+    ? `${base}?return_to=${encodeURIComponent(returnPath)}`
+    : base;
+}
+
+/**
+ * Build the `/auth/start` entry URL for registration so signups always create
+ * a fresh validated signup context instead of hitting /register directly.
+ * Claim paths carry the claim metadata; everything else is a landing funnel.
+ */
+export function signupEntryUrl(returnPath: string): string {
+  if (returnPath && returnPath !== "/dashboard") {
+    const claim = approveClaimReturnPath(returnPath, null);
+    if (claim) {
+      const token = claim.slice(CLAIM_PREFIX.length);
+      return `/auth/start?source=claim_link&claim_token=${encodeURIComponent(token)}&return_to=${encodeURIComponent(claim)}`;
+    }
+  }
+  return "/auth/start?source=landing_page";
+}

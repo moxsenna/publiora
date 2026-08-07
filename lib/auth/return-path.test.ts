@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   approveClaimReturnPath,
+  approveSignupReturnPath,
   normalizeClaimToken,
+  signupEntryUrl,
+  withSignupReturnPath,
 } from "@/lib/auth/return-path";
 
 describe("normalizeClaimToken", () => {
@@ -57,5 +60,56 @@ describe("approveClaimReturnPath", () => {
     expect(approveClaimReturnPath(null, null)).toBeNull();
     expect(approveClaimReturnPath("", null)).toBeNull();
     expect(approveClaimReturnPath(undefined, null)).toBeNull();
+  });
+});
+
+describe("approveSignupReturnPath", () => {
+  it("accepts the dashboard and claim paths", () => {
+    expect(approveSignupReturnPath("/dashboard")).toBe("/dashboard");
+    expect(approveSignupReturnPath("/claim/ABC123")).toBe("/claim/ABC123");
+  });
+
+  it("falls back to dashboard for missing input", () => {
+    expect(approveSignupReturnPath(null)).toBe("/dashboard");
+    expect(approveSignupReturnPath(undefined)).toBe("/dashboard");
+    expect(approveSignupReturnPath("")).toBe("/dashboard");
+  });
+
+  it("never allows open redirects", () => {
+    expect(approveSignupReturnPath("https://evil.com/")).toBe("/dashboard");
+    expect(approveSignupReturnPath("//evil.com/claim/X")).toBe("/dashboard");
+    expect(approveSignupReturnPath("/claim\\evil")).toBe("/dashboard");
+    expect(approveSignupReturnPath("/read/abc")).toBe("/dashboard");
+    expect(approveSignupReturnPath("/claim/%2F%2Fevil.com")).toBe("/dashboard");
+    expect(approveSignupReturnPath("/claim/AB!C")).toBe("/dashboard");
+  });
+});
+
+describe("withSignupReturnPath", () => {
+  it("appends only non-dashboard return paths", () => {
+    expect(withSignupReturnPath("/login", "/dashboard")).toBe("/login");
+    expect(withSignupReturnPath("/login", "/claim/ABC123")).toBe(
+      "/login?return_to=%2Fclaim%2FABC123"
+    );
+    expect(withSignupReturnPath("/register", "")).toBe("/register");
+  });
+});
+
+describe("signupEntryUrl", () => {
+  it("routes claim returns through claim_link auth/start", () => {
+    expect(signupEntryUrl("/claim/ABC123")).toBe(
+      "/auth/start?source=claim_link&claim_token=ABC123&return_to=%2Fclaim%2FABC123"
+    );
+  });
+
+  it("routes non-claim returns through the landing funnel", () => {
+    expect(signupEntryUrl("/dashboard")).toBe("/auth/start?source=landing_page");
+    expect(signupEntryUrl("")).toBe("/auth/start?source=landing_page");
+  });
+
+  it("never echoes a rejected return value into the entry url", () => {
+    expect(signupEntryUrl("https://evil.com/x")).toBe(
+      "/auth/start?source=landing_page"
+    );
   });
 });
