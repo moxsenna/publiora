@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePublishEbook } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
-import { Radio } from "@/components/ui/Radio";
 import {
   Rocket,
   AlertTriangle,
@@ -16,6 +15,7 @@ import {
   Target,
   Users,
   Eye,
+  Link2,
 } from "lucide-react";
 import type { ProjectWorkflowState } from "@/types/workflow";
 import { getPublishBlockerCopy, getPublishCheckCopy, publishId } from "@/lib/i18n/id/publish";
@@ -58,9 +58,6 @@ export function PublishPanel({
 }: PublishPanelProps) {
   const publish = usePublishEbook();
   const pushToast = useUiStore((s) => s.pushToast);
-  const [visibility, setVisibility] = React.useState<
-    "public" | "private" | null
-  >(isPublished ? null : "public");
   const [publishDone, setPublishDone] = React.useState(false);
   const [publishedSlugState, setPublishedSlugState] = React.useState<
     string | null
@@ -78,9 +75,9 @@ export function PublishPanel({
 
   // Re-publish copy
   const publishLabel = isPublished ? publishId.republish : publishId.publish;
-  const publishDescription = isPublished
-    ? "Versi terbit sebelumnya akan diganti dengan versi terbaru."
-    : "Semua bagian akan disimpan sebagai versi terbit untuk pembaca.";
+  const publishDescription =
+    "Ebook akan disimpan sebagai versi terbit dan hanya dapat " +
+    "dibuka oleh Anda atau pembaca yang berhasil melakukan klaim.";
 
   const onPublish = async () => {
     if (isPublishing || !canPublish || hasBlockers) return;
@@ -88,15 +85,13 @@ export function PublishPanel({
     try {
       const ebook = await publish.mutateAsync({
         project_id: projectId,
-        is_public:
-          visibility === null ? undefined : visibility === "public",
       });
       setPublishDone(true);
       setPublishedSlugState(ebook.slug ?? null);
       setPublishedIdState(ebook.id ?? null);
       pushToast({
         title: publishId.success,
-        description: "Ebook Anda kini tersedia untuk pembaca.",
+        description: "Ebook Anda kini tersedia untuk pembaca melalui tautan klaim.",
         variant: "success",
       });
     } catch {
@@ -299,33 +294,16 @@ export function PublishPanel({
 
       {/* Publish controls */}
       <div className="bg-white rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] shadow-[var(--shadow-card)] p-6 space-y-4">
-        {/* Visibility selection */}
-          <fieldset>
-          <legend className="text-sm font-medium text-[var(--color-deep-gray)]">
-            {publishId.visibility}
-          </legend>
-          <p className="text-xs text-[var(--color-medium-gray)] mb-2">
-            Publik mengaktifkan slug pembaca. Privat membatasi akses melalui tautan klaim.
-          </p>
-          <div className="space-y-2">
-            <Radio
-              name="publish-visibility"
-              value="public"
-              checked={visibility === "public"}
-              onChange={() => setVisibility("public")}
-              label={publishId.public}
-              description="Slug pembaca aktif dan dapat diakses semua orang."
-            />
-            <Radio
-              name="publish-visibility"
-              value="private"
-              checked={visibility === "private"}
-              onChange={() => setVisibility("private")}
-              label={publishId.private}
-              description="Akses hanya tersedia melalui tautan klaim."
-            />
+        {/* Claim-only distribution note */}
+        <div className="flex items-start gap-2.5 border border-[var(--color-publiora-border)] rounded-lg p-3 bg-[var(--color-surface-2)]">
+          <Link2 className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-gold)]" />
+          <div className="space-y-0.5 text-xs text-[var(--color-medium-gray)]">
+            <p className="text-sm font-medium text-[var(--color-deep-gray)]">
+              Terbitkan untuk pembaca
+            </p>
+            <p>{publishDescription}</p>
           </div>
-        </fieldset>
+        </div>
 
         {/* CTA preview if configured */}
         {hasCta && ctaText && (
