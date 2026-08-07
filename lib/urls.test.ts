@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildAppUrl,
   buildClaimUrl,
@@ -37,14 +37,13 @@ afterEach(() => {
 
 describe("resolveDomainUrl", () => {
   it("uses canonical domains when envs are unset in production", () => {
-    const oldEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     try {
       expect(resolveDomainUrl("marketing")).toBe("https://publiora.biz.id");
       expect(resolveDomainUrl("app")).toBe("https://app.publiora.biz.id");
       expect(resolveDomainUrl("reader")).toBe("https://baca.publiora.biz.id");
     } finally {
-      process.env.NODE_ENV = oldEnv;
+      vi.unstubAllEnvs();
     }
   });
 
