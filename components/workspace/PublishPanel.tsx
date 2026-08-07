@@ -6,7 +6,6 @@ import { usePublishEbook } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Button } from "@/components/ui/Button";
 import { Radio } from "@/components/ui/Radio";
-import { Label } from "@/components/ui/Input";
 import {
   Rocket,
   AlertTriangle,
@@ -16,8 +15,13 @@ import {
   Tag,
   Target,
   Users,
+  Eye,
 } from "lucide-react";
 import type { ProjectWorkflowState } from "@/types/workflow";
+import { getPublishBlockerCopy, getPublishCheckCopy, publishId } from "@/lib/i18n/id/publish";
+import { ctaGoalDisplayLabel } from "@/lib/projects/project-type-copy";
+import { buildProjectPreviewUrl } from "@/lib/urls";
+import { workspaceId } from "@/lib/i18n/id";
 
 interface PublishPanelProps {
   projectId: string;
@@ -54,9 +58,9 @@ export function PublishPanel({
 }: PublishPanelProps) {
   const publish = usePublishEbook();
   const pushToast = useUiStore((s) => s.pushToast);
-  const [visibility, setVisibility] = React.useState<"public" | "private">(
-    "public",
-  );
+  const [visibility, setVisibility] = React.useState<
+    "public" | "private" | null
+  >(isPublished ? null : "public");
   const [publishDone, setPublishDone] = React.useState(false);
   const [publishedSlugState, setPublishedSlugState] = React.useState<
     string | null
@@ -73,10 +77,10 @@ export function PublishPanel({
   const checks = workflow?.checks ?? [];
 
   // Re-publish copy
-  const publishLabel = isPublished ? "Terbitkan ulang" : "Terbitkan sekarang";
+  const publishLabel = isPublished ? publishId.republish : publishId.publish;
   const publishDescription = isPublished
-    ? "This will replace the previous publication snapshot."
-    : "All sections will be snapshotted and published to the reader.";
+    ? "Versi terbit sebelumnya akan diganti dengan versi terbaru."
+    : "Semua bagian akan disimpan sebagai versi terbit untuk pembaca.";
 
   const onPublish = async () => {
     if (isPublishing || !canPublish || hasBlockers) return;
@@ -84,22 +88,19 @@ export function PublishPanel({
     try {
       const ebook = await publish.mutateAsync({
         project_id: projectId,
-        is_public: visibility === "public",
+        is_public:
+          visibility === null ? undefined : visibility === "public",
       });
       setPublishDone(true);
       setPublishedSlugState(ebook.slug ?? null);
       setPublishedIdState(ebook.id ?? null);
       pushToast({
-        title: "Ebook published",
-        description: "Your ebook is now live.",
+        title: publishId.success,
+        description: "Ebook Anda kini tersedia untuk pembaca.",
         variant: "success",
       });
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Gagal menerbitkan. Silakan coba lagi.";
-      pushToast({ title: message, variant: "danger" });
+    } catch {
+      pushToast({ title: publishId.failed, variant: "danger" });
     }
   };
 
@@ -108,10 +109,10 @@ export function PublishPanel({
 
   // Determine CTA status string
   const ctaStatus = (() => {
-    if (!hasCta) return "Not configured";
-    if (ctaText && ctaGoal) return ctaGoal.replace(/_/g, " ");
-    if (ctaGoal) return `${ctaGoal.replace(/_/g, " ")} (no text)`;
-    return "Configured";
+    if (!hasCta) return "Belum diatur";
+    if (ctaText && ctaGoal) return ctaGoalDisplayLabel(ctaGoal);
+    if (ctaGoal) return `${ctaGoalDisplayLabel(ctaGoal)} (tanpa teks)`;
+    return "Sudah diatur";
   })();
 
   // Determine blockers for specific steps
@@ -132,7 +133,7 @@ export function PublishPanel({
         {isPublished && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-success)]/10 text-[var(--color-success)] text-sm font-medium">
             <CheckCircle2 className="h-4 w-4" />
-            Published
+            Sudah terbit
             {publishedSlugState && (
               <Link
                 href={`/read/${publishedSlugState}`}
@@ -140,7 +141,7 @@ export function PublishPanel({
                 rel="noopener noreferrer"
                 className="ml-auto text-[var(--color-publiora-blue)] hover:underline inline-flex items-center gap-1"
               >
-                View reader <ExternalLink className="h-3 w-3" />
+                Buka pembaca <ExternalLink className="h-3 w-3" />
               </Link>
             )}
           </div>
@@ -150,24 +151,24 @@ export function PublishPanel({
         <div className="grid grid-cols-2 gap-3">
           <SummaryItem
             icon={<BookOpen className="h-3.5 w-3.5" />}
-            label="Title"
-            value={projectTitle ?? "Untitled"}
+            label="Judul"
+            value={projectTitle ?? "Tanpa judul"}
           />
           <SummaryItem
             icon={<Users className="h-3.5 w-3.5" />}
-            label="Author"
-            value={projectAuthor ?? "Unknown"}
+            label="Penulis"
+            value={projectAuthor ?? "Belum diisi"}
           />
           {projectSubtitle && (
             <SummaryItem
-              label="Subtitle"
+              label="Subjudul"
               value={projectSubtitle}
               className="col-span-2"
             />
           )}
           <SummaryItem
-            label="Sections"
-            value={`${sectionsCount} section${sectionsCount !== 1 ? "s" : ""}`}
+            label="Bagian"
+            value={`${sectionsCount} bagian`}
           />
           <SummaryItem
             icon={<Tag className="h-3.5 w-3.5" />}
@@ -176,7 +177,7 @@ export function PublishPanel({
           />
           {ctaText && (
             <SummaryItem
-              label="CTA text"
+              label="Teks CTA"
               value={ctaText}
               className="col-span-2"
             />
@@ -193,7 +194,7 @@ export function PublishPanel({
         {/* Progress bar */}
         <div>
           <div className="flex justify-between text-xs text-[var(--color-medium-gray)] mb-1">
-            <span>Writing completion</span>
+            <span>Progres penulisan</span>
             <span>{progressPct}%</span>
           </div>
           <div className="h-1.5 bg-[var(--color-surface-3)] rounded-full overflow-hidden">
@@ -211,14 +212,14 @@ export function PublishPanel({
           <div className="flex items-center gap-2 text-[var(--color-danger)]">
             <AlertTriangle className="h-4 w-4" />
             <h3 className="text-sm font-semibold">
-              {blockers.length} issue{blockers.length > 1 ? "s" : ""} to resolve
+              {blockers.length} masalah perlu diselesaikan
             </h3>
           </div>
 
           {reviewBlockers.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-[var(--color-medium-gray)] uppercase tracking-wide">
-                Review issues
+                Masalah tinjauan
               </h4>
               <ul className="space-y-1.5">
                 {reviewBlockers.map((b) => (
@@ -228,13 +229,13 @@ export function PublishPanel({
                   >
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[var(--color-gold)]" />
                     <div className="min-w-0 flex-1 space-y-0.5">
-                      <span>{b.message}</span>
+                      <span>{getPublishBlockerCopy(b.code)}</span>
                       <button
                         type="button"
                         onClick={() => onNavigate(b.targetStep)}
                         className="block text-xs font-medium text-[var(--color-publiora-blue)] hover:underline"
                       >
-                        Go to {b.targetStep}
+                        Tinjau masalah
                       </button>
                     </div>
                   </li>
@@ -246,7 +247,7 @@ export function PublishPanel({
           {otherBlockers.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-[var(--color-medium-gray)] uppercase tracking-wide">
-                Other blockers
+                Penghalang lain
               </h4>
               <ul className="space-y-1.5">
                 {otherBlockers.map((b) => (
@@ -256,13 +257,13 @@ export function PublishPanel({
                   >
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[var(--color-gold)]" />
                     <div className="min-w-0 flex-1 space-y-0.5">
-                      <span>{b.message}</span>
+                      <span>{getPublishBlockerCopy(b.code)}</span>
                       <button
                         type="button"
                         onClick={() => onNavigate(b.targetStep)}
                         className="block text-xs font-medium text-[var(--color-publiora-blue)] hover:underline"
                       >
-                        Go to {b.targetStep}
+                        Tinjau masalah
                       </button>
                     </div>
                   </li>
@@ -273,12 +274,12 @@ export function PublishPanel({
         </div>
       )}
 
-      {/* Warnings section */}
+      {/* Peringatan section */}
       {!hasBlockers &&
         checks.filter((c) => c.severity === "warning").length > 0 && (
           <div className="bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] rounded-xl p-4 space-y-2">
             <h4 className="text-xs font-semibold text-[var(--color-gold)] uppercase tracking-wide">
-              Warnings
+              Peringatan
             </h4>
             <ul className="space-y-1">
               {checks
@@ -289,7 +290,7 @@ export function PublishPanel({
                     className="flex items-start gap-2 text-xs text-[var(--color-medium-gray)]"
                   >
                     <span className="shrink-0 mt-0.5">&#x2139;</span>
-                    <span>{c.label}</span>
+                    <span>{getPublishCheckCopy(c.code ?? c.id)}</span>
                   </li>
                 ))}
             </ul>
@@ -299,34 +300,39 @@ export function PublishPanel({
       {/* Publish controls */}
       <div className="bg-white rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] shadow-[var(--shadow-card)] p-6 space-y-4">
         {/* Visibility selection */}
-        <div>
-          <Label>Visibility</Label>
+          <fieldset>
+          <legend className="text-sm font-medium text-[var(--color-deep-gray)]">
+            {publishId.visibility}
+          </legend>
           <p className="text-xs text-[var(--color-medium-gray)] mb-2">
-            Public makes the ebook accessible via its reader slug. Private hides it
-            from public view.
+            Publik mengaktifkan slug pembaca. Privat membatasi akses melalui tautan klaim.
           </p>
           <div className="space-y-2">
             <Radio
+              name="publish-visibility"
+              value="public"
               checked={visibility === "public"}
               onChange={() => setVisibility("public")}
-              label="Public"
-              description="Slug is active and visible to everyone."
+              label={publishId.public}
+              description="Slug pembaca aktif dan dapat diakses semua orang."
             />
             <Radio
+              name="publish-visibility"
+              value="private"
               checked={visibility === "private"}
               onChange={() => setVisibility("private")}
-              label="Private"
-              description="Only accessible via claim links."
+              label={publishId.private}
+              description="Akses hanya tersedia melalui tautan klaim."
             />
           </div>
-        </div>
+        </fieldset>
 
         {/* CTA preview if configured */}
         {hasCta && ctaText && (
           <div className="border border-[var(--color-publiora-border)] rounded-lg p-3 bg-[var(--color-surface-2)]">
             <div className="flex items-center gap-1.5 text-xs text-[var(--color-medium-gray)] mb-1">
               <Target className="h-3 w-3" />
-              Reader CTA preview
+              Pratinjau CTA pembaca
             </div>
             {ctaUrl ? (
               <a
@@ -353,8 +359,7 @@ export function PublishPanel({
         {/* Error message for API-level blockers */}
         {publish.isError && !publishDone && (
           <div className="rounded-lg bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30 p-3 text-sm text-[var(--color-danger)]">
-            {(publish.error as Error)?.message ??
-              "Publish failed. Check for blockers and try again."}
+            {publishId.failed}
           </div>
         )}
 
@@ -363,19 +368,29 @@ export function PublishPanel({
             <Link href={`/read/${publishedSlugState}`} target="_blank">
               <Button variant="outline" size="sm">
                 <ExternalLink className="h-4 w-4" />
-                Open reader
+                Buka pembaca
               </Button>
             </Link>
           )}
           {publishDone && publishedIdState && (
             <Link href={`/published/${publishedIdState}`}>
               <Button variant="ghost" size="sm">
-                Manage claims
+                Kelola klaim
               </Button>
             </Link>
           )}
 
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <a
+              href={buildProjectPreviewUrl(projectId)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="sm">
+                <Eye className="h-4 w-4" />
+                {workspaceId.previewAsReader}
+              </Button>
+            </a>
             <Button
               onClick={onPublish}
               loading={isPublishing}
@@ -384,7 +399,7 @@ export function PublishPanel({
               size="sm"
             >
               <Rocket className="h-4 w-4" />
-              {isPublished ? "Republish" : "Publish"}
+              {publishLabel}
             </Button>
           </div>
         </div>
