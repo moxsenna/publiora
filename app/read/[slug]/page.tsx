@@ -5,6 +5,7 @@ import { use } from "react";
 import Link from "next/link";
 import { usePublishedBySlug } from "@/lib/api/hooks";
 import { Reader } from "@/components/reader/Reader";
+import { buildPublishedReaderDocument } from "@/lib/reader/build-published-reader-document";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { BookOpen } from "lucide-react";
@@ -48,5 +49,12 @@ export default function ReadPage({
     );
   }
 
-  return <Reader ebook={ebook} />;
+  return (
+    <Reader
+      document={buildPublishedReaderDocument(ebook)}
+      mode="claimed_reader"
+      backHref="/library"
+      backLabel={readerId.backToLibrary}
+    />
+  );
 }
