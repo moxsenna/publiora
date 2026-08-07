@@ -20,7 +20,7 @@ import {
 import type { ProjectWorkflowState } from "@/types/workflow";
 import { getPublishBlockerCopy, getPublishCheckCopy, publishId } from "@/lib/i18n/id/publish";
 import { ctaGoalDisplayLabel } from "@/lib/projects/project-type-copy";
-import { buildProjectPreviewUrl } from "@/lib/urls";
+import { buildProjectPreviewUrl, buildPublishedReaderUrl } from "@/lib/urls";
 import { workspaceId } from "@/lib/i18n/id";
 
 interface PublishPanelProps {
@@ -131,7 +131,7 @@ export function PublishPanel({
             Sudah terbit
             {publishedSlugState && (
               <Link
-                href={`/read/${publishedSlugState}`}
+                href={buildPublishedReaderUrl(publishedSlugState)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-auto text-[var(--color-publiora-blue)] hover:underline inline-flex items-center gap-1"
@@ -334,6 +334,21 @@ export function PublishPanel({
           {publishDescription}
         </p>
 
+        {/* Post-publish guide: create the claim link */}
+        {publishDone && (
+          <div className="flex items-start gap-2.5 rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 p-3">
+            <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-success)]" />
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-[var(--color-success)]">
+                {publishId.success}
+              </p>
+              <p className="text-xs text-[var(--color-medium-gray)]">
+                {publishId.guideLine}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Error message for API-level blockers */}
         {publish.isError && !publishDone && (
           <div className="rounded-lg bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30 p-3 text-sm text-[var(--color-danger)]">
@@ -343,17 +358,22 @@ export function PublishPanel({
 
         <div className="flex items-center gap-3 pt-1">
           {publishDone && publishedSlugState && (
-            <Link href={`/read/${publishedSlugState}`} target="_blank">
+            <Link
+              href={buildPublishedReaderUrl(publishedSlugState)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Button variant="outline" size="sm">
-                <ExternalLink className="h-4 w-4" />
-                Buka pembaca
+                <BookOpen className="h-4 w-4" />
+                {publishId.previewPublished}
               </Button>
             </Link>
           )}
           {publishDone && publishedIdState && (
-            <Link href={`/published/${publishedIdState}`}>
-              <Button variant="ghost" size="sm">
-                Kelola klaim
+            <Link href={`/published/${publishedIdState}?tab=claims&create=1`}>
+              <Button size="sm">
+                <Link2 className="h-4 w-4" />
+                {publishId.createLink}
               </Button>
             </Link>
           )}

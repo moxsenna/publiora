@@ -37,7 +37,7 @@ function PublishDialogContent({ open, onClose, projectId, isPublished }: Publish
         variant: "success",
       });
       onClose();
-      router.push(`/published/${ebook.id}`);
+      router.push(`/published/${ebook.id}?tab=claims&create=1`);
     } catch {
       pushToast({ title: publishId.failed, variant: "danger" });
     }

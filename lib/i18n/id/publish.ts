@@ -5,6 +5,9 @@ export const publishId = {
   republish: "Terbitkan ulang",
   success: "Ebook berhasil diterbitkan",
   failed: "Penerbitan gagal. Periksa kesiapan ebook, lalu coba lagi.",
+  guideLine: "Buat link klaim untuk dibagikan kepada pembaca.",
+  createLink: "Buat link klaim",
+  previewPublished: "Pratinjau versi terbit",
 } as const;
 
 const blockerCopy: Record<string, string> = {
