@@ -40,7 +40,6 @@ export async function GET(
 
     return Response.json({
       status: "ready",
-      token: link.token,
       ebook: {
         id: ebook.id,
         project_id: ebook.project_id,
@@ -60,8 +59,12 @@ export async function GET(
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Server error";
-    return jsonError(message, 503, "unavailable");
+    console.error("Claim preview failed", err);
+    return jsonError(
+      "Layanan klaim sementara tidak tersedia.",
+      503,
+      "unavailable"
+    );
   }
 }
 
@@ -83,7 +86,7 @@ export async function POST(
     });
     if (!rl.ok) {
       return jsonError(
-        `Terlalu banyak percobaan claim. Coba lagi dalam ${rl.retryAfterSec}s.`,
+        "Terlalu banyak percobaan klaim. Coba lagi beberapa saat.",
         429,
         "rate_limited"
       );
@@ -94,136 +97,71 @@ export async function POST(
     } = await supabase.auth.getUser();
     if (!user) return jsonError("Unauthorized", 401, "unauthorized");
 
-    const admin = createAdminClient();
-    const { data: link } = await admin
-      .from("claim_links")
-      .select("*")
-      .eq("token", token.toUpperCase())
-      .maybeSingle();
+    // Delegate to claim_ebook_access_v2: the RPC locks the claim link row,
+    // validates status/expiry/usage, and performs the entitlement insert +
+    // counters + claim event in ONE transaction. Concurrent duplicate claims
+    // serialize on the row lock, so a claim is granted once and
+    // already-owned requests never consume a slot. The RPC reads auth.uid(),
+    // so it must run under the caller's JWT (not the service-role client).
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      "claim_ebook_access_v2",
+      { p_token: token.toUpperCase() }
+    );
 
-    if (!link) return Response.json({ status: "not_found" });
-    if (link.status === "revoked") {
-      await admin.from("claim_events").insert({
-        claim_link_id: link.id,
-        reader_email: user.email ?? user.id,
-        status: "revoked",
-      });
-      return Response.json({ status: "revoked" });
-    }
-    if (
-      link.status === "expired" ||
-      (link.expires_at && new Date(link.expires_at).getTime() < Date.now())
-    ) {
-      await admin
-        .from("claim_links")
-        .update({ status: "expired" })
-        .eq("id", link.id);
-      await admin.from("claim_events").insert({
-        claim_link_id: link.id,
-        reader_email: user.email ?? user.id,
-        status: "expired",
-      });
-      return Response.json({ status: "expired" });
-    }
-    if (link.max_uses != null && link.used_count >= link.max_uses) {
-      await admin.from("claim_events").insert({
-        claim_link_id: link.id,
-        reader_email: user.email ?? user.id,
-        status: "limit_reached",
-      });
-      return Response.json({ status: "limit_reached" });
+    if (rpcError) {
+      console.error("Claim RPC failed", rpcError);
+      return jsonError(
+        "Layanan klaim sementara tidak tersedia.",
+        500,
+        "db_error"
+      );
     }
 
-    const { data: ebook } = await admin
-      .from("published_ebooks")
-      .select("*")
-      .eq("id", link.ebook_id)
-      .maybeSingle();
-    if (!ebook) return Response.json({ status: "not_found" });
-
-    const mappedEbook = {
-      id: ebook.id,
-      project_id: ebook.project_id,
-      slug: ebook.slug,
-      title: ebook.title,
-      author: ebook.author,
-      subtitle: ebook.subtitle,
-      cover_color: ebook.cover_color,
-      sections: ebook.sections ?? [],
-      published_at: ebook.published_at,
-      total_readers: ebook.total_readers ?? 0,
-      active_claims: ebook.active_claims ?? 0,
-      is_public: ebook.is_public,
-      cta_goal: ebook.cta_goal ?? null,
-      final_cta: ebook.final_cta ?? null,
-      cta_url: ebook.cta_url ?? null,
+    const result = (rpcResult ?? {}) as {
+      status?: string;
+      ebook?: unknown;
+      entitlement?: unknown;
     };
 
-    const { data: existing } = await admin
-      .from("entitlements")
-      .select("*")
-      .eq("ebook_id", ebook.id)
-      .eq("reader_id", user.id)
-      .maybeSingle();
-
-    if (existing) {
-      await admin.from("claim_events").insert({
-        claim_link_id: link.id,
-        reader_email: user.email ?? user.id,
+    if (result.status === "revoked") {
+      return Response.json({ status: "revoked" });
+    }
+    if (result.status === "expired") {
+      return Response.json({ status: "expired" });
+    }
+    if (result.status === "limit_reached") {
+      return Response.json({ status: "limit_reached" });
+    }
+    if (result.status === "already_owned") {
+      return Response.json({
         status: "already_owned",
+        ebook: result.ebook ?? null,
       });
-      return Response.json({ status: "already_owned", ebook: mappedEbook });
+    }
+    if (result.status === "claimed") {
+      return Response.json({
+        status: "claimed",
+        ebook: result.ebook ?? null,
+        entitlement: result.entitlement ?? null,
+      });
+    }
+    if (result.status === "not_found") {
+      return Response.json({ status: "not_found" });
     }
 
-    const { data: ent, error: entErr } = await admin
-      .from("entitlements")
-      .insert({
-        reader_id: user.id,
-        ebook_id: ebook.id,
-        ebook_title: ebook.title,
-        ebook_slug: ebook.slug,
-        cover_color: ebook.cover_color,
-        author: ebook.author,
-        claim_link_id: link.id,
-      })
-      .select("*")
-      .single();
-
-    if (entErr) return jsonError(entErr.message, 500, "db_error");
-
-    await admin
-      .from("claim_links")
-      .update({ used_count: (link.used_count ?? 0) + 1 })
-      .eq("id", link.id);
-
-    await admin.from("claim_events").insert({
-      claim_link_id: link.id,
-      reader_email: user.email ?? user.id,
-      status: "claimed",
-    });
-
-    await admin
-      .from("published_ebooks")
-      .update({ total_readers: (ebook.total_readers ?? 0) + 1 })
-      .eq("id", ebook.id);
-
-    return Response.json({
-      status: "claimed",
-      ebook: mappedEbook,
-      entitlement: {
-        id: ent.id,
-        reader_id: ent.reader_id,
-        ebook_id: ent.ebook_id,
-        ebook_title: ent.ebook_title,
-        ebook_slug: ent.ebook_slug,
-        cover_color: ent.cover_color,
-        author: ent.author,
-        claim_link_id: ent.claim_link_id,
-        created_at: ent.created_at,
-      },
-    });
+    // Unknown status payload — fail safe without echoing the detail.
+    console.error("Claim RPC returned unexpected status", result.status);
+    return jsonError(
+      "Layanan klaim sementara tidak tersedia.",
+      503,
+      "unavailable"
+    );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Server error";
-    return jsonError(message, 503, "unavailable");
+    console.error("Claim failed", err);
+    return jsonError(
+      "Layanan klaim sementara tidak tersedia.",
+      503,
+      "unavailable"
+    );
   }
 }
