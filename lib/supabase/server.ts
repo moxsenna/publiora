@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies, headers } from "next/headers";
 import { getPublicSupabaseEnv } from "@/lib/supabase/env";
+import { normalizeAuthCookieOptions } from "@/lib/supabase/cookie-options";
 
 export async function createClient() {
   const env = getPublicSupabaseEnv();
@@ -30,7 +31,7 @@ export async function createClient() {
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
+            cookieStore.set(name, value, normalizeAuthCookieOptions(options))
           );
         } catch {
           // set from Server Component — proxy refreshes session

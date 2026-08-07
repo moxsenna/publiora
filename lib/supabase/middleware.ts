@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { getPublicSupabaseEnv } from "@/lib/supabase/env";
+import { normalizeAuthCookieOptions } from "@/lib/supabase/cookie-options";
 
 /** Build request-scoped Supabase client that can write refreshed cookies. */
 export function createClient(request: NextRequest) {
@@ -22,7 +23,7 @@ export function createClient(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
+          response.cookies.set(name, value, normalizeAuthCookieOptions(options))
         );
       },
     },
