@@ -11,6 +11,8 @@ export const readerId = {
   addToLibrary: "Tambahkan ke Pustaka",
   signIn: "Masuk",
   signInAndAdd: "Masuk dan tambahkan ke Pustaka",
+  signInAndClaim: "Masuk & klaim",
+  signUpForClaim: "Daftar untuk klaim",
   password: "Kata sandi",
   backToLibrary: "Kembali ke Pustaka",
   emptySections: "Ebook ini belum memiliki bagian yang dapat dibaca.",
