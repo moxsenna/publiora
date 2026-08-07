@@ -10,9 +10,11 @@ import {
   useChangePlan,
   usePurchaseCreditPack,
   useCreditCosts,
+  useMarketingPreferences,
   isPaymentCheckout,
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
+import { useAuthStore } from "@/store/authStore";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -28,6 +30,7 @@ import {
   Sparkles,
   Check,
   History,
+  Mail,
 } from "lucide-react";
 import type { PlanId } from "@/types";
 import { formatDate, formatRelativeTime, cn } from "@/lib/utils";
@@ -50,8 +53,39 @@ export default function BillingPage() {
   const { data: costs } = useCreditCosts();
   const changePlan = useChangePlan();
   const buyPack = usePurchaseCreditPack();
+  const updateConsent = useMarketingPreferences();
+  const profile = useAuthStore((s) => s.profile);
+  const setProfile = useAuthStore((s) => s.setProfile);
   const pushToast = useUiStore((s) => s.pushToast);
   const [checkout, setCheckout] = React.useState<CheckoutIntent | null>(null);
+
+  // Local copy keeps the checkbox honest while the PATCH is in flight and
+  // rolls back to the stored profile value when the request fails.
+  const [marketingConsent, setMarketingConsent] = React.useState(
+    profile?.marketing_email_consent ?? false
+  );
+  React.useEffect(() => {
+    setMarketingConsent(profile?.marketing_email_consent ?? false);
+  }, [profile?.marketing_email_consent]);
+
+  const onToggleMarketingConsent = async (value: boolean) => {
+    if (updateConsent.isPending) return;
+    setMarketingConsent(value);
+    try {
+      const res = await updateConsent.mutateAsync({
+        marketing_email_consent: value,
+      });
+      if (profile) setProfile({ ...profile, ...res.profile });
+      pushToast({ title: billingId.emailPreferencesSaved, variant: "success" });
+    } catch (error) {
+      setMarketingConsent(profile?.marketing_email_consent ?? false);
+      pushToast({
+        title: billingId.emailPreferencesFailed,
+        description: getUiErrorMessage(error),
+        variant: "danger",
+      });
+    }
+  };
 
   const onChangePlan = async (
     plan_id: PlanId,
@@ -441,6 +475,34 @@ export default function BillingPage() {
                 ))}
               </ul>
             )}
+          </CardBody>
+        </Card>
+      </section>
+
+      {/* Email preferences */}
+      <section>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-[var(--color-medium-gray)]" />
+              <CardTitle className="text-base">{billingId.emailPreferences}</CardTitle>
+            </div>
+            <CardDescription>{billingId.emailPreferencesDescription}</CardDescription>
+          </CardHeader>
+          <CardBody>
+            <label className="flex cursor-pointer items-start gap-2.5 text-sm text-[var(--color-deep-gray)]">
+              <input
+                type="checkbox"
+                checked={marketingConsent}
+                onChange={(event) => void onToggleMarketingConsent(event.target.checked)}
+                disabled={updateConsent.isPending}
+                className="mt-0.5 h-4 w-4 accent-[var(--color-publiora-blue)]"
+              />
+              <span>{billingId.emailMarketingLabel}</span>
+            </label>
+            <p className="text-xs text-[var(--color-medium-gray)] mt-1.5 max-w-xl">
+              {billingId.emailPreferencesNote}
+            </p>
           </CardBody>
         </Card>
       </section>

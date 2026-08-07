@@ -41,6 +41,7 @@ import type {
   Offer,
   OfferLinkedProjectSummary,
   ProjectOfferLink,
+  Profile,
 } from "@/types";
 import type { SendMessageInput, ChatResponse } from "@/types/message";
 import type { ProjectStateV2 } from "@/types/strategy";
@@ -54,6 +55,23 @@ import type {
 } from "@/lib/offers/schemas";
 
 const READER_ID = "reader@publiora.app";
+
+// Profile
+export interface MarketingPreferencesResult {
+  marketing_email_consent: boolean;
+  marketing_email_consent_at: string | null;
+  marketing_email_consent_source: Profile["marketing_email_consent_source"];
+}
+
+export function useMarketingPreferences() {
+  return useMutation({
+    mutationFn: (input: { marketing_email_consent: boolean }) =>
+      apiFetch<{ ok: true; profile: MarketingPreferencesResult }>(
+        "/api/profile/marketing-preferences",
+        { method: "PATCH", body: JSON.stringify(input) }
+      ),
+  });
+}
 
 // Projects
 export function useProjects() {
