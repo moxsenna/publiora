@@ -10,6 +10,7 @@ export * from "./published-ebook";
 export * from "./claim-link";
 export * from "./entitlement";
 export * from "./reading-progress";
+export * from "./reader";
 export * from "./export";
 export * from "./billing";
 export * from "./template";
