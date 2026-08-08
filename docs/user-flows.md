@@ -309,3 +309,44 @@ And readers feel:
 - Atomic RPC `publish_project_atomic_v1` keeps stable publication ID on republish.
 - Claim links remain valid across republish.
 
+---
+
+## 13. Claim Reader & Attribution Lifecycle (2026-08)
+
+### Preview before publish (Journey A)
+- Creator opens **Pratinjau versi terbit** (`/projects/<id>/preview`) at any stage:
+  a full Reader render, with the gold "Pratinjau" banner.
+- Preview **never publishes**: no `published_ebooks` row, no slug, no
+  entitlement, no reader progress, no analytics, no public URL.
+- Workspace shows "Pratinjau versi terbit" (outline) + "Buat link klaim"
+  (primary) only after a real publish.
+
+### Attribution on signup (Journeys B–C)
+- CTA from landing page / claim bonus → `/auth/start` carries a one-time,
+  short-lived context token (only its SHA-256 hash ever reaches the DB).
+- After signup, `complete_signup_context_v1` sets the immutable `signup_origin`
+  (`landing_page` / `claim_link`), plus `first_claim_*` for claim contexts.
+- No context → `direct_app`.
+
+### Shared session across hosts (Journey G)
+- One session cookie shared across `app.*` and `baca.*` via
+  `AUTH_COOKIE_DOMAIN`. Login on app = logged in on reader, and vice versa.
+
+### Reader activation & reader→creator (Journeys D–E)
+- First successful claim sets `reader_activated_at` (one-shot). Existing
+  landing-origin accounts keep `landing_page` — origin never changes.
+- First project in the app sets `creator_activated_at`; the dashboard shows the
+  reader→creator card only while `signup_origin = claim_link` and the reader has
+  zero projects; the card disappears once the first project exists.
+
+### Claim-only publish (Journey F)
+- Publishing creates a **non-public** ebook; distribution is exclusively via
+  claim links. Copied link always targets the **reader domain**
+  (`baca.publiora.biz.id/claim/<token>`), never `window.location.origin`.
+
+### Export (Journey H)
+- Internal (service-role only) audience view `internal_user_audience_v1`;
+  export via `npm run export:audience -- --segment claim_reader_only`.
+  Default export includes only consenting users; `--count-only` prints a number
+  and never emails. See `docs/signup-attribution.md`.
+

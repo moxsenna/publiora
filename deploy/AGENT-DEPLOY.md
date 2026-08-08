@@ -119,6 +119,37 @@ This adds RPC `public.create_project_with_state` used by `POST /api/projects`. D
 
 API has a temporary non-RPC fallback only if the function is missing; production should apply the migration.
 
+### Attribution / lifecycle / audience (2026-08)
+
+Migrations to apply before shipping the attribution code:
+
+```text
+supabase/migrations/20260807000001_signup_attribution_lifecycle.sql
+supabase/migrations/20260807000002_complete_signup_context_v1.sql
+supabase/migrations/20260807000003_claim_ebook_access_v2.sql
+supabase/migrations/20260807000004_internal_user_audience_v1.sql
+```
+
+New env keys (see `.env.example`):
+
+```text
+NEXT_PUBLIC_MARKETING_URL=https://publiora.biz.id
+NEXT_PUBLIC_APP_URL=https://app.publiora.biz.id
+NEXT_PUBLIC_READER_URL=https://baca.publiora.biz.id
+AUTH_COOKIE_DOMAIN=.publiora.biz.id
+NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.publiora.biz.id
+SIGNUP_CONTEXT_SECRET=<random secret>
+```
+
+Notes:
+
+- Claim copy links must be `NEXT_PUBLIC_READER_URL`-based; if the published
+  panel still shows the app origin, the container env is stale.
+- Cross-host login depends on `AUTH_COOKIE_DOMAIN`; local dev omits it.
+- `internal_user_audience_v1` is service-role only — do not expose via API.
+- Audience export: `node scripts/export-audience.mjs` (server/local only,
+  requires `SUPABASE_SERVICE_ROLE_KEY`).
+
 ## Deploy / update Publiora
 
 Canonical steps also in `deploy/VPS.md`. Prefer **git on server** if `/opt/publiora` is a clone; else **rsync from PC**.
