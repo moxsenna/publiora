@@ -1,0 +1,14 @@
+import { FileDown, Eye } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Card, CardBody } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/PageState";
+import { ExportStatusPill } from "@/components/ui/StatusPill";
+import { formatPublishedDate, publishedId } from "@/lib/i18n/id/published";
+import type { ExportFormat, ExportJob } from "@/types/export";
+
+export function ExportsPanel({ exports, isLoading, isError, isCreating, onRetry, onCreate }: { exports?: ExportJob[]; isLoading: boolean; isError: boolean; isCreating: boolean; onRetry: () => void; onCreate: (format: ExportFormat) => void }) {
+  if (isLoading) return <div className="space-y-3"><div className="flex flex-wrap gap-2"><SkeletonButtons /></div></div>;
+  return <div className="space-y-4"><Card><CardBody><div className="flex flex-wrap gap-2">{(["pdf", "epub", "docx"] as const).map((format) => <Button key={format} size="sm" variant="outline" disabled={isCreating} onClick={() => onCreate(format)}><FileDown aria-hidden="true" className="h-4 w-4" />Ekspor {format.toUpperCase()}</Button>)}</div></CardBody></Card>{isError ? <Card><ErrorState description={publishedId.exports.loadError} onRetry={onRetry} /></Card> : !exports?.length ? <Card><EmptyState icon={<FileDown className="h-6 w-6" />} title={publishedId.exports.empty} description={publishedId.exports.emptyDescription} /></Card> : <Card><CardBody className="p-0"><div className="overflow-x-auto"><table className="w-full min-w-[42rem] text-sm" aria-label={publishedId.exports.caption}><caption className="sr-only">{publishedId.exports.caption}</caption><thead className="bg-[var(--color-surface-2)] text-left text-xs text-[var(--color-medium-gray)]"><tr><th scope="col" className="p-3">{publishedId.exports.format}</th><th scope="col" className="p-3">{publishedId.exports.status}</th><th scope="col" className="p-3">{publishedId.exports.created}</th><th scope="col" className="p-3">{publishedId.exports.action}</th></tr></thead><tbody>{exports.map((job) => <tr key={job.id} className="border-t border-[var(--color-publiora-border)]"><td className="p-3 font-medium uppercase">{job.format}</td><td className="p-3"><ExportStatusPill status={job.status} /></td><td className="whitespace-nowrap p-3 text-[var(--color-medium-gray)]">{formatPublishedDate(job.created_at)}</td><td className="p-3">{job.url && job.status === "complete" && <a href={job.url} target="_blank" rel="noopener noreferrer" aria-label={`Unduh ${job.format.toUpperCase()}`} className="inline-flex items-center gap-1 text-xs text-[var(--color-publiora-blue)] hover:underline"><Eye aria-hidden="true" className="h-3.5 w-3.5" />{publishedId.actions.download}</a>}</td></tr>)}</tbody></table></div></CardBody></Card>}</div>;
+}
+function SkeletonButtons() { return <div className="h-9 w-36 animate-pulse rounded bg-[var(--color-surface-2)]" />; }

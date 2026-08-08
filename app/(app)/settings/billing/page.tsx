@@ -33,7 +33,16 @@ import {
   Mail,
 } from "lucide-react";
 import type { PlanId } from "@/types";
-import { formatDate, formatRelativeTime, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import {
+  billingId,
+  formatBillingDate,
+  formatBillingRelativeTime,
+  getCreditTransactionTypeCopy,
+  getPackBadgeCopy,
+  getSubscriptionStatusCopy,
+  getUiErrorMessage,
+} from "@/lib/i18n/id";
 import type { PaymentMethodCode } from "@/lib/paycore/methods";
 
 function formatIdr(amount: number) {
@@ -108,8 +117,12 @@ export default function BillingPage() {
         description: "Kredit bulanan disesuaikan dengan plan baru.",
         variant: "success",
       });
-    } catch {
-      pushToast({ title: "Gagal ubah plan", variant: "danger" });
+    } catch (error) {
+      pushToast({
+        title: "Gagal ubah plan",
+        description: getUiErrorMessage(error),
+        variant: "danger",
+      });
     }
   };
 
@@ -131,8 +144,12 @@ export default function BillingPage() {
         description: `Saldo sekarang ${res.balance.balance} kredit.`,
         variant: "success",
       });
-    } catch {
-      pushToast({ title: "Top-up gagal", variant: "danger" });
+    } catch (error) {
+      pushToast({
+        title: "Top-up gagal",
+        description: getUiErrorMessage(error),
+        variant: "danger",
+      });
     }
   };
 
@@ -189,10 +206,10 @@ export default function BillingPage() {
     <div className="max-w-4xl mx-auto px-3 sm:px-5 py-5 space-y-5">
       <div>
         <h1 className="text-xl font-bold text-[var(--color-publiora-black)]">
-          Billing & Credits
+          {billingId.title}
         </h1>
         <p className="text-sm text-[var(--color-medium-gray)] mt-0.5">
-          Langganan + kredit untuk generate outline, section, title, dan CTA.
+          Langganan + kredit untuk membuat outline, bagian, judul, dan CTA.
         </p>
       </div>
 
@@ -230,8 +247,8 @@ export default function BillingPage() {
                   <ProgressBar value={Math.min(100, Math.max(0, usedPct))} />
                 </div>
                 <p className="text-xs text-[var(--color-medium-gray)]">
-                  Periode {formatDate(balance.period_start)} –{" "}
-                  {formatDate(balance.period_end)} · Lifetime spent{" "}
+                  Periode {formatBillingDate(balance.period_start)} –{" "}
+                  {formatBillingDate(balance.period_end)} · Total terpakai{" "}
                   {balance.lifetime_spent}
                 </p>
               </>
@@ -247,7 +264,7 @@ export default function BillingPage() {
               </div>
               <div>
                 <div className="text-[11px] uppercase tracking-wide text-[var(--color-medium-gray)]">
-                  Subscription
+                  {billingId.subscription}
                 </div>
                 {ls ? (
                   <Skeleton className="h-6 w-24 mt-0.5" />
@@ -256,37 +273,37 @@ export default function BillingPage() {
                     <span className="text-lg font-bold capitalize text-[var(--color-publiora-black)]">
                       {sub?.plan_id}
                     </span>
-                    <Badge
-                      variant={
-                        sub?.status === "active" ? "success" : "warning"
-                      }
-                    >
-                      {sub?.status}
-                    </Badge>
+                    {sub && (
+                      <Badge
+                        variant={getSubscriptionStatusCopy(sub.status).tone}
+                      >
+                        {getSubscriptionStatusCopy(sub.status).label}
+                      </Badge>
+                    )}
                   </div>
                 )}
               </div>
             </div>
             {sub?.renews_at && (
               <p className="text-xs text-[var(--color-medium-gray)]">
-                Renews {formatDate(sub.renews_at)}
+                Perpanjangan {formatBillingDate(sub.renews_at)}
               </p>
             )}
             {costs && (
               <div className="rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] p-2.5 text-xs text-[var(--color-medium-gray)] space-y-0.5">
                 <div className="font-medium text-[var(--color-deep-gray)] mb-0.5">
-                  Biaya generate
+                  Biaya pembuatan
                 </div>
                 <div className="flex justify-between">
                   <span>Outline</span>
                   <span>{costs.outline} kredit</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Section</span>
+                  <span>Bagian</span>
                   <span>{costs.section} kredit</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Title / CTA</span>
+                  <span>Judul / CTA</span>
                   <span>
                     {costs.title} / {costs.cta} kredit
                   </span>
@@ -300,7 +317,7 @@ export default function BillingPage() {
       {/* Plans */}
       <section>
         <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-2.5">
-          Plans
+          Paket langganan
         </h2>
         {lp ? (
           <div className="grid md:grid-cols-3 gap-2.5">
@@ -338,8 +355,8 @@ export default function BillingPage() {
                           )}
                         </div>
                       </div>
-                      {plan.featured && <Badge variant="gold">Popular</Badge>}
-                      {current && <Badge variant="success">Current</Badge>}
+                      {plan.featured && <Badge variant="gold">Populer</Badge>}
+                      {current && <Badge variant="success">Plan saat ini</Badge>}
                     </div>
                     <div className="text-xs text-[var(--color-medium-gray)]">
                       {plan.monthly_credits.toLocaleString()} kredit / bulan
@@ -386,7 +403,9 @@ export default function BillingPage() {
                   <div className="text-sm font-semibold text-[var(--color-publiora-black)]">
                     {pack.name}
                   </div>
-                  {pack.badge && <Badge variant="gold">{pack.badge}</Badge>}
+                  {pack.badge && (
+                    <Badge variant="gold">{getPackBadgeCopy(pack.badge)}</Badge>
+                  )}
                 </div>
                 <div className="text-xl font-bold text-[var(--color-publiora-black)]">
                   +{pack.credits}
@@ -416,7 +435,7 @@ export default function BillingPage() {
         </div>
         <p className="text-xs text-[var(--color-medium-gray)] mt-2">
           Pilih metode bayar di modal, lalu lanjut ke Duitku via PayCore. Kredit
-          aktif setelah webhook payment.succeeded — bukan dari halaman return.
+          aktif setelah pembayaran dikonfirmasi oleh gateway.
         </p>
       </section>
 
@@ -427,7 +446,7 @@ export default function BillingPage() {
         }}
         intent={checkout}
         loading={changePlan.isPending || buyPack.isPending}
-        defaultMethod="BR"
+        defaultMethod="SP"
         onConfirm={confirmCheckout}
       />
 
@@ -439,7 +458,9 @@ export default function BillingPage() {
               <History className="h-4 w-4 text-[var(--color-medium-gray)]" />
               <CardTitle className="text-base">Riwayat kredit</CardTitle>
             </div>
-            <CardDescription>Grant, top-up, dan pemakaian generate.</CardDescription>
+            <CardDescription>
+              Grant, top-up, dan pemakaian kredit.
+            </CardDescription>
           </CardHeader>
           <CardBody className="p-0">
             {!txns || txns.length === 0 ? (
@@ -458,7 +479,8 @@ export default function BillingPage() {
                         {t.label}
                       </div>
                       <div className="text-xs text-[var(--color-medium-gray)]">
-                        {formatRelativeTime(t.created_at)} · {t.type}
+                        {formatBillingRelativeTime(t.created_at)} ·{" "}
+                        {getCreditTransactionTypeCopy(t.type).label}
                       </div>
                     </div>
                     <div

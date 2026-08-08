@@ -1,0 +1,16 @@
+export const navigationId = {
+  dashboard: "Dasbor",
+  projects: "Proyek",
+  offers: "Produk & Penawaran",
+  library: "Pustaka",
+  billing: "Tagihan",
+  newProject: "Proyek Baru",
+  workspace: "Ruang Kerja",
+  published: "Terbit",
+  signOut: "Keluar",
+  openMenu: "Buka menu",
+  closeMenu: "Tutup menu",
+  collapseSidebar: "Ciutkan panel samping",
+  expandSidebar: "Bentangkan panel samping",
+  guest: "Pengguna",
+} as const;

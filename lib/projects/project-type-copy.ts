@@ -158,3 +158,7 @@ export function salesPositioningLabel(pos: SalesPositioning): string {
 export function ctaGoalLabel(goal: CtaGoal): string {
   return CTA_GOAL_LABELS_ID[goal];
 }
+
+export function ctaGoalDisplayLabel(goal: CtaGoal | string): string {
+  return CTA_GOAL_LABELS_ID[goal as CtaGoal] ?? "Tujuan CTA lainnya";
+}

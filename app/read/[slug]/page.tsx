@@ -9,6 +9,7 @@ import { buildPublishedReaderDocument } from "@/lib/reader/build-published-reade
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { BookOpen } from "lucide-react";
+import { readerId } from "@/lib/i18n/id/reader";
 
 export default function ReadPage({
   params,
@@ -39,11 +40,11 @@ export default function ReadPage({
             Ebook tidak ditemukan
           </h1>
           <p className="mt-2 text-sm text-[var(--color-medium-gray)]">
-            Link mungkin salah, atau ebook belum dipublish.
+            Tautan mungkin salah atau ebook belum diterbitkan.
           </p>
-          <Link href="/library" className="inline-block mt-6">
-            <Button>Ke library</Button>
-          </Link>
+            <Link href="/library" className="inline-block mt-6">
+              <Button>{readerId.backToLibrary}</Button>
+            </Link>
         </div>
       </div>
     );
