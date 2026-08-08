@@ -91,7 +91,7 @@ begin
     v_status := 'already_owned';
     insert into public.claim_events (claim_link_id, reader_email, status)
     values (v_link.id, coalesce(v_reader_email, v_uid::text), 'already_owned');
-    return claim_result(v_status, v_ebook, v_ent);
+    return claim_result_json(v_status, v_ebook, v_ent);
   end if;
 
   -- Atomically insert the entitlement; the unique(reader_id,ebook_id) row

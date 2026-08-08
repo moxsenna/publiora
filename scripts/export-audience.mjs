@@ -185,8 +185,7 @@ function client() {
 // query + main (run when executed directly; importable for tests)
 // ---------------------------------------------------------------------------
 
-export async function runExport(opts) {
-  const supabase = client();
+export async function runExport(opts, supabase = client()) {
   let query = supabase
     .from("internal_user_audience_v1")
     .select(EXPORT_COLUMNS.join(","))

@@ -29,7 +29,7 @@ function readyAuth(profile = PROFILE_ROW) {
   return rpc;
 }
 
-function requestWithCookie(token: string | null, consent: boolean) {
+function requestWithCookie(token: string | null, consent = false) {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (token) headers.cookie = `${SIGNUP_CONTEXT_COOKIE}=${encodeURIComponent(token)}`;
   return new Request("http://localhost/api/auth/complete-signup-context", {
