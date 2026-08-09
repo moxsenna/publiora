@@ -72,8 +72,8 @@ PAYCORE_DEFAULT_PAYMENT_METHOD=BR
 PAYCORE_DEFAULT_PAYMENT_METHOD=SP
 
 # Canonical product domains (staging uses bid.id subdomains)
-NEXT_PUBLIC_MARKETING_URL=https://publiora.bid.id
-NEXT_PUBLIC_APP_URL=https://app.publiora.bid.id
+NEXT_PUBLIC_MARKETING_URL=https://publiora.biz.id
+NEXT_PUBLIC_APP_URL=https://app.publiora.biz.id
 NEXT_PUBLIC_READER_URL=https://baca.publiora.biz.id
 
 # Shared session cookie domain across subdomains
@@ -118,14 +118,14 @@ PAYCORE_APP_ID=publiora
 PAYCORE_KEY_ID=pk_production_publiora_01
 PAYCORE_APP_SECRET=\$PAYCORE_APP_SECRET
 PAYCORE_WEBHOOK_SECRET=\$PAYCORE_WEBHOOK_SECRET
-PAYCORE_RETURN_URL=https://app.publiora.bid.id/billing/return
+PAYCORE_RETURN_URL=https://app.publiora.biz.id/billing/return
 PAYCORE_MERCHANT_PROFILE_ID=appvibe_duitku_v2
 PAYCORE_DEFAULT_PAYMENT_METHOD=BR
 PAYCORE_DEFAULT_PAYMENT_METHOD=SP
 
 # Canonical product domains (production uses bid.id subdomains)
-NEXT_PUBLIC_MARKETING_URL=https://publiora.bid.id
-NEXT_PUBLIC_APP_URL=https://app.publiora.bid.id
+NEXT_PUBLIC_MARKETING_URL=https://publiora.biz.id
+NEXT_PUBLIC_APP_URL=https://app.publiora.biz.id
 NEXT_PUBLIC_READER_URL=https://baca.publiora.biz.id
 
 # Shared session cookie domain across subdomains
