@@ -9,7 +9,7 @@
 ## ✅ Critical Fixes Applied (P0 Issues)
 
 ### #1 Domain Typo Fixed ✓
-- **Problem**: `publiora.bid.id` → incorrect domain (should be `.biz.id`)
+- **Problem**: `publiora.biz.id` → incorrect domain (should be `.biz.id`)
 - **Fix**: All occurrences of `bid.id` replaced with `biz.id` across codebase
 - **Verification**: Zero `bid.id` references remaining in any source file
 - **Files Updated**: `.env.staging`, `.env.production`, documentation, E2E tests
@@ -38,7 +38,7 @@
 ### #5 Creator Preview Terminology Fixed ✓
 - **Wrong name**: "Preview as Claim Link" (confusing!)
 - **Correct name**: "Pratinjau sebagai pembaca" / "Reader Mode Preview"
-- **Endpoint**: `app.publiora.bid.id/projects/{id}/preview` (stays on app domain)
+- **Endpoint**: `app.publiora.biz.id/projects/{id}/preview` (stays on app domain)
 - **Not related**: This is internal testing tool, NOT external claim funnel
 - **Database assertions**: Zero published_ebooks/entitlements/progress rows created
 
@@ -75,7 +75,7 @@
 ### .env.staging
 ```bash
 # Location: D:\Coding\Publiora\.env.staging
-# Domains: publiora.biz.id, app.publiora.bid.id, baca.publiora.biz.id
+# Domains: publiora.biz.id, app.publiora.biz.id, baca.publiora.biz.id
 # Cookie Domain: .publiora.biz.id (shared across all subdomains)
 # Sign-up Context Secret: c5bdc7bde9... (rotated value)
 ```
@@ -135,13 +135,13 @@ SELECT used_count FROM claim_links WHERE token = '<TOKEN>';
 3. In DevTools Application tab → Cookies → baca.publiora.biz.id
    - Verify: `NextAuthSession` domain = `.publiora.biz.id` (parent!)
    - Verify flags: Secure, SameSite=Lax
-4. **Without closing browser**, navigate to `https://app.publiora.bid.id/library`
+4. **Without closing browser**, navigate to `https://app.publiora.biz.id/library`
 5. Should load profile data WITHOUT re-login prompt
 
 **Reverse Direction Test**:
 1. Fresh incognito window
-2. Login at `app.publiora.bid.id`
-3. Navigate to `baca.publiora.bid.id/library`
+2. Login at `app.publiora.biz.id`
+3. Navigate to `baca.publiora.biz.id/library`
 4. Should remain authenticated
 
 **Fail Criteria**:
@@ -155,10 +155,10 @@ SELECT used_count FROM claim_links WHERE token = '<TOKEN>';
 
 **Terminology**: This is internal preview testing, NOT claim funnel
 
-**URL Pattern**: `https://app.publiora.bid.id/projects/{PROJECT_ID}/preview`
+**URL Pattern**: `https://app.publiora.biz.id/projects/{PROJECT_ID}/preview`
 
 **Test Steps**:
-1. Login as creator at `app.publiora.bid.id`
+1. Login as creator at `app.publiora.biz.id`
 2. Create draft project with at least 1 section generated
 3. Click button: **"Pratinjau sebagai pembaca"** or "Preview Reader Mode"
 4. Opens new tab at app domain (NOT baca domain!)

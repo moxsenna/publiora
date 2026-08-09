@@ -14,12 +14,12 @@ Implements full user attribution lifecycle per [Live AI Specification](https://g
 - NEVER inserts into `published_ebooks` table
 - No slug generation or public URLs created
 - No entitlement modifications or analytics tracking
-- URL pattern: `app.publiora.bid.id/projects/{id}/preview`
+- URL pattern: `app.publiora.biz.id/projects/{id}/preview`
 
 **Cross-Domain Cookie Sharing**
 - `AUTH_COOKIE_DOMAIN=.publiora.biz.id` enables shared sessions across:
-  - Marketing: `https://publiora.bid.id`
-  - App: `https://app.publiora.bid.id`
+  - Marketing: `https://publiora.biz.id`
+  - App: `https://app.publiora.biz.id`
   - Reader: `https://baca.publiora.biz.id`
 
 **Reader-to-Creator Entitlement**
@@ -73,8 +73,8 @@ Staging and production environments are now **completely isolated**:
 
 | Environment | Domains | Secret |
 |-------------|---------|--------|
-| **Staging** | `staging.publiora.bid.id`, `app.staging.publiora.bid.id`, `baca.staging.publiora.biz.id` | Unique staging secret |
-| **Production** | `publiora.bid.id`, `app.publiora.bid.id`, `baca.publiora.biz.id` | Unique production secret |
+| **Staging** | `staging.publiora.biz.id`, `app.staging.publiora.biz.id`, `baca.staging.publiora.biz.id` | Unique staging secret |
+| **Production** | `publiora.biz.id`, `app.publiora.biz.id`, `baca.publiora.biz.id` | Unique production secret |
 
 This ensures no cross-contamination between test and live data. Each environment has its own signup context secret.
 
@@ -111,14 +111,14 @@ psql -h db.publiora.supabase.co -U postgres -d postgres \
 
 ```bash
 # Staging environment (isolated subdomains)
-export NEXT_PUBLIC_MARKETING_URL="https://staging.publiora.bid.id"
-export NEXT_PUBLIC_APP_URL="https://app.staging.publiora.bid.id"
+export NEXT_PUBLIC_MARKETING_URL="https://staging.publiora.biz.id"
+export NEXT_PUBLIC_APP_URL="https://app.staging.publiora.biz.id"
 export NEXT_PUBLIC_READER_URL="https://baca.staging.publiora.biz.id"
 export AUTH_COOKIE_DOMAIN=".staging.publiora.biz.id"
 
 # Production environment
-export NEXT_PUBLIC_MARKETING_URL="https://publiora.bid.id"
-export NEXT_PUBLIC_APP_URL="https://app.publiora.bid.id"
+export NEXT_PUBLIC_MARKETING_URL="https://publiora.biz.id"
+export NEXT_PUBLIC_APP_URL="https://app.publiora.biz.id"
 export NEXT_PUBLIC_READER_URL="https://baca.publiora.biz.id"
 export AUTH_COOKIE_DOMAIN=".publiora.biz.id"
 ```
@@ -145,17 +145,17 @@ Test flows requiring staging environment:
 **Flow B: Staging Login → App Session Active**
 ```
 1. Login at baca.staging.publiora.biz.id (email/password)
-2. Without closing browser, navigate to app.staging.publiora.bid.id/library
+2. Without closing browser, navigate to app.staging.publiora.biz.id/library
 3. Should remain authenticated WITHOUT re-login prompt
 4. Cookie domain should be .staging.publiora.biz.id
 ```
 
 **Flow C: Creator Reader Preview**
 ```
-1. Login as creator at app.staging.publiora.bid.id
+1. Login as creator at app.staging.publiora.biz.id
 2. Create new project → enter draft content
 3. Click "Pratinjau sebagai pembaca" button
-4. Opens preview at app.staging.publiora.bid.id/projects/{id}/preview
+4. Opens preview at app.staging.publiora.biz.id/projects/{id}/preview
 5. Verify preview shows WITHOUT publishing to public
 6. Check network tab: NO POST to /api/internal/publish routes
 7. Database assertion: published_ebooks count = 0
@@ -174,7 +174,7 @@ Test flows requiring staging environment:
 ```
 1. Complete signup flow from claim link
 2. Check database: profiles.signup_origin = 'claim_link'
-3. Login to app.staging.publiora.bid.id with same credentials
+3. Login to app.staging.publiora.biz.id with same credentials
 4. Verify "New Project" button becomes enabled
 5. Create project → verify creator_activated_at timestamp set
 ```

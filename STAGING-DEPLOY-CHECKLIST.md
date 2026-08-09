@@ -148,14 +148,14 @@ Get actual values from:
    - `NextAuthSession` domain = `.publiora.biz.id` (parent domain!)
    - Check flags: `Secure`, `SameSite=Lax`
    
-3. **Without closing browser**, navigate to app.publiora.bid.id
+3. **Without closing browser**, navigate to app.publiora.biz.id
    - Click "My Library" or `/library` route
    - Should display user profile data WITHOUT re-login prompt
    
 4. **Cross-check from reverse direction**
    - Clear browser state again (incognito)
-   - Login at app.publiora.bid.id/library
-   - Navigate to baca.publiora.bid.id/library
+   - Login at app.publiora.biz.id/library
+   - Navigate to baca.publiora.biz.id/library
    - Should remain authenticated
 
 **Pass Criteria**: ✅ Automatic session persistence across subdomains
@@ -183,7 +183,7 @@ Cookie sharing must work via browser's native HTTP layer, not manual manipulatio
 **Terminology Correction**: This is NOT "claim link" - it's a **reader mode preview** for creators to test how their content appears to readers before publishing.
 
 **Setup**:
-- Login as creator at `app.publiora.bid.id`
+- Login as creator at `app.publiora.biz.id`
 - Existing account with paid subscription OR trial status
 - Project must have at least 1 generated section
 
@@ -196,7 +196,7 @@ Cookie sharing must work via browser's native HTTP layer, not manual manipulatio
    
 2. **Enter reader preview mode**
    - Look for button labeled: **"Pratinjau sebagai pembaca"** or "Preview Reader Mode"
-   - Click it → Opens new tab at `app.publiora.bid.id/projects/<PROJECT_ID>/preview`
+   - Click it → Opens new tab at `app.publiora.biz.id/projects/<PROJECT_ID>/preview`
    - NOT baca domain, NOT claim flow
    
 3. **Verify preview behavior**
