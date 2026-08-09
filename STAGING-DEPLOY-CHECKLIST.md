@@ -47,7 +47,7 @@ Get actual values from:
 
 1. **Open claim link while logged-out**
    ```
-   Navigate to: baca.publiora.biz.id/claim/<TOKEN>
+   Navigate to: baca.staging.publiora.biz.id/claim/<TOKEN>
    ```
    - Expected: Page loads with "Daftar" button visible (not query param URL)
    - No error about invalid token
@@ -65,14 +65,14 @@ Get actual values from:
    - Complete signup
    - Auto-redirect back to `/claim/<TOKEN>` after registration
    
-   Cookie should be set: `NextAuthSession=xxx` with domain `.publiora.biz.id`
+   Cookie should be set: `NextAuthSession=xxx` with domain `.staging.publiora.biz.id`
 
-3. **Verify ebook access granted**
-   - Check browser cookie: `document.cookie.split('; ').map(c => c.split('=')[0])`
-     - Should show: `NextAuthSession, readerId`
+3. **Verify entitlement created via auth session**
+   - Check browser cookies in DevTools → Application tab → Cookies
+     - Should show: `NextAuthSession` cookie (auth session), NOT `readerId`
    
    - Check network tab (DevTools → Network)
-     - Last request should be to `/api/internal/claim_ebook_access_v2` returning `{claim_result_json}`
+     - Last request should be to `/api/internal/claim_ebook_access_v2` returning successful claim result
 
 4. **Database verification**
    Connect via psql or Supabase SQL Editor:
@@ -125,7 +125,7 @@ Get actual values from:
 
 **Fail Scenarios**:
 - Token invalid/error page → Check `signup_contexts` table for expired/invalid hash
-- Cookie not set → Check `AUTH_COOKIE_DOMAIN` value, third-party cookie settings
+- Cookie not set → Check `AUTH_COOKIE_DOMAIN=.staging.publiora.biz.id` value, third-party cookie settings
 - Signup origin shows 'landing_page' instead of 'claim_link' → Verify claim_ebook_access_v2 RPC returns correct source
 - `/read/?claim=` URL pattern detected → Should be `/claim/{token}`, check frontend routing
 
@@ -139,23 +139,23 @@ Get actual values from:
 
 **Correct Test Method (Automatic)**:
 
-1. **Login at baca.publiora.biz.id**
+1. **Login at baca.staging.publiora.biz.id**
    - Use test account created in Scenario A
    - Enter credentials → Submit login form
    
 2. **Verify cookies set correctly**
-   In DevTools Application tab → Cookies → baca.publiora.biz.id:
-   - `NextAuthSession` domain = `.publiora.biz.id` (parent domain!)
+   In DevTools Application tab → Cookies → baca.staging.publiora.biz.id:
+   - `NextAuthSession` domain = `.staging.publiora.biz.id` (parent domain!)
    - Check flags: `Secure`, `SameSite=Lax`
    
-3. **Without closing browser**, navigate to app.publiora.biz.id
+3. **Without closing browser**, navigate to app.staging.publiora.biz.id
    - Click "My Library" or `/library` route
    - Should display user profile data WITHOUT re-login prompt
    
 4. **Cross-check from reverse direction**
    - Clear browser state again (incognito)
-   - Login at app.publiora.biz.id/library
-   - Navigate to baca.publiora.biz.id/library
+   - Login at app.staging.publiora.biz.id/library
+   - Navigate to baca.staging.publiora.biz.id/library
    - Should remain authenticated
 
 **Pass Criteria**: ✅ Automatic session persistence across subdomains
@@ -164,7 +164,7 @@ Get actual values from:
 
 **Fail Scenarios**:
 - Login prompt appears on second domain → Cookie domain mismatch
-  * Verify `AUTH_COOKIE_DOMAIN=.publiora.biz.id` matches all subdomains
+  * Verify `AUTH_COOKIE_DOMAIN=.staging.publiora.biz.id` matches all subdomains
 - CORS error → Disable Safari Intelligent Tracking Prevention for testing
 - Third-party cookie blocked → Chrome may require --disable-site-isolation-trials flag
 
@@ -183,7 +183,7 @@ Cookie sharing must work via browser's native HTTP layer, not manual manipulatio
 **Terminology Correction**: This is NOT "claim link" - it's a **reader mode preview** for creators to test how their content appears to readers before publishing.
 
 **Setup**:
-- Login as creator at `app.publiora.biz.id`
+- Login as creator at `app.staging.publiora.biz.id`
 - Existing account with paid subscription OR trial status
 - Project must have at least 1 generated section
 
@@ -196,7 +196,7 @@ Cookie sharing must work via browser's native HTTP layer, not manual manipulatio
    
 2. **Enter reader preview mode**
    - Look for button labeled: **"Pratinjau sebagai pembaca"** or "Preview Reader Mode"
-   - Click it → Opens new tab at `app.publiora.biz.id/projects/<PROJECT_ID>/preview`
+   - Click it → Opens new tab at `app.staging.publiora.biz.id/projects/<PROJECT_ID>/preview`
    - NOT baca domain, NOT claim flow
    
 3. **Verify preview behavior**

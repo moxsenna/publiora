@@ -10,11 +10,16 @@ Implements full user attribution lifecycle per [Live AI Specification](https://g
 - Immutable `signup_origin` field on `profiles` table (NOT separate table)
 
 **Claim-Only Publish Architecture**
-- Preview flow uses reader mode preview (internal testing tool for creators)
-- NEVER inserts into `published_ebooks` table
-- No slug generation or public URLs created
-- No entitlement modifications or analytics tracking
-- URL pattern: `app.publiora.biz.id/projects/{id}/preview`
+	- Reader preview feature allows creators to test content appearance without publishing
+	- NEVER inserts into `published_ebooks` table during preview mode
+	- Preview is internal testing tool, separate from external claim funnel
+	- No slug generation or public URLs created during preview
+	- No entitlement modifications or analytics tracking
+	- URL pattern: `app.staging.publiora.biz.id/projects/{id}/preview` (stays on app subdomain)
+	
+**Important Distinction**: Preview ≠ Claim Link
+	- Preview = Internal creator testing tool (stays on app domain)
+	- Claim Link = External marketing conversion funnel (uses baca domain + /claim/TOKEN route)
 
 **Cross-Domain Cookie Sharing**
 - `AUTH_COOKIE_DOMAIN=.publiora.biz.id` enables shared sessions across:
@@ -67,16 +72,18 @@ Implements full user attribution lifecycle per [Live AI Specification](https://g
 
 ---
 
-## ⚠️ Security Note: Environment Isolation
+## ⚠️ Environment Isolation (Staging vs Production)
 
 Staging and production environments are now **completely isolated**:
 
-| Environment | Domains | Secret |
-|-------------|---------|--------|
-| **Staging** | `staging.publiora.biz.id`, `app.staging.publiora.biz.id`, `baca.staging.publiora.biz.id` | Unique staging secret |
-| **Production** | `publiora.biz.id`, `app.publiora.biz.id`, `baca.publiora.biz.id` | Unique production secret |
+| Environment | Domains | Cookie Domain |
+|-------------|---------|---------------|
+| **Staging** | `staging.publiora.biz.id`, `app.staging.publiora.biz.id`, `baca.staging.publiora.biz.id` | `.staging.publiora.biz.id` |
+| **Production** | `publiora.biz.id`, `app.publiora.biz.id`, `baca.publiora.biz.id` | `.publiora.biz.id` |
 
-This ensures no cross-contamination between test and live data. Each environment has its own signup context secret.
+This ensures no cross-contamination between test and live data. Each environment has its own namespace with separate cookie domains.
+
+**Important**: Signup contexts use cryptographically random tokens stored in HttpOnly cookies with SHA-256 hashing only (no environment secret required).
 
 ---
 
@@ -137,8 +144,8 @@ Test flows requiring staging environment:
 2. Click "Daftar" button → fill signup form
 3. Redirect to /register?return_to=/claim/<TOKEN>
 4. Complete signup → auto-redirect back to /claim/<TOKEN>
-5. Verify entitlement created (reader_id cookie set)
-6. Navigate to library → verify ebook accessible
+5. Verify auth session created (NextAuthSession cookie set), NOT readerId cookie
+6. Navigate to library → verify ebook accessible via entitlement
 ```
 
 **Flow B: Staging Login → App Session Active**
@@ -163,10 +170,11 @@ Test flows requiring staging environment:
 **Flow D: Publish Creates Claim Link**
 ```
 1. Publish ebook from app → generates published_ebooks row
-2. Click "Generate Claim Link" → creates cached_url on baca.publiora.biz.id
-3. Open claim link while logged-out → triggers signup modal
-4. Complete signup → redirect to ebook with reader_id cookie
-5. Verify claim_link origin preserved through funnel
+2. Click "Generate Claim Link" → creates claim_link token in database
+3. UI builds canonical URL with buildClaimUrl(token) function
+4. Open claim link while logged-out → triggers signup modal
+5. Complete signup → redirect to ebook with auth session established
+6. Verify claim_link origin preserved through funnel
 ```
 
 **Flow E: Reader Becomes Creator**
