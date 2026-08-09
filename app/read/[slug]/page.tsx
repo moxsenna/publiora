@@ -40,11 +40,11 @@ export default function ReadPage({
             Ebook tidak ditemukan
           </h1>
           <p className="mt-2 text-sm text-[var(--color-medium-gray)]">
-            Tautan mungkin salah atau ebook belum diterbitkan.
+            Link mungkin salah, atau ebook belum dipublish.
           </p>
-            <Link href="/library" className="inline-block mt-6">
-              <Button>{readerId.backToLibrary}</Button>
-            </Link>
+          <Link href="/library" className="inline-block mt-6">
+            <Button>Ke library</Button>
+          </Link>
         </div>
       </div>
     );

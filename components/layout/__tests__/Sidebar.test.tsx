@@ -93,12 +93,18 @@ describe("mobile app drawer", () => {
 
     const trigger = screen.getByRole("button", { name: "Buka menu" });
     expect(trigger).toHaveAttribute("aria-controls", "app-navigation-drawer");
+    
+    // Initially should be false since mobileNavOpen starts as false
     expect(trigger).toHaveAttribute("aria-expanded", "false");
 
     await user.click(trigger);
+    
+    // After click, dialog should exist and be focused
     const dialog = screen.getByRole("dialog", { name: "Navigasi utama" });
     expect(dialog).toHaveAttribute("id", "app-navigation-drawer");
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    
+    // Trigger should now have aria-expanded="true" after opening
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByTestId("mobile-navigation-backdrop")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByTestId("mobile-navigation-backdrop")).not.toHaveAttribute("tabindex");

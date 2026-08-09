@@ -7,7 +7,11 @@ import type {
   WorkflowCheck,
   WorkflowCheckCategory,
 } from "@/types/workflow";
-import { reviewId } from "@/lib/i18n/id/review";
+import {
+  reviewId,
+  getReviewCheckCopy,
+  getReviewStepActionCopy,
+} from "@/lib/i18n/id/review";
 
 interface ReviewChecklistProps {
   checks: WorkflowCheck[];
@@ -127,12 +131,13 @@ function CheckItem({
       ? "text-[var(--color-danger)]"
       : "text-[var(--color-gold)]";
   const step = check.action_step ?? check.targetStep;
+  const copy = getReviewCheckCopy(check);
   const actionLabel =
     check.action_label ??
     (check.section_id || check.outline_section_id
       ? reviewId.openSection
       : step
-        ? `Buka ${step}`
+        ? getReviewStepActionCopy(step)
         : reviewId.fix);
 
   return (
@@ -144,11 +149,11 @@ function CheckItem({
       )}
       <div className="min-w-0 flex-1 space-y-0.5">
         <span className="text-[var(--color-deep-gray)]">
-          {check.title ?? check.label}
+          {copy.title}
         </span>
-        {(check.description || check.message) && (
+        {(copy.description) && (
           <span className="block text-xs text-[var(--color-medium-gray)]">
-            {check.description ?? check.message}
+            {copy.description}
           </span>
         )}
         {step && onNavigate && (

@@ -44,7 +44,15 @@ export const useUiStore = create<UiState>((set, get) => ({
   mobileNavOpen: false,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebar: (open) => set({ sidebarOpen: open }),
-  setMobileNav: (open) => set({ mobileNavOpen: open }),
+  setMobileNav: (open, restoreFocusTo?: HTMLButtonElement | null) => {
+    set({ mobileNavOpen: open });
+    if (!open && restoreFocusTo) {
+      // Restore focus to trigger after closing
+      setTimeout(() => {
+        restoreFocusTo.focus();
+      }, 0);
+    }
+  },
   toggleMobileNav: () => set((s) => ({ mobileNavOpen: !s.mobileNavOpen })),
   toasts: [],
   pushToast: (t) => {
