@@ -71,6 +71,9 @@ git-*.txt
 testsprite_tests/tmp/
 testsprite_tests/**/*.log
 
+# 9router placeholder (AI provider local dev marker)
+.9router
+
 # git worktrees
 .worktrees/
 
