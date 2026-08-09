@@ -103,7 +103,6 @@ psql -h db.publiora.supabase.co -U postgres -d postgres \
 4. `20260807000004_internal_user_audience_v1.sql` - Creates admin-only audience view
 
 **Important Notes:**
-- Migration does NOT create a `signed_up_users` table
 - Attribution data stored directly in existing `profiles` table columns
 - Temporary `signup_contexts` table stores short-lived tokens with SHA-256 hashing
 
