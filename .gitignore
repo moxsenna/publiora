@@ -71,8 +71,8 @@ git-*.txt
 testsprite_tests/tmp/
 testsprite_tests/**/*.log
 
-# 9router placeholder (AI provider local dev marker)
-.9router
+# 9router placeholder - DO NOT IGNORE for Docker builds
+# .9router → removed from ignore list below
 
 # git worktrees
 .worktrees/

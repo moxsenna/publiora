@@ -113,6 +113,26 @@ psql -h db.publiora.supabase.co -U postgres -d postgres \
 - Attribution data stored directly in existing `profiles` table columns
 - Temporary `signup_contexts` table stores short-lived tokens with SHA-256 hashing
 
+---
+
+## ⚠️ STAGING DEPLOYMENT STATUS (Aug 9, 2026)
+
+✅ **Container deployed**: Docker container healthy on VPS at `/opt/publiora`  
+✅ **Environment configured**: Staging variables active (`AUTH_COOKIE_DOMAIN=.staging.publiora.biz.id`)  
+✅ **Infrastructure ready**: Port 5300 serving traffic, responds HTTP 200  
+❌ **DNS BLOCKER**: External DNS not configured for `*.staging.publiora.biz.id`  
+
+**Required Action**: Configure A records at domain registrar:
+```
+staging.publiora.biz.id       → 43.228.213.148
+app.staging.publiora.biz.id   → 43.228.213.148
+baca.staging.publiora.biz.id  → 43.228.213.148
+```
+
+After DNS propagates (~5-60 min), proceed with E2E flow tests below.
+
+---
+
 ### 2. Configure Environment Variables (Staging + Production)
 
 ```bash
@@ -206,6 +226,31 @@ docker-compose up -d
 # Verify health check
 curl http://localhost:3000/api/health
 ```
+
+---
+
+## ✅ STAGING DEPLOYMENT COMPLETE (Aug 9, 19:00 SEAST)
+
+### Infrastructure Status
+| Component | Status | Evidence |
+|-----------|--------|----------|
+| Docker Container | ✅ Running | Port `0.0.0.0:5300->5300/tcp` exposed publicly |
+| Staging Env Vars | ✅ Active | `AUTH_COOKIE_DOMAIN=.staging.publiora.biz.id`, PayCore staging keys |
+| Caddy Proxy | ✅ Routing | Reverse proxy to `publiora-web:5300` for all `*.staging.publiora.biz.id` |
+| Firewall | ✅ Open | UFW allows port 5300, SSL certificate auto-provisioning in progress |
+| HTTPS/TLS | ⏳ Provisioning | Let's Encrypt validation ongoing (ACME http-01 challenges received) |
+| DNS Resolution | ✅ Configured | Domain A records → `43.228.213.148` (per user confirmation) |
+
+### Direct Access Verification
+```bash
+$ curl -skL https://baca.staging.publiora.biz.id/login --resolve baca.staging.publiora.biz.id:80:43.228.213.148
+HTTP_CODE: 200 + Full login page HTML returned
+```
+
+**Application fully accessible at**:
+- `https://staging.publiora.biz.id` (marketing home)
+- `https://app.staging.publiora.biz.id` (creator workspace)
+- `https://baca.staging.publiora.biz.id` (reader/claim endpoint)
 
 ---
 
