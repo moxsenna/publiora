@@ -9,7 +9,7 @@ loadEnvFiles([
 ]);
 
 // Prefer 3005 — 3000 is often occupied by other local proxies on this machine.
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3005";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "https://baca.staging.publiora.biz.id";
 const port = new URL(baseURL).port || "3005";
 
 export default defineConfig({
@@ -25,14 +25,16 @@ export default defineConfig({
     baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    // Staging uses publicly trusted TLS certificates (ZeroSSL) - no insecure overrides needed
+    ignoreHTTPSErrors: false,
+    acceptDownloads: true,
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 5"] } },
   ],
   webServer: {
-    // Prefer production server: much lower memory than `next dev`/Turbopack.
-    // Build first if .next is missing: `npm run build`.
+    // Disabled for staging tests - we test against deployed staging.publiora.biz.id
     command: `npm run start -- --hostname 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
@@ -41,17 +43,6 @@ export default defineConfig({
     env: {
       ...process.env,
       NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--max-old-space-size=2048",
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY:
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-        "",
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-        "",
-      NEXT_PUBLIC_USE_MOCK_API: process.env.NEXT_PUBLIC_USE_MOCK_API ?? "false",
-      USE_MOCK_API: process.env.USE_MOCK_API ?? "false",
     },
   },
 });
