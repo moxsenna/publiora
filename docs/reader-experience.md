@@ -98,23 +98,65 @@ secepat mungkin.
 
 4\. Reader URL Structure
 
-Public Reader
+**Three-Domain Architecture (2026-08 Update)**
 
-publiora.web.id/read/:slug
+Publiora uses three separate subdomains for different user experiences:
+
+### Marketing Domain
+```
+https://publiora.biz.id
+```
+- Landing page & acquisition
+- Public-facing marketing content
+- No authentication required
+
+### App Domain  
+```
+https://app.publiora.biz.id
+```
+- Creator workspace & dashboard
+- Project management
+- Authenticated creators only
+
+### Reader Domain
+```
+https://baca.publiora.biz.id
+```
+- **Ebook reading experience** (primary reader host)
+- Claim links & ebook distribution
+- Library & reader authentication
+- All public claim URLs target this domain
 
 ---
 
-Private Reader
+Correct URL Examples
 
-Requires authentication + entitlement.
+```
+✅ https://baca.publiora.biz.id/read/content-engine-playbook
+✅ https://baca.publiora.biz.id/claim/ABC123TOKEN
+✅ https://baca.publiora.biz.id/library
+❌ https://app.publiora.biz.id/read/... ← WRONG (should be baca.)
+```
 
 ---
 
-Claim Link
+Implementation Notes
 
-publiora.web.id/claim/:token
+Reader URLs are built using `lib/urls.ts`:
 
----
+```typescript
+export function buildPublishedReaderUrl(slug: string): string {
+  return buildDomainUrl("reader", `/read/${slug}`);
+}
+
+// Returns: "https://baca.publiora.biz.id/read/{slug}"
+```
+
+The `NEXT_PUBLIC_READER_URL` environment variable must be set during Docker build time to inject the correct domain into the client bundle.
+
+## Domain Routing (2026-08)
+
+Host-based routing enforces domain boundaries via middleware (`proxy.ts`). Requests to `/read/:path*`, `/claim/:path*`, or `/library/:path*` on any host other than `baca.publiora.biz.id` are automatically redirected with a 308 permanent redirect.
 
 5\. Reader Layout
 
