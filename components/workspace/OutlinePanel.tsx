@@ -210,7 +210,6 @@ export function OutlinePanel({
 
               <Button
                 onClick={() => onGenerate(false)}
-                loading={generateOutline.isPending}
                 disabled={generateOutline.isPending}
                 className="w-full"
               >
@@ -351,7 +350,6 @@ export function OutlinePanel({
             variant="outline"
             size="sm"
             onClick={() => onGenerate(false)}
-            loading={generateOutline.isPending}
             disabled={generateOutline.isPending}
             className="shrink-0"
           >
@@ -415,7 +413,6 @@ export function OutlinePanel({
             </Button>
             <Button
               variant="danger"
-              loading={generateOutline.isPending}
               disabled={generateOutline.isPending}
               onClick={() => onGenerate(true)}
             >
