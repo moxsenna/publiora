@@ -54,9 +54,9 @@ export function Features() {
             return (
               <div
                 key={f.title}
-                className="p-4 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] hover:bg-white hover:shadow-[var(--shadow-card-hover)] transition-colors transition-shadow"
+                className="group p-4 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] hover:bg-white hover:-translate-y-1 hover:border-[var(--color-publiora-blue)]/40 hover:shadow-[var(--shadow-card-hover)] transition-all duration-200"
               >
-                <div className="h-9 w-9 rounded-lg bg-[var(--color-publiora-black)] grid place-items-center text-white">
+                <div className="h-9 w-9 rounded-lg bg-[var(--color-publiora-black)] grid place-items-center text-white transition-transform duration-200 group-hover:scale-110">
                   <Icon className="h-4 w-4" />
                 </div>
                 <h3 className="mt-3 text-base font-semibold text-[var(--color-publiora-black)]">{f.title}</h3>

@@ -1,0 +1,98 @@
+# Shared reverse proxy for multi-app VPS
+# DNS A → 43.228.213.148
+
+waduid.appvibe.biz.id {
+	encode gzip
+	reverse_proxy web:5001
+}
+
+waduid-api.appvibe.biz.id {
+	encode gzip
+	reverse_proxy api:5000
+}
+
+9router.appvibe.web.id {
+	encode gzip
+	reverse_proxy 172.19.0.1:5100
+}
+
+gemini-web.appvibe.web.id {
+	encode gzip
+	reverse_proxy 172.19.0.1:8081
+}
+
+lakoku.biz.id, app.lakoku.biz.id {
+	encode gzip
+	reverse_proxy lakoku-web:5200
+}
+
+publiora.biz.id, app.publiora.biz.id, read.publiora.biz.id {
+	encode gzip
+	reverse_proxy publiora-web:5300
+}
+
+# legacy host → new apex
+publiora.appvibe.biz.id {
+	redir https://publiora.biz.id{uri} permanent
+}
+
+# hermox / affiliate tools
+moxaffi.appvibe.biz.id {
+	encode gzip
+
+	handle /oauth/threads/* {
+		reverse_proxy threads-oauth:8765
+	}
+	handle /auth {
+		reverse_proxy threads-oauth:8765
+	}
+	handle /auth/* {
+		reverse_proxy threads-oauth:8765
+	}
+	handle /callback {
+		reverse_proxy threads-oauth:8765
+	}
+	handle /callback/* {
+		reverse_proxy threads-oauth:8765
+	}
+	handle /connect* {
+		reverse_proxy threads-oauth:8765
+	}
+
+	handle /meta/uninstall {
+		respond "ok" 200
+	}
+	handle /meta/data-deletion {
+		header Content-Type application/json
+		respond `{"url":"https://moxaffi.appvibe.biz.id/meta/data-deletion-status","confirmation_code":"moxaffi-ok"}` 200
+	}
+	handle /meta/data-deletion-status {
+		header Content-Type text/plain
+		respond "Data deletion request received / processed." 200
+	}
+
+	handle /privacy {
+		header Content-Type text/html; charset=utf-8
+		respond `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Privacy Policy — moxaffi</title></head><body style="font-family:system-ui,sans-serif;max-width:760px;margin:40px auto;padding:0 16px;line-height:1.55"><h1>Privacy Policy — moxaffi</h1><p><b>Last updated:</b> 19 July 2026</p><p>moxaffi/hermox processes Threads account identifiers, OAuth tokens, and post content solely to publish content you request via official Threads API. Data is stored on a private server, not sold. Contact the operator via Telegram for deletion requests. Status: <a href="/meta/data-deletion-status">data deletion status</a>.</p></body></html>` 200
+	}
+	handle /terms {
+		header Content-Type text/html; charset=utf-8
+		respond `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Terms — moxaffi</title></head><body style="font-family:system-ui,sans-serif;max-width:760px;margin:40px auto;padding:0 16px;line-height:1.55"><h1>Terms of Use — moxaffi</h1><p>Automation helper for the operator’s own publishing workflows. You are responsible for content compliance with Meta/Threads policies. See <a href="/privacy">Privacy Policy</a>.</p></body></html>` 200
+	}
+
+	handle /webhook {
+		reverse_proxy 172.19.0.1:8766
+	}
+
+	handle /health {
+		reverse_proxy threads-oauth:8765
+	}
+
+	respond "moxaffi ok — hermox tools" 200
+}
+
+# spark-bridge MCP server (Gemini Spark data bridge)
+spark-mcp.appvibe.web.id {
+	encode gzip
+	reverse_proxy 172.19.0.1:8810
+}

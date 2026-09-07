@@ -64,7 +64,7 @@ export function Pricing() {
             <div
               key={t.name}
               className={
-                "p-5 rounded-[var(--radius-card)] border bg-white " +
+                "p-5 rounded-[var(--radius-card)] border bg-white hover:-translate-y-1.5 transition-all duration-300 hover:shadow-xl " +
                 (t.featured
                   ? "border-[var(--color-publiora-black)] shadow-[var(--shadow-pop)] relative md:col-span-2 lg:col-span-1"
                   : "border-[var(--color-publiora-border)]")

@@ -13,6 +13,16 @@ import type { Section } from "@/types/section";
 import type { Outline } from "@/types/outline";
 import { loadPrimaryProjectOfferContext } from "@/lib/offers/project-offer-context";
 
+export async function continueAfterPublicationLookup<T>(
+  lookup: { data: Record<string, unknown> | null; error: unknown },
+  continuePublish: (publication: Record<string, unknown> | null) => Promise<T>,
+): Promise<T | Response> {
+  if (lookup.error) {
+    return jsonError("Failed to load existing publication", 500, "db_error");
+  }
+  return continuePublish(lookup.data);
+}
+
 function slugify(s: string): string {
   return s
     .toLowerCase()
@@ -113,9 +123,11 @@ export async function POST(
     previousStatus = project.status;
     previousPublishedAt = project.published_at ?? null;
 
-    const body = (await req.json().catch(() => ({}))) as {
-      is_public?: boolean;
-    };
+    // Claim-only distribution (§9.2): the server always publishes non-public
+    // and ignores any client-requested visibility. Existing public records
+    // are never bulk-changed; only new/republished snapshots come through
+    // this atomic RPC.
+    const isPublic = false;
 
     // Load strategy — check PostgREST error explicitly
     const {
@@ -234,7 +246,7 @@ export async function POST(
       await restoreProjectStatus(
         supabase,
         id,
-        previousStatus === "published" ? "generated" : (previousStatus ?? "generated"),
+        previousStatus ?? "generated",
         now,
         previousPublishedAt,
       );
@@ -281,11 +293,26 @@ export async function POST(
       : null;
 
     // Prefer stable slug on republish; generate only for first publish.
-    const { data: existingPub } = await supabase
+    const existingPublicationLookup = await supabase
       .from("published_ebooks")
-      .select("id, slug")
+      .select("id, slug, is_public")
       .eq("project_id", id)
       .maybeSingle();
+    const guardedPublication = await continueAfterPublicationLookup(
+      existingPublicationLookup,
+      async (publication) => publication,
+    );
+    if (guardedPublication instanceof Response) {
+      await restoreProjectStatus(
+        supabase,
+        id,
+        previousStatus ?? "generated",
+        now,
+        previousPublishedAt,
+      );
+      return guardedPublication;
+    }
+    const existingPub = guardedPublication;
     const slug =
       (existingPub?.slug as string | undefined) ||
       slugify(project.title) + "-" + Math.random().toString(36).slice(2, 6);
@@ -307,7 +334,7 @@ export async function POST(
       {
         p_project_id: id,
         p_publication_snapshot: publication_snapshot,
-        p_is_public: body.is_public ?? true,
+        p_is_public: isPublic,
         p_slug: slug,
       },
     );
@@ -316,7 +343,7 @@ export async function POST(
       await restoreProjectStatus(
         supabase,
         id,
-        previousStatus === "published" ? "generated" : (previousStatus ?? "generated"),
+        previousStatus ?? "generated",
         now,
         previousPublishedAt,
       );
@@ -350,7 +377,7 @@ export async function POST(
       await restoreProjectStatus(
         supabase,
         id,
-        previousStatus === "published" ? "generated" : previousStatus,
+        previousStatus,
         new Date().toISOString(),
         previousPublishedAt,
       );

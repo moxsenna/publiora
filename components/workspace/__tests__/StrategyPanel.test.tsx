@@ -492,9 +492,9 @@ describe("contextual suggestions from metadata", () => {
 
     render(<StrategyPanel projectId="proj-1" />);
 
-    // Chips should be visible
-    expect(screen.getByText(CTX_REPLIES[0].label)).toBeInTheDocument();
-    expect(screen.getByText(CTX_REPLIES[1].label)).toBeInTheDocument();
+    // Chips should be visible (component adds "1. ", "2. " prefixes)
+    expect(screen.getByText(/1\. Target UMKM/u)).toBeInTheDocument();
+    expect(screen.getByText(/2\. Kesulitan digital/u)).toBeInTheDocument();
   });
 
   it("clicking a contextual chip calls send.mutateAsync with suggestion.message", async () => {
@@ -514,7 +514,7 @@ describe("contextual suggestions from metadata", () => {
     const user = userEvent.setup();
     render(<StrategyPanel projectId="proj-1" />);
 
-    const chip = screen.getByText(CTX_REPLIES[0].label);
+    const chip = screen.getByText(/1\. Target UMKM/u);
     await user.click(chip);
 
     expect(sendMutateAsyncMock).toHaveBeenCalledWith({
@@ -639,9 +639,9 @@ describe("latest-only behavior", () => {
 
     render(<StrategyPanel projectId="proj-1" />);
 
-    // Latest chips visible
-    expect(screen.getByText("New chip X")).toBeInTheDocument();
-    expect(screen.getByText("New chip Y")).toBeInTheDocument();
+    // Latest chips visible (component adds "1. ", "2. " prefixes)
+    expect(screen.getByText(/1\. New chip X/u)).toBeInTheDocument();
+    expect(screen.getByText(/2\. New chip Y/u)).toBeInTheDocument();
 
     // Earlier chips NOT visible
     expect(screen.queryByText("Old chip A")).not.toBeInTheDocument();

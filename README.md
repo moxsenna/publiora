@@ -18,6 +18,12 @@ npm install
 npm run dev
 ```
 
+Canonical domain keys (`NEXT_PUBLIC_MARKETING_URL` / `NEXT_PUBLIC_APP_URL` /
+`NEXT_PUBLIC_READER_URL`), shared session cookie (`AUTH_COOKIE_DOMAIN`) and
+`SIGNUP_CONTEXT_SECRET`: see `.env.example`. Single-host local dev may point the
+three URLs at localhost; `.env`-less e2e uses `.env.e2e.local`. See
+`docs/auth-domains.md`.
+
 ### Database
 
 Apply Supabase migrations under `supabase/migrations/` (including CTA fields migration `20260719000001_workflow_review_cta.sql`).
@@ -32,6 +38,7 @@ Apply Supabase migrations under `supabase/migrations/` (including CTA fields mig
 | `npm run test:e2e:smoke` | Playwright public smoke |
 | `npm run test:e2e` | Full Playwright (needs `E2E_EMAIL` / `E2E_PASSWORD`) |
 | `node scripts/seed-e2e-workflow-project.mjs` | Seed multi-stage e2e project |
+| `npm run export:audience` | Export consented audience segments (service-role only; see `docs/signup-attribution.md`) |
 
 ### E2E auth
 
@@ -40,8 +47,10 @@ Playwright injects Supabase session cookies (`@supabase/ssr` format). See `e2e/h
 ### Docs
 
 - `docs/prd.md` / `docs/mvp-scope.md` — product scope
-- `docs/user-flows.md` — workflow-first UX
+- `docs/user-flows.md` — workflow-first UX (incl. claim reader & attribution lifecycle)
 - `docs/ai-prompts.md` — agent contracts
+- `docs/auth-domains.md` — canonical hosts + shared session
+- `docs/signup-attribution.md` — attribution, lifecycle, consent, audience export
 - `deploy/AGENT-DEPLOY.md` — VPS rebuild (git push ≠ live)
 
 ## License

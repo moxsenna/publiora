@@ -13,6 +13,12 @@ export interface OutlineSection {
   estimated_words: number;
   /** Generation status per section. */
   status: "pending" | "generating" | "generated" | "failed";
+  /** Optional alias for status during generation workflows. */
+  generation_status?: "pending" | "generating" | "generated" | "failed";
+  /** Optional alias for position. */
+  section_order?: number;
+  /** Optional alias for estimated_words. */
+  target_word_count?: number;
 }
 
 export interface Outline {

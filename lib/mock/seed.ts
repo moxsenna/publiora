@@ -31,6 +31,17 @@ export const seedProfile: Profile[] = [
     plan: "creator",
     created_at: "2026-06-01T10:00:00.000Z",
     updated_at: "2026-06-01T10:00:00.000Z",
+    signup_origin: "legacy_unknown",
+    initial_intent: null,
+    first_claim_link_id: null,
+    first_claim_ebook_id: null,
+    first_claim_creator_id: null,
+    reader_activated_at: null,
+    creator_activated_at: "2026-06-12T09:30:00.000Z",
+    creator_subscribed_at: null,
+    marketing_email_consent: false,
+    marketing_email_consent_at: null,
+    marketing_email_consent_source: null,
   },
 ];
 

@@ -36,6 +36,10 @@ yarn-error.log*
 .env
 .env*.local
 !.env.example
+.env.staging
+.env.production
+.env.staging.example
+.env.production.example
 
 # vercel
 .vercel
@@ -58,6 +62,9 @@ build-out.txt
 
 deploy/.env.production
 
+# audience export artifacts (server/local-only, never committed)
+.local/
+
 # local agent / browser noise
 .playwright-mcp/
 .vscode/
@@ -68,6 +75,9 @@ git-*.txt
 testsprite_tests/tmp/
 testsprite_tests/**/*.log
 
+# 9router placeholder - DO NOT IGNORE for Docker builds
+# .9router → removed from ignore list below
+
 # git worktrees
 .worktrees/
 
@@ -76,3 +86,4 @@ docs/stitch/exports/html/*.png
 deploy/paycore.env.snippet
 .env.e2e.local
 playwright/.auth/
+testsprite_tests/tmp/config.json

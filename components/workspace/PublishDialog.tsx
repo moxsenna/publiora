@@ -6,37 +6,40 @@ import { usePublishEbook } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { Label } from "@/components/ui/Input";
-import { Radio } from "@/components/ui/Radio";
+import { Link2 } from "lucide-react";
+import { publishId } from "@/lib/i18n/id/publish";
 
 interface PublishDialogProps {
   open: boolean;
   onClose: () => void;
   projectId: string;
+  isPublished: boolean;
 }
 
-export function PublishDialog({ open, onClose, projectId }: PublishDialogProps) {
+export function PublishDialog(props: PublishDialogProps) {
+  return <PublishDialogContent key={`${props.open}:${props.isPublished}`} {...props} />;
+}
+
+function PublishDialogContent({ open, onClose, projectId, isPublished }: PublishDialogProps) {
   const router = useRouter();
   const publish = usePublishEbook();
   const pushToast = useUiStore((s) => s.pushToast);
-  const [visibility, setVisibility] = React.useState<"public" | "private">("public");
 
   const onPublish = async () => {
     if (publish.isPending) return;
     try {
       const ebook = await publish.mutateAsync({
         project_id: projectId,
-        is_public: visibility === "public",
       });
-      pushToast({ title: "Ebook published", description: "Klaim link bisa dibuat sekarang.", variant: "success" });
+      pushToast({
+        title: publishId.success,
+        description: "Tautan klaim kini dapat dibuat.",
+        variant: "success",
+      });
       onClose();
-      router.push(`/published/${ebook.id}`);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Publish gagal. Periksa blocker dan coba lagi.";
-      pushToast({ title: message, variant: "danger" });
+      router.push(`/published/${ebook.id}?tab=claims&create=1`);
+    } catch {
+      pushToast({ title: publishId.failed, variant: "danger" });
     }
   };
 
@@ -44,29 +47,23 @@ export function PublishDialog({ open, onClose, projectId }: PublishDialogProps) 
     <Modal
       open={open}
       onClose={publish.isPending ? () => {} : onClose}
-      title="Publish ebook"
-      description="Publish menjadikan semua section terkini menjadi versi reader. Public = slug aktif."
+      title={isPublished ? publishId.republish : publishId.title}
+      description="Ebook akan disimpan sebagai versi terbit dan hanya dapat dibuka oleh Anda atau pembaca yang berhasil melakukan klaim."
       footer={
         <>
           <Button variant="outline" onClick={onClose} disabled={publish.isPending}>Batal</Button>
           <Button onClick={onPublish} loading={publish.isPending} disabled={publish.isPending}>
-            {publish.isPending ? "Memproses..." : "Publish sekarang"}
+            {publish.isPending ? "Memproses…" : (isPublished ? publishId.republish : publishId.publishNow)}
           </Button>
         </>
       }
     >
-      <div className="space-y-3">
-        <Label>Visibility</Label>
-        <Radio
-          checked={visibility === "public"}
-          onChange={() => setVisibility("public")}
-          label="Public — slug aktif, claim link bisa diakses"
-        />
-        <Radio
-          checked={visibility === "private"}
-          onChange={() => setVisibility("private")}
-          label="Private — slug hidden, hanya claim link bisa beri akses"
-        />
+      <div className="flex items-start gap-2.5 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] p-3">
+        <Link2 className="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-gold)]" />
+        <p className="text-xs text-[var(--color-medium-gray)]">
+          Terbitkan untuk pembaca — akses hanya melalui tautan klaim yang
+          Anda buat setelah terbit.
+        </p>
       </div>
     </Modal>
   );

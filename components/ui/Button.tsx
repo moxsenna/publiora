@@ -52,7 +52,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={disabled || loading}
         className={cn(
-          "inline-flex items-center justify-center gap-1.5 rounded-[var(--radius-button)] font-medium transition-colors duration-150 select-none",
+          "inline-flex items-center justify-center gap-1.5 rounded-[var(--radius-button)] font-medium select-none cursor-pointer",
+          "transition-all duration-150 ease-out active:scale-[0.98] disabled:active:scale-100",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           variantClasses[variant],
           sizeClasses[size],
@@ -61,7 +62,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading && (
-          <span className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+          <span
+            aria-hidden="true"
+            className="h-4 w-4 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
+          />
         )}
         {children}
       </button>

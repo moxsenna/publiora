@@ -23,7 +23,7 @@ export function HowItWorks() {
           {steps.map((s) => (
             <div
               key={s.num}
-              className="p-4 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-white"
+              className="group p-4 rounded-[var(--radius-card)] border border-[var(--color-publiora-border)] bg-white hover:-translate-y-1 hover:border-[var(--color-gold)]/50 hover:shadow-[var(--shadow-card-hover)] transition-all duration-200"
             >
               <div className="text-xl font-bold text-[var(--color-gold)]">{s.num}</div>
               <h3 className="mt-2 text-base font-semibold text-[var(--color-publiora-black)]">{s.title}</h3>

@@ -4,6 +4,7 @@ import {
   commonId,
   ebookTypeLabelsId,
   generationId,
+  navigationId,
   publishId,
   reviewId,
   sectionStatusLabelsId,
@@ -24,6 +25,25 @@ describe("id label maps", () => {
     );
   });
 
+  it("defines exact Indonesian navigation labels", () => {
+    expect(navigationId).toEqual({
+      dashboard: "Dasbor",
+      projects: "Proyek",
+      offers: "Produk & Penawaran",
+      library: "Pustaka",
+      billing: "Tagihan",
+      newProject: "Proyek Baru",
+      workspace: "Ruang Kerja",
+      published: "Terbit",
+      signOut: "Keluar",
+      openMenu: "Buka menu",
+      closeMenu: "Tutup menu",
+      collapseSidebar: "Ciutkan panel samping",
+      expandSidebar: "Bentangkan panel samping",
+      guest: "Pengguna",
+    });
+  });
+
   it("has non-empty Indonesian strings for key modules", () => {
     for (const value of Object.values(commonId)) {
       expect(String(value).length).toBeGreaterThan(0);
@@ -33,7 +53,7 @@ describe("id label maps", () => {
     expect(reviewId.strategy).toBe("Strategi");
     expect(publishId.publish).toBe("Terbitkan");
     expect(agentsId.generateSuggestions).toBe("Buat saran");
-    expect(workflowStepLabelsId.review).toBe("Review");
+    expect(workflowStepLabelsId.review).toBe("Tinjau");
   });
 
   it("does not expose raw English enum tokens as labels", () => {

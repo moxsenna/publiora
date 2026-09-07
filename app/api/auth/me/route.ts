@@ -1,10 +1,30 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile } from "@/types/auth";
+import type { Profile, SignupOrigin, MarketingConsentSource } from "@/types/auth";
 import type { PlanId } from "@/types/billing";
 
 function isPlanId(value: unknown): value is PlanId {
   return value === "free" || value === "creator" || value === "pro";
+}
+
+function isSignupOrigin(value: unknown): value is SignupOrigin {
+  return (
+    value === "unattributed" ||
+    value === "landing_page" ||
+    value === "claim_link" ||
+    value === "direct_app" ||
+    value === "legacy_unknown" ||
+    value === "admin_created"
+  );
+}
+
+function isConsentSource(value: unknown): value is MarketingConsentSource {
+  return (
+    value === "landing_signup" ||
+    value === "claim_signup" ||
+    value === "account_settings" ||
+    value === "admin_import"
+  );
 }
 
 function mapProfileRow(row: Record<string, unknown>, email: string | null): Profile {
@@ -18,6 +38,24 @@ function mapProfileRow(row: Record<string, unknown>, email: string | null): Prof
     plan: isPlanId(planRaw) ? planRaw : "free",
     created_at: String(row.created_at ?? new Date().toISOString()),
     updated_at: String(row.updated_at ?? new Date().toISOString()),
+    signup_origin: isSignupOrigin(row.signup_origin)
+      ? row.signup_origin
+      : "unattributed",
+    initial_intent:
+      row.initial_intent === "reader" || row.initial_intent === "creator"
+        ? row.initial_intent
+        : null,
+    first_claim_link_id: (row.first_claim_link_id as string | null) ?? null,
+    first_claim_ebook_id: (row.first_claim_ebook_id as string | null) ?? null,
+    first_claim_creator_id: (row.first_claim_creator_id as string | null) ?? null,
+    reader_activated_at: (row.reader_activated_at as string | null) ?? null,
+    creator_activated_at: (row.creator_activated_at as string | null) ?? null,
+    creator_subscribed_at: (row.creator_subscribed_at as string | null) ?? null,
+    marketing_email_consent: Boolean(row.marketing_email_consent ?? false),
+    marketing_email_consent_at: (row.marketing_email_consent_at as string | null) ?? null,
+    marketing_email_consent_source: isConsentSource(row.marketing_email_consent_source)
+      ? row.marketing_email_consent_source
+      : null,
   };
 }
 
@@ -55,6 +93,17 @@ export async function GET() {
         plan: "free",
         created_at: now,
         updated_at: now,
+        signup_origin: "unattributed",
+        initial_intent: null,
+        first_claim_link_id: null,
+        first_claim_ebook_id: null,
+        first_claim_creator_id: null,
+        reader_activated_at: null,
+        creator_activated_at: null,
+        creator_subscribed_at: null,
+        marketing_email_consent: false,
+        marketing_email_consent_at: null,
+        marketing_email_consent_source: null,
       };
     } else {
       profile = mapProfileRow(row as Record<string, unknown>, user.email ?? null);

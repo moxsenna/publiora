@@ -6,8 +6,8 @@ export function FinalCTA() {
   return (
     <section className="bg-[var(--color-publiora-black)] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16 text-center relative overflow-hidden">
-        <div className="absolute -top-12 right-10 h-56 w-56 rounded-full bg-[var(--color-gold)]/20 blur-3xl" />
-        <div className="absolute -bottom-12 left-10 h-56 w-56 rounded-full bg-[var(--color-publiora-blue)]/20 blur-3xl" />
+        <div className="absolute -top-12 right-10 h-56 w-56 rounded-full bg-[var(--color-gold)]/20 blur-3xl animate-pulse-soft" />
+        <div className="absolute -bottom-12 left-10 h-56 w-56 rounded-full bg-[var(--color-publiora-blue)]/20 blur-3xl animate-pulse-soft" />
         <div className="relative">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-pretty">
             Mulai publikasi ebook marketing pertama Anda.

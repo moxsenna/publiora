@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 import { TitleSuggestions } from "@/components/workspace/TitleSuggestions";
 import {
   Sparkles,
@@ -59,6 +60,7 @@ export function OutlinePanel({
   const { data: outline, isLoading } = useOutline(projectId);
   const { data: strategy } = useStrategy(projectId);
   const generate = useGenerateOutline();
+  const generateOutline = generate;
   const update = useUpdateOutline();
   const approve = useApproveOutline();
   const pushToast = useUiStore((s) => s.pushToast);
@@ -97,6 +99,19 @@ export function OutlinePanel({
     return draft.sections.filter((s) => s.title && s.title.trim().length > 0)
       .length;
   }, [draft.sections]);
+
+  // Stable sensor configuration — must be declared unconditionally with the
+  // other hooks. Declaring it after an early return changes the hook count
+  // between renders (e.g. loading → ready), which React rejects with
+  // "Rendered more hooks than during the previous render" (#310).
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   const canApprove = !!(
     outline &&
@@ -195,12 +210,20 @@ export function OutlinePanel({
 
               <Button
                 onClick={() => onGenerate(false)}
-                loading={generate.isPending}
-                disabled={generate.isPending}
+                disabled={generateOutline.isPending}
                 className="w-full"
               >
-                <Sparkles className="h-4 w-4" />
-                Generate outline
+                {generateOutline.isPending ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>Menyusun outline…</span>
+                    <LoadingDots size="sm" />
+                  </span>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Generate outline
+                  </>
+                )}
               </Button>
             </div>
           }
@@ -248,15 +271,6 @@ export function OutlinePanel({
   };
 
   const saveLabel = outlineSaveStateLabel(draft.saveState);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -336,12 +350,20 @@ export function OutlinePanel({
             variant="outline"
             size="sm"
             onClick={() => onGenerate(false)}
-            loading={generate.isPending}
-            disabled={generate.isPending}
+            disabled={generateOutline.isPending}
             className="shrink-0"
           >
-            <Sparkles className="h-4 w-4" />
-            Regenerate
+            {generateOutline.isPending ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span>Menyusun outline…</span>
+                <LoadingDots size="sm" />
+              </span>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Regenerate
+              </>
+            )}
           </Button>
         </div>
       )}
@@ -391,10 +413,17 @@ export function OutlinePanel({
             </Button>
             <Button
               variant="danger"
-              loading={generate.isPending}
+              disabled={generateOutline.isPending}
               onClick={() => onGenerate(true)}
             >
-              Regenerate and reset
+              {generateOutline.isPending ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span>Menyusun outline…</span>
+                  <LoadingDots size="sm" />
+                </span>
+              ) : (
+                "Regenerate and reset"
+              )}
             </Button>
           </>
         }

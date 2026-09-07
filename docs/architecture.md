@@ -21,48 +21,38 @@ Core flow:
 Brainstorm → Generate → Publish → Share Claim Link → Reader Access
 
 ---
+## 2\. Domain Structure (2026-08 Update)
 
-2\. Domain Structure
+**Three Subdomain Architecture**
 
-publiora.web.id
+```
+Marketing     → https://publiora.biz.id       (public landing & acquisition)
+App           → https://app.publiora.biz.id   (creator workspace, authenticated)
+Reader        → https://baca.publiora.biz.id  (ebook reading, claim links, library)
+```
 
-Marketing site, public reader, claim pages.
+**Deployment Notes:**
 
-app.publiora.web.id
+- Runs on Docker container on VPS at `/opt/publiora`
+- Frontend serves via Caddy reverse proxy at `43.228.213.148:5300`
+- All three subdomains point to same IP, Caddy handles TLS termination
+- Middleware (`proxy.ts`) enforces host boundaries - redirects cross-domain requests
 
-Authenticated app:
+**MVP Routes:**
 
-creator dashboard
-
-ebook generator
-
-editor
-
-library
-
-access management
-
-MVP routes:
-
-publiora.web.id
-
-publiora.web.id/read/:slug
-
-publiora.web.id/claim/:token
-
-app.publiora.web.id/dashboard
-
-app.publiora.web.id/projects
-
-app.publiora.web.id/projects/:id
-
-app.publiora.web.id/library
-
-app.publiora.web.id/settings/billing
+```txt
+https://publiora.biz.id              # Marketing homepage
+https://publiora.biz.id/login        # Auth (shared across domains)
+https://app.publiora.biz.id/dashboard    # Creator workspace
+https://app.publiora.biz.id/projects     # Project management  
+https://baca.publiora.biz.id/read/:slug  # Public reader
+https://baca.publiora.biz.id/claim/:token # Claim page
+https://baca.publiora.biz.id/library         # Reader library
+```
 
 ---
 
-3\. High-Level Architecture
+## 3\. High-Level Architecture
 
 Frontend App
 

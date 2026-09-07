@@ -3,23 +3,46 @@
 import * as React from "react";
 import Link from "next/link";
 import { ReaderShell } from "@/components/layout/ReaderShell";
+import { ReaderPreviewBanner } from "@/components/reader/ReaderPreviewBanner";
 import { Button } from "@/components/ui/Button";
 import { useUpdateReadingProgress } from "@/lib/api/hooks";
-import type { PublishedEbook } from "@/types";
+import type { ReadingProgress } from "@/types/reading-progress";
+import type { ReaderDocument, ReaderMode } from "@/types/reader";
 import { cn } from "@/lib/utils";
-import { List, X } from "lucide-react";
+import { List, Pencil, X } from "lucide-react";
+import { readerId } from "@/lib/i18n/id/reader";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface ReaderProps {
-  ebook: PublishedEbook;
-  backHref?: string;
-  backLabel?: string;
+  document: ReaderDocument;
+  mode: ReaderMode;
+  initialProgress?: ReadingProgress | null;
+  backHref: string;
+  backLabel: string;
 }
 
-export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: ReaderProps) {
-  const [active, setActive] = React.useState(0);
+export function Reader({
+  document: ebook,
+  mode,
+  initialProgress = null,
+  backHref,
+  backLabel,
+}: ReaderProps) {
+  const canTrackProgress =
+    mode === "claimed_reader" && ebook.capabilities.can_track_progress;
+  const initialSection = canTrackProgress
+    ? Math.min(
+        Math.max((initialProgress?.current_section ?? 1) - 1, 0),
+        Math.max(ebook.sections.length - 1, 0)
+      )
+    : 0;
+
+  const [active, setActive] = React.useState(initialSection);
   const [tocOpen, setTocOpen] = React.useState(false);
   const updateProgress = useUpdateReadingProgress();
   const sectionRefs = React.useRef<(HTMLElement | null)[]>([]);
+  const tocTriggerRef = React.useRef<HTMLButtonElement>(null);
+  const tocDialogRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const observers: IntersectionObserver[] = [];
@@ -40,20 +63,22 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
   }, [ebook.sections.length]);
 
   React.useEffect(() => {
-    if (ebook.sections.length === 0) return;
+    if (!canTrackProgress || ebook.sections.length === 0) return;
     const progress = Math.round(((active + 1) / ebook.sections.length) * 100);
     updateProgress.mutate({
       ebook_id: ebook.id,
       patch: { progress, current_section: active + 1 },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, ebook.id, ebook.sections.length]);
+  }, [active, canTrackProgress, ebook.id, ebook.sections.length]);
 
   const scrollTo = React.useCallback(
     (idx: number) => {
       const next = Math.max(0, Math.min(ebook.sections.length - 1, idx));
       sectionRefs.current[next]?.scrollIntoView({
-        behavior: "smooth",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
         block: "start",
       });
       setActive(next);
@@ -67,15 +92,18 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
+      if (e.key === "Escape") {
+        setTocOpen(false);
+        return;
+      }
       if (
         tag === "INPUT" ||
         tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        tag === "BUTTON" ||
+        tag === "A" ||
         el?.isContentEditable
       ) {
-        return;
-      }
-      if (e.key === "Escape") {
-        setTocOpen(false);
         return;
       }
       if (e.key === "t" || e.key === "T") {
@@ -95,12 +123,53 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
     return () => window.removeEventListener("keydown", onKey);
   }, [active, scrollTo]);
 
+  React.useEffect(() => {
+    if (!tocOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const tocTrigger = tocTriggerRef.current;
+    document.body.style.overflow = "hidden";
+    const dialog = tocDialogRef.current;
+    const focusable = () =>
+      Array.from(
+        dialog?.querySelectorAll<HTMLElement>(
+          "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
+        ) ?? []
+      );
+    focusable()[0]?.focus();
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    dialog?.addEventListener("keydown", trapFocus);
+    return () => {
+      dialog?.removeEventListener("keydown", trapFocus);
+      document.body.style.overflow = previousOverflow;
+      tocTrigger?.focus();
+    };
+  }, [tocOpen]);
+
   const progressPct = ebook.sections.length
     ? Math.round(((active + 1) / ebook.sections.length) * 100)
     : 0;
 
+  const editSectionHref = (sectionId: string) =>
+    ebook.source_project_id
+      ? `/projects/${ebook.source_project_id}?step=write&section=${encodeURIComponent(sectionId)}`
+      : null;
+
   return (
     <ReaderShell backHref={backHref} backLabel={backLabel}>
+      <ReaderPreviewBanner mode={mode} backHref={backHref} />
       <div className="h-0.5 bg-[var(--color-surface-3)] sticky top-14 z-20">
         <div
           className="h-full bg-[var(--color-publiora-blue)] transition-[width] duration-200"
@@ -113,7 +182,7 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
         <aside className="hidden lg:block w-64 shrink-0">
           <div className="sticky top-24 space-y-1">
             <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-medium-gray)] mb-3">
-              Daftar isi
+              {readerId.tableOfContents}
             </div>
             {ebook.sections.map((s, i) => (
               <button
@@ -140,89 +209,139 @@ export function Reader({ ebook, backHref = "/library", backLabel = "Library" }: 
             className="rounded-[var(--radius-card)] p-8 md:p-12 mb-10 text-white"
             style={{ background: ebook.cover_color }}
           >
-            <div className="text-xs uppercase tracking-wide opacity-70 mb-3">Publiora</div>
-            <h1 className="text-3xl md:text-4xl font-bold leading-tight">{ebook.title}</h1>
+            <div className="text-xs uppercase tracking-wide opacity-70 mb-3">
+              Publiora
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+              {ebook.title}
+            </h1>
             {ebook.subtitle && (
-              <p className="mt-3 text-base opacity-90 text-[var(--color-gold-soft)]">{ebook.subtitle}</p>
+              <p className="mt-3 text-base opacity-90 text-[var(--color-gold-soft)]">
+                {ebook.subtitle}
+              </p>
             )}
-            <p className="mt-6 text-sm opacity-80">oleh {ebook.author}</p>
+            <p className="mt-6 text-sm opacity-80">
+              {readerId.by} {ebook.author}
+            </p>
             <p className="mt-3 text-xs opacity-70 hidden sm:block">
-              Keyboard: J/K atau ←/→ pindah section · T daftar isi · Esc tutup
+              {readerId.keyboardHint}
             </p>
           </div>
 
           <div className="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-card)] px-8 md:px-12 py-10 border border-[var(--color-publiora-border)]/50">
-            {ebook.sections.map((s, i) => (
-              <section
-                key={s.id}
-                id={`section-${i + 1}`}
-                ref={(el) => {
-                  sectionRefs.current[i] = el;
-                }}
-                className="reader-prose mb-16 last:mb-0 scroll-mt-24"
-              >
-                <h2>{s.title}</h2>
-                <div dangerouslySetInnerHTML={{ __html: s.content_html }} />
-                {i === ebook.sections.length - 1 && (
-                  <div className="not-prose mt-10 space-y-4">
-                    {ebook.final_cta ? (
-                      <div className="rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/5 p-6">
-                        <p className="text-sm font-medium text-[var(--color-publiora-black)]">
-                          {ebook.final_cta}
-                        </p>
-                        {ebook.cta_url && (
-                          <a
-                            href={ebook.cta_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-block mt-3"
-                          >
-                            <Button size="sm" variant="gold">
-                              {ebook.final_cta}
-                            </Button>
-                          </a>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] p-6">
-                        <p className="text-sm text-[var(--color-medium-gray)]">
-                          Selesai membaca? Simpan ebook di library dan lanjutkan kapan saja.
-                        </p>
-                      </div>
+            {ebook.sections.map((s, i) => {
+              const editHref =
+                ebook.capabilities.can_edit_sections && s.source_section_id
+                  ? editSectionHref(s.source_section_id)
+                  : null;
+              return (
+                <section
+                  key={s.id}
+                  id={`section-${i + 1}`}
+                  ref={(el) => {
+                    sectionRefs.current[i] = el;
+                  }}
+                  className="reader-prose mb-16 last:mb-0 scroll-mt-24"
+                >
+                  <div className="flex items-center gap-3 not-prose mb-4">
+                    <h2 className="mb-0">{s.title}</h2>
+                    {!s.is_complete && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-gold)]/15 border border-[var(--color-gold)]/40 px-2.5 py-0.5 text-xs font-medium text-[var(--color-publiora-black)]">
+                        {readerId.previewSectionNotComplete}
+                      </span>
                     )}
-                    <Link href="/library">
-                      <Button size="sm">Kembali ke library</Button>
-                    </Link>
+                    {editHref && (
+                      <Link
+                        href={editHref}
+                        className="inline-flex items-center gap-1 text-xs text-[var(--color-medium-gray)] hover:text-[var(--color-publiora-black)] transition-colors"
+                      >
+                        <Pencil aria-hidden="true" className="h-3 w-3" />
+                        {readerId.previewEditSection}
+                      </Link>
+                    )}
                   </div>
-                )}
-              </section>
-            ))}
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(s.content_html) }} />
+                  {i === ebook.sections.length - 1 && (
+                    <div className="not-prose mt-10 space-y-4">
+                      {ebook.cta ? (
+                        <div className="rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/5 p-6">
+                          <p className="text-sm font-medium text-[var(--color-publiora-black)]">
+                            {ebook.cta.body}
+                          </p>
+                          {ebook.cta.url && (
+                            <a
+                              href={ebook.cta.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block mt-3"
+                            >
+                              <Button size="sm" variant="gold">
+                                {ebook.cta.button_label ?? ebook.cta.body}
+                              </Button>
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] p-6">
+                          <p className="text-sm text-[var(--color-medium-gray)]">
+                            {readerId.savePrompt}
+                          </p>
+                        </div>
+                      )}
+                      <Link href={backHref}>
+                        <Button size="sm">{backLabel}</Button>
+                      </Link>
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+
+            {ebook.sections.length === 0 && (
+              <p className="text-sm text-[var(--color-medium-gray)]">
+                {readerId.emptySections}
+              </p>
+            )}
           </div>
         </article>
       </div>
 
       {/* Mobile TOC button */}
       <button
+        ref={tocTriggerRef}
         type="button"
         onClick={() => setTocOpen(true)}
+        aria-controls="reader-table-of-contents"
+        aria-expanded={tocOpen}
         className="lg:hidden fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))] h-12 w-12 rounded-full bg-[var(--color-publiora-black)] text-white shadow-[var(--shadow-pop)] grid place-items-center"
-        aria-label="Buka daftar isi"
+        aria-label={readerId.openTableOfContents}
       >
         <List className="h-5 w-5" />
       </button>
 
       {tocOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/40 overscroll-contain" onClick={() => setTocOpen(false)}>
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/40 overscroll-contain"
+          onClick={() => setTocOpen(false)}
+        >
           <div
+            ref={tocDialogRef}
+            id="reader-table-of-contents"
             role="dialog"
             aria-modal="true"
-            aria-label="Daftar isi"
+            aria-labelledby="reader-toc-title"
             className="absolute bottom-0 inset-x-0 bg-white rounded-t-3xl p-5 max-h-[70vh] overflow-y-auto overscroll-contain"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Daftar isi</h3>
-              <button type="button" onClick={() => setTocOpen(false)} aria-label="Tutup">
+              <h3 id="reader-toc-title" className="font-semibold">
+                {readerId.tableOfContents}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setTocOpen(false)}
+                aria-label={readerId.closeTableOfContents}
+              >
                 <X className="h-5 w-5 text-[var(--color-medium-gray)]" />
               </button>
             </div>

@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   Lock,
 } from "lucide-react";
+import { buildProjectPreviewUrl } from "@/lib/urls";
 import type {
   ProjectWorkflowStep,
   WorkflowStepStatus,
@@ -149,7 +150,7 @@ export default function WorkspacePage() {
   };
 
   const onPreview = () => {
-    pushStep("review");
+    window.open(buildProjectPreviewUrl(id), "_blank", "noopener,noreferrer");
   };
 
   // ---- Error state ----
@@ -251,6 +252,7 @@ export default function WorkspacePage() {
           open={publishOpen}
           onClose={() => setPublishOpen(false)}
           projectId={project.id}
+          isPublished={project.status === "published"}
         />
       )}
 
