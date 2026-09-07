@@ -20,9 +20,9 @@ export function Hero() {
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <Link href="/register">
-              <Button size="lg">
+              <Button size="lg" className="group">
                 Mulai gratis
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link href="/read/content-engine-playbook">
@@ -41,7 +41,7 @@ export function Hero() {
         </div>
         <div className="relative max-w-full overflow-hidden">
           <div className="pointer-events-none absolute inset-4 sm:inset-0 bg-[var(--color-gold-soft)] rounded-[28px] blur-3xl opacity-40 md:rotate-3" />
-          <div className="relative max-w-full rounded-[20px] border border-[var(--color-publiora-border)] bg-white shadow-[var(--shadow-pop)] p-3.5 md:rotate-1 md:hover:rotate-0 transition-transform duration-300">
+          <div className="relative max-w-full rounded-[20px] border border-[var(--color-publiora-border)] bg-white shadow-[var(--shadow-pop)] p-3.5 md:rotate-1 md:hover:rotate-0 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
             <div className="rounded-xl bg-[var(--color-publiora-black)] text-white p-4">
               <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--color-gold)]">Workspace</div>
               <h3 className="mt-1.5 text-lg font-semibold">The Content Engine Playbook</h3>
