@@ -66,9 +66,9 @@ export function ReviewPanel({
         id: projectId,
         patch: { title, subtitle: subtitle || undefined },
       });
-      pushToast({ title: "Title and subtitle saved", variant: "success" });
+      pushToast({ title: "Judul dan subjudul disimpan", variant: "success" });
     } catch {
-      pushToast({ title: "Failed to save title", variant: "danger" });
+      pushToast({ title: "Gagal menyimpan judul", variant: "danger" });
     }
   };
 
@@ -84,22 +84,22 @@ export function ReviewPanel({
             <div className="flex items-center gap-2 mb-3">
               <ClipboardCheck className="h-4 w-4 text-[var(--color-publiora-black)]" />
               <h3 className="text-sm font-semibold text-[var(--color-publiora-black)]">
-                Readiness
+                Kesiapan Ebook
               </h3>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <SummaryBadge
-                label="Blockers"
+                label="Kendala"
                 count={blockerCount}
                 variant="danger"
               />
               <SummaryBadge
-                label="Warnings"
+                label="Peringatan"
                 count={warningCount}
                 variant="warning"
               />
               <SummaryBadge
-                label="Passed"
+                label="Lolos"
                 count={passCount}
                 variant="success"
               />
@@ -109,7 +109,7 @@ export function ReviewPanel({
           {/* 2. Content checks */}
           <section>
             <h3 className="text-sm font-semibold text-[var(--color-publiora-black)] mb-3">
-              Checks
+              Daftar Pemeriksaan
             </h3>
             <ReviewChecklist
               checks={checks}
@@ -186,25 +186,25 @@ export function ReviewPanel({
                 onClick={onContinueToPublish}
                 title={
                   blockerCount > 0
-                    ? `Resolve ${blockerCount} blocker(s) before publishing`
+                    ? `Selesaikan ${blockerCount} kendala sebelum menerbitkan`
                     : undefined
                 }
               >
                 <Rocket className="h-4 w-4" />
                 {blockerCount > 0
-                  ? `Resolve ${blockerCount} Blocker(s)`
+                  ? `Selesaikan ${blockerCount} Kendala`
                   : "Lanjut ke Terbit"}
               </Button>
               {blockerCount > 0 && (
                 <p className="text-xs text-[var(--color-danger)] mt-1.5 text-center">
-                  You can continue with warnings but must resolve all blockers
-                  first.
+                  Anda dapat melanjutkan dengan peringatan, tetapi semua kendala
+                  utama wajib diselesaikan terlebih dahulu.
                 </p>
               )}
               {blockerCount === 0 && warningCount > 0 && (
                 <p className="text-xs text-[var(--color-gold)] mt-1.5 text-center">
-                  You have {warningCount} warning(s). You can still continue to
-                  publish.
+                  Ada {warningCount} peringatan. Anda tetap dapat melanjutkan ke
+                  tahap penerbitan.
                 </p>
               )}
             </section>

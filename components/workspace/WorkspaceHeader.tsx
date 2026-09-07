@@ -25,7 +25,7 @@ export function WorkspaceHeader({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/projects">
-            <Button variant="ghost" size="icon" aria-label="Back to projects">
+            <Button variant="ghost" size="icon" aria-label="Kembali ke proyek">
               <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
           </Link>
@@ -34,7 +34,7 @@ export function WorkspaceHeader({
               <Skeleton className="h-4 w-40" />
             ) : (
               <h1 className="text-sm font-semibold truncate text-[var(--color-publiora-black)]">
-                {project?.title ?? "Untitled"}
+                {project?.title ?? "Tanpa judul"}
               </h1>
             )}
           </div>
@@ -46,10 +46,10 @@ export function WorkspaceHeader({
             size="sm"
             variant="outline"
             onClick={onPreview}
-            aria-label="Preview ebook"
+            aria-label="Pratinjau ebook"
           >
             <Eye className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Preview</span>
+            <span className="hidden sm:inline">Pratinjau</span>
           </Button>
 
           <Button
@@ -57,7 +57,7 @@ export function WorkspaceHeader({
             variant="ghost"
             className="hidden sm:inline-flex text-[var(--color-danger)]"
             onClick={onDelete}
-            aria-label="Delete project"
+            aria-label="Hapus proyek"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>

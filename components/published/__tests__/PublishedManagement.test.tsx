@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClaimEvent, ClaimLink } from "@/types/claim-link";
 import type { ExportJob } from "@/types/export";
 import type { PublishedEbook } from "@/types/published-ebook";
-import { buildPublicClaimUrl } from "@/lib/urls";
+import { buildPublicClaimUrl, buildPublishedReaderUrl } from "@/lib/urls";
 import {
   ClaimEventsTable,
   ClaimLinkRow,
@@ -58,7 +58,7 @@ const link: ClaimLink = {
 describe("komponen manajemen publikasi", () => {
   it("mempertahankan URL reader dan nama aksi header", () => {
     render(<PublishedHeader ebook={ebook} onCreateClaimLink={vi.fn()} />);
-    expect(screen.getByRole("link", { name: "Buka reader" })).toHaveAttribute("href", "/read/panduan-panjang");
+    expect(screen.getByRole("link", { name: "Buka reader" })).toHaveAttribute("href", buildPublishedReaderUrl(ebook.slug));
     expect(screen.getByRole("link", { name: "Buka reader" })).toHaveAttribute("rel", "noopener noreferrer");
     expect(screen.getByRole("button", { name: "Buat tautan klaim" })).toBeInTheDocument();
     expect(screen.getByText("12 pembaca")).toBeInTheDocument();

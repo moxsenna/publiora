@@ -9,8 +9,10 @@ import {
   useStrategy,
 } from "@/lib/api/hooks";
 import { useUiStore } from "@/store/projectStore";
+import { useAuthStore } from "@/store/authStore";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AssistantMessageContent } from "@/components/workspace/AssistantMessageContent";
@@ -48,6 +50,8 @@ interface StrategyPanelProps {
 }
 
 export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProps) {
+  const profile = useAuthStore((s) => s.profile);
+  const userName = profile?.name ?? "Anda";
   const { data: messages, isLoading: msgsLoading } = useMessages(projectId);
   const { data: strategyData, isLoading: strategyLoading } = useStrategy(projectId);
   const { data: project } = useProject(projectId);
@@ -198,17 +202,19 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
                     metadata: {},
                     created_at: new Date().toISOString(),
                   }}
+                  userName={userName}
                   pending={pendingSend.status === "sending"}
                   failed={pendingSend.status === "failed"}
                   onRetry={pendingSend.status === "failed" ? onRetry : undefined}
                 />
                 {pendingSend.status === "sending" && (
                   <div
-                    className="text-sm text-[var(--color-medium-gray)] text-center py-4"
+                    className="text-sm text-[var(--color-medium-gray)] py-4 flex items-center justify-center gap-2"
                     aria-live="polite"
                     aria-busy="true"
                   >
-                    Asisten menyiapkan balasan…
+                    <LoadingDots size="sm" />
+                    <span>Asisten menyiapkan balasan…</span>
                   </div>
                 )}
               </>
@@ -238,7 +244,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
             <>
               {messages.map((m) => (
                 <React.Fragment key={m.id}>
-                  <MessageBubble message={m} />
+                  <MessageBubble message={m} userName={userName} />
                   {m.role === "assistant" &&
                     m.id === latestAssistant?.id &&
                     latestSuggestions.length > 0 && (
@@ -263,6 +269,7 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
                     metadata: {},
                     created_at: new Date().toISOString(),
                   }}
+                  userName={userName}
                   pending={pendingSend.status === "sending"}
                   failed={pendingSend.status === "failed"}
                   onRetry={pendingSend.status === "failed" ? onRetry : undefined}
@@ -272,11 +279,12 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
               {/* Skeleton while waiting for next assistant reply */}
               {showSkeleton && (
                 <div
-                  className="text-sm text-[var(--color-medium-gray)] text-center py-2"
+                  className="text-sm text-[var(--color-medium-gray)] py-2 flex items-center justify-center gap-2"
                   aria-live="polite"
                   aria-busy="true"
                 >
-                  Menyiapkan pilihan berikutnya…
+                  <LoadingDots size="sm" />
+                  <span>Menyiapkan pilihan berikutnya…</span>
                 </div>
               )}
             </>
@@ -473,11 +481,13 @@ export function StrategyPanel({ projectId, onRequestOutline }: StrategyPanelProp
 
 function MessageBubble({
   message,
+  userName = "Anda",
   pending = false,
   failed = false,
   onRetry,
 }: {
   message: ChatMessage;
+  userName?: string;
   pending?: boolean;
   failed?: boolean;
   onRetry?: () => void;
@@ -513,7 +523,8 @@ function MessageBubble({
           <>
             {message.content}
             {pending && (
-              <span className="ml-2 text-[10px] text-white/70 italic">
+              <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-white/80 italic font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse-dot" />
                 {STRATEGY_COPY_ID.sendingInline}
               </span>
             )}
@@ -538,7 +549,7 @@ function MessageBubble({
       </div>
       {message.role === "user" && (
         <div className="shrink-0">
-          <Avatar name="You" size="sm" />
+          <Avatar name={userName} size="sm" />
         </div>
       )}
     </div>

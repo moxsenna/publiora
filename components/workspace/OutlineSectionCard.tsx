@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { OutlineSection } from "@/types/outline";
 import { cn } from "@/lib/utils";
+import { workspaceId } from "@/lib/i18n/id/workspace";
 
 function SectionStatusBadge({ status }: { status: OutlineSection["status"] }) {
   const map: Record<
@@ -147,14 +148,14 @@ export function OutlineSectionCard({
               <Input
                 value={section.title}
                 onChange={(e) => handleUpdate({ title: e.target.value })}
-                placeholder="Judul section…"
+                placeholder={workspaceId.sectionTitlePlaceholder}
                 disabled={disabled}
               />
               <Textarea
                 value={section.summary ?? ""}
                 onChange={(e) => handleUpdate({ summary: e.target.value })}
                 rows={2}
-                placeholder="Ringkasan isi section…"
+                placeholder={workspaceId.sectionSummaryPlaceholder}
                 disabled={disabled}
               />
               <div className="flex items-center justify-between gap-2 min-w-0">

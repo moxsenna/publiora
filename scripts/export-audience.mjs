@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Export consented audience segments from internal_user_audience_v1.
  *

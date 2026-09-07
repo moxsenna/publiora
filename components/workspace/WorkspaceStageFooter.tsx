@@ -99,9 +99,9 @@ function getPrimaryCta(
   switch (current) {
     case "strategy":
       cta = {
-        label: "Next: Create Outline",
+        label: "Lanjut: Buat Outline",
         disabled: !canAct,
-        disabledReason: "Complete the strategy chat first",
+        disabledReason: "Selesaikan obrolan strategi terlebih dahulu",
         action: () => onNavigate("outline"),
         icon: <ArrowRight className="h-3.5 w-3.5" />,
         variant: "primary",
@@ -110,9 +110,9 @@ function getPrimaryCta(
 
     case "outline":
       cta = {
-        label: "Next: Write Sections",
+        label: "Lanjut: Tulis Bab",
         disabled: !canAct,
-        disabledReason: "Approve the outline first",
+        disabledReason: "Setujui outline terlebih dahulu",
         action: () => onNavigate("write"),
         icon: <ArrowRight className="h-3.5 w-3.5" />,
         variant: "primary",
@@ -121,9 +121,9 @@ function getPrimaryCta(
 
     case "write":
       cta = {
-        label: "Next: Review Ebook",
+        label: "Lanjut: Tinjau Ebook",
         disabled: !canAct,
-        disabledReason: "Generate all sections first",
+        disabledReason: "Tulis semua bagian terlebih dahulu",
         action: () => onNavigate("review"),
         icon: <ArrowRight className="h-3.5 w-3.5" />,
         variant: "primary",
@@ -133,7 +133,7 @@ function getPrimaryCta(
     case "review":
       if (canPublish) {
         cta = {
-          label: "Publish Ebook",
+          label: "Publikasikan Ebook",
           disabled: false,
           action: onPublish,
           icon: <Rocket className="h-3.5 w-3.5" />,
@@ -141,9 +141,9 @@ function getPrimaryCta(
         };
       } else {
         cta = {
-          label: "Resolve Issues to Publish",
+          label: "Selesaikan Kendala",
           disabled: true,
-          disabledReason: "Fix blockers above before publishing",
+          disabledReason: "Perbaiki kendala di atas sebelum menerbitkan",
           action: () => {},
           icon: <AlertTriangle className="h-3.5 w-3.5" />,
           variant: "outline",
@@ -153,9 +153,9 @@ function getPrimaryCta(
 
     case "publish":
       cta = {
-        label: "Publish Now",
+        label: "Publikasikan Sekarang",
         disabled: !canPublish,
-        disabledReason: "Resolve all blockers before publishing",
+        disabledReason: "Selesaikan semua kendala sebelum menerbitkan",
         action: onPublish,
         icon: <Rocket className="h-3.5 w-3.5" />,
         variant: "gold",
@@ -164,7 +164,7 @@ function getPrimaryCta(
 
     default:
       cta = {
-        label: "Next",
+        label: "Lanjut",
         disabled: true,
         action: () => {},
       };
@@ -182,7 +182,7 @@ function getPrimaryCta(
       {cta.icon}
       <span className="hidden sm:inline">{cta.label}</span>
       <span className="sm:hidden">
-        {current === "publish" || current === "review" ? "Publish" : "Next"}
+        {current === "publish" || current === "review" ? "Publikasikan" : "Lanjut"}
       </span>
     </Button>
   );

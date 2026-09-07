@@ -15,34 +15,15 @@ import {
   isValidCtaUrl,
 } from "@/types/ai-suggestions";
 import type { Project } from "@/types/project";
+import { workspaceId } from "@/lib/i18n/id/workspace";
 
 // ---------------------------------------------------------------------------
 // Local label maps
 // ---------------------------------------------------------------------------
 
-const CTA_GOAL_LABELS: Record<CtaGoal, string> = {
-  visit_product: "Visit Product Page",
-  join_whatsapp: "Join WhatsApp Community",
-  claim_bonus: "Claim Bonus / Download",
-  buy_product: "Buy the Product",
-  follow_creator: "Follow Creator",
-  custom: "Custom CTA",
-};
-
-const CTA_GOAL_DESCRIPTIONS: Record<CtaGoal, string> = {
-  visit_product: "Direct readers to your product or landing page.",
-  join_whatsapp: "Invite readers to a WhatsApp group or community.",
-  claim_bonus: "Offer a bonus resource or download.",
-  buy_product: "Encourage a direct purchase.",
-  follow_creator: "Grow your social following.",
-  custom: "Define your own custom call-to-action.",
-};
-
-const PLACEMENT_LABELS = {
-  ebook_end: "End of ebook",
-  claim_page: "Claim page only",
-  both: "Both",
-} as const;
+const CTA_GOAL_LABELS: Record<CtaGoal, string> = workspaceId.ctaGoalLabels;
+const CTA_GOAL_DESCRIPTIONS: Record<CtaGoal, string> = workspaceId.ctaGoalDescriptions;
+const PLACEMENT_LABELS = workspaceId.placementLabels;
 
 // ---------------------------------------------------------------------------
 // CtaComposer
@@ -116,8 +97,8 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
       const e = err as { code?: string; message?: string };
       if (e?.code === "insufficient_credits") {
         pushToast({
-          title: "Not enough credits",
-          description: "Open Billing to top up or upgrade your plan.",
+          title: workspaceId.creditsInsufficientTitle,
+          description: workspaceId.creditsInsufficientDesc,
           variant: "danger",
         });
         return;
@@ -140,16 +121,16 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
       setCtaText(s.text);
       setSelectedGoal(s.goal);
       setAppliedGoal(s.goal);
-      pushToast({ title: "CTA applied", variant: "success" });
+      pushToast({ title: workspaceId.ctaApplied, variant: "success" });
     } catch {
-      pushToast({ title: "Failed to save CTA", variant: "danger" });
+      pushToast({ title: workspaceId.ctaSaveFailed, variant: "danger" });
     }
   };
 
   // Save custom text
   const saveCta = async () => {
     if (urlRequired && !urlValid) {
-      pushToast({ title: "Please enter a valid URL", variant: "danger" });
+      pushToast({ title: workspaceId.ctaUrlInvalid, variant: "danger" });
       return;
     }
     try {
@@ -162,9 +143,9 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
         },
       });
       setAppliedGoal(selectedGoal);
-      pushToast({ title: "CTA saved", variant: "success" });
+      pushToast({ title: workspaceId.ctaSaved, variant: "success" });
     } catch {
-      pushToast({ title: "Failed to save CTA", variant: "danger" });
+      pushToast({ title: workspaceId.ctaSaveFailed, variant: "danger" });
     }
   };
 

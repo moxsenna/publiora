@@ -10,6 +10,7 @@ export default defineConfig({
     // Exclude Playwright e2e tests (use npm run test:e2e instead)
     exclude: [
       'e2e/**',
+      'tests/e2e/**',
       'node_modules/**',
       '.worktrees/**',
       '**/node_modules/**',

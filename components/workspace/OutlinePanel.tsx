@@ -32,6 +32,7 @@ import {
   useOutlineDraft,
 } from "@/components/workspace/useOutlineDraft";
 import { OutlineSectionCard } from "@/components/workspace/OutlineSectionCard";
+import { workspaceId } from "@/lib/i18n/id/workspace";
 import {
   DndContext,
   KeyboardSensor,
@@ -125,7 +126,7 @@ export function OutlinePanel({
     const s = strategy.state.strategy;
     const parts: string[] = [];
     if (s.topic) parts.push(s.topic);
-    if (s.audience) parts.push(`for ${s.audience}`);
+    if (s.audience) parts.push(`untuk ${s.audience}`);
     if (s.core_promise) parts.push(s.core_promise);
     if (s.unique_angle) parts.push(s.unique_angle);
     return parts.length > 0 ? parts.join(" \u00B7 ") : null;
@@ -141,14 +142,14 @@ export function OutlinePanel({
           confirm_reset_written_sections: confirmReset,
         },
       });
-      pushToast({ title: "Outline created", variant: "success" });
+      pushToast({ title: workspaceId.outlineCreated, variant: "success" });
       setRegenerationDialogOpen(false);
     } catch (err) {
       const e = err as { code?: string; message?: string };
       if (e?.code === "strategy_not_ready") {
         pushToast({
-          title: "Strategy not ready",
-          description: "Complete the strategy before generating an outline.",
+          title: workspaceId.strategyNotReadyTitle,
+          description: workspaceId.strategyNotReadyDesc,
           variant: "danger",
         });
         return;
@@ -159,14 +160,14 @@ export function OutlinePanel({
       }
       if (e?.code === "insufficient_credits") {
         pushToast({
-          title: "Not enough credits",
-          description: "Open Billing to top up or upgrade your plan.",
+          title: workspaceId.creditsInsufficientTitle,
+          description: workspaceId.creditsInsufficientDesc,
           variant: "danger",
         });
         return;
       }
       pushToast({
-        title: "Generate failed",
+        title: workspaceId.outlineGenerateFailed,
         variant: "danger",
       });
     }
@@ -188,8 +189,8 @@ export function OutlinePanel({
       <div className="p-6">
         <EmptyState
           icon={<ListTree className="h-6 w-6" />}
-          title="No outline yet"
-          description="Generate an outline from your approved strategy."
+          title={workspaceId.noOutlineTitle}
+          description={workspaceId.generateOutlineFromStrategy}
           action={
             <div className="space-y-3 w-full max-w-sm">
               {/* Strategy summary */}
@@ -221,7 +222,7 @@ export function OutlinePanel({
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4" />
-                    Generate outline
+                    {workspaceId.generateOutlineBtn}
                   </>
                 )}
               </Button>
@@ -238,19 +239,19 @@ export function OutlinePanel({
       const flushed = await draft.flushSave();
       if (!flushed) {
         pushToast({
-          title: "Simpan dulu",
-          description: "Outline belum tersimpan. Coba lagi.",
+          title: workspaceId.saveFirst,
+          description: workspaceId.saveFirstDesc,
           variant: "danger",
         });
         return;
       }
       await approve.mutateAsync(projectId);
       pushToast({
-        title: "Outline disetujui. Lanjut ke Write.",
+        title: workspaceId.outlineApproved,
         variant: "success",
       });
     } catch {
-      pushToast({ title: "Approve gagal", variant: "danger" });
+      pushToast({ title: workspaceId.approveFailed, variant: "danger" });
     }
   };
 
@@ -290,10 +291,10 @@ export function OutlinePanel({
             <h2 className="text-lg font-semibold text-[var(--color-publiora-black)]">{outline.title}</h2>
             {outline.approved ? (
               <Badge variant="success">
-                <Check className="h-3 w-3" /> Disetujui
+                <Check className="h-3 w-3" /> {workspaceId.approved}
               </Badge>
             ) : (
-              <Badge variant="warning">Draft</Badge>
+              <Badge variant="warning">{workspaceId.draft}</Badge>
             )}
             {saveLabel ? (
               <span
@@ -311,15 +312,15 @@ export function OutlinePanel({
           {outline.approved ? (
             <Button size="sm" onClick={onContinueToWrite} disabled={!onContinueToWrite}>
               <ArrowRight className="h-4 w-4" />
-              Lanjut ke Write
+              {workspaceId.continueToWrite}
             </Button>
           ) : (
             <>
               <Button variant="outline" size="sm" onClick={add}>
-                <Plus className="h-4 w-4" /> Section
+                <Plus className="h-4 w-4" /> {workspaceId.newSection}
               </Button>
               <Button size="sm" onClick={onApprove} loading={approve.isPending} disabled={!canApprove}>
-                Setujui outline
+                {workspaceId.approveOutline}
               </Button>
             </>
           )}
@@ -331,7 +332,7 @@ export function OutlinePanel({
         <div className="flex items-center gap-2 rounded-lg border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/5 p-2.5 text-xs text-[var(--color-deep-gray)]">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[var(--color-gold)]" />
           <span>
-            Add at least {MIN_SECTIONS_FOR_APPROVE} sections with titles to approve. Currently: {validSectionCount}.
+            {workspaceId.approveHint(MIN_SECTIONS_FOR_APPROVE, validSectionCount)}
           </span>
         </div>
       )}
@@ -343,7 +344,7 @@ export function OutlinePanel({
             value={userInstruction}
             onChange={(e) => setUserInstruction(e.target.value)}
             rows={1}
-            placeholder="Instruksi opsional untuk generate ulang…"
+            placeholder={workspaceId.regenerateInstructionPlaceholder}
             className="flex-1"
           />
           <Button
@@ -361,7 +362,7 @@ export function OutlinePanel({
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Regenerate
+                {workspaceId.regenerateOutline}
               </>
             )}
           </Button>
@@ -403,13 +404,13 @@ export function OutlinePanel({
       <Modal
         open={regenerationDialogOpen}
         onClose={() => setRegenerationDialogOpen(false)}
-        title="Regenerate and reset written sections"
-        description="This outline already has written section content. Regenerating will permanently delete all written sections. This action cannot be undone."
+        title={workspaceId.regenerateResetTitle}
+        description={workspaceId.regenerateResetDesc}
         size="sm"
         footer={
           <>
             <Button variant="outline" onClick={() => setRegenerationDialogOpen(false)}>
-              Cancel
+              Batal
             </Button>
             <Button
               variant="danger"
@@ -422,7 +423,7 @@ export function OutlinePanel({
                   <LoadingDots size="sm" />
                 </span>
               ) : (
-                "Regenerate and reset"
+                workspaceId.regenerateResetAction
               )}
             </Button>
           </>
@@ -430,10 +431,7 @@ export function OutlinePanel({
       >
         <div className="flex items-start gap-2 text-sm text-[var(--color-danger)]">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-          <p>
-            All previously generated section content will be lost. Make sure you really want to
-            regenerate the entire outline.
-          </p>
+          <p>{workspaceId.regenerateResetWarning}</p>
         </div>
       </Modal>
     </div>
