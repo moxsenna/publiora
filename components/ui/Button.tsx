@@ -61,13 +61,24 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {...props}
       >
-        {loading && (
-          <span
-            aria-hidden="true"
-            className="h-4 w-4 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
-          />
+        {loading ? (
+          size === "icon" ? (
+            <span
+              aria-hidden="true"
+              className="h-4 w-4 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
+            />
+          ) : (
+            <>
+              <span
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
+              />
+              {children}
+            </>
+          )
+        ) : (
+          children
         )}
-        {children}
       </button>
     );
   }

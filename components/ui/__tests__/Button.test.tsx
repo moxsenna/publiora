@@ -23,6 +23,18 @@ describe("Button Micro-Interactions", () => {
     expect(spinner).not.toBeNull();
   });
 
+  it("replaces children with spinner when size is icon and loading", () => {
+    render(
+      <Button loading size="icon" aria-label="Send">
+        <span data-testid="send-icon">Icon</span>
+      </Button>
+    );
+    const btn = screen.getByRole("button", { name: "Send" });
+    expect(btn).toBeDisabled();
+    expect(btn.querySelector(".animate-spin")).not.toBeNull();
+    expect(screen.queryByTestId("send-icon")).toBeNull();
+  });
+
   it("suppresses active scale when disabled", () => {
     render(<Button disabled>Disabled</Button>);
     const btn = screen.getByRole("button", { name: "Disabled" });
