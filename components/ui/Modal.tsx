@@ -70,8 +70,8 @@ export function Modal({ open, onClose, title, description, children, size = "md"
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain">
-      <div data-testid="modal-backdrop" className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => { if (closeStateRef.current.closeOnBackdrop) requestClose(); }} aria-hidden="true" />
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-describedby={description ? descriptionId : undefined} tabIndex={-1} className={cn("relative w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain bg-[var(--color-surface-1)] rounded-[var(--radius-card)] shadow-[var(--shadow-pop)] animate-fade-in border border-[var(--color-border-subtle)] outline-none", sizeMap[size])}>
+      <div data-testid="modal-backdrop" className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-modal-backdrop-enter" onClick={() => { if (closeStateRef.current.closeOnBackdrop) requestClose(); }} aria-hidden="true" />
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-describedby={description ? descriptionId : undefined} tabIndex={-1} className={cn("relative w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain bg-[var(--color-surface-1)] rounded-[var(--radius-card)] shadow-[var(--shadow-pop)] animate-modal-enter border border-[var(--color-border-subtle)] outline-none", sizeMap[size])}>
         <div className="flex items-start justify-between px-4 pt-4 gap-3 sm:px-5 sm:pt-5">
           <div className="min-w-0">
             {title && <h2 id={titleId} className="text-base font-semibold text-[var(--color-publiora-black)]">{title}</h2>}

@@ -18,7 +18,7 @@ export function Toaster() {
         <div
           key={t.id}
           className={cn(
-            "rounded-xl shadow-[var(--shadow-pop)] border bg-white px-3 py-2.5 flex items-start gap-2.5 animate-slide-in-right",
+            "rounded-xl shadow-[var(--shadow-pop)] border bg-white px-3 py-2.5 flex items-start gap-2.5 animate-toast-in hover:shadow-lg transition-all duration-200",
             t.variant === "success" && "border-[#A7E9C5]",
             t.variant === "danger" && "border-[#FCBABA]",
             t.variant === "default" && "border-[var(--color-publiora-border)]"

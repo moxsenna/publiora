@@ -75,7 +75,7 @@ export function Dropdown({
           id={menuId}
           role="menu"
           className={cn(
-            "absolute top-full mt-1.5 min-w-[180px] rounded-xl border border-[var(--color-publiora-border)] bg-white shadow-[var(--shadow-pop)] py-1 z-50 animate-fade-in",
+            "absolute top-full mt-1.5 min-w-[180px] rounded-xl border border-[var(--color-publiora-border)] bg-white shadow-[var(--shadow-pop)] py-1 z-50 animate-scale-in origin-top-right transition-transform",
             align === "end" ? "right-0" : "left-0"
           )}
         >
