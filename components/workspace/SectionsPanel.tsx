@@ -33,7 +33,18 @@ import {
   estimateGenerationCost,
   useSequentialSectionGeneration,
 } from "@/components/workspace/useSequentialSectionGeneration";
-import { Sparkles, FileText, Play, Save, ChevronDown } from "lucide-react";
+import {
+  Sparkles,
+  FileText,
+  Play,
+  Save,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Loader2,
+  X,
+} from "lucide-react";
 import type { Section } from "@/types/section";
 import type { EnhancementAction, EnhancementSuggestion } from "@/types/ai-suggestions";
 import { cn } from "@/lib/utils";
@@ -63,7 +74,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     },
   });
 
-  const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [selectedOutlineId, setSelectedOutlineId] = React.useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
 
   // Enhancement review dialog state
@@ -140,15 +151,35 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     );
   }
 
-  const current = activeId
-    ? (sections?.find((s) => s.id === activeId) ?? null)
-    : (sections?.[0] ?? null);
-
   const currentOutline =
-    outline.sections.find((os) => os.id === current?.outline_section_id) ??
-    outline.sections[0];
+    (selectedOutlineId
+      ? outline.sections.find((os) => os.id === selectedOutlineId)
+      : null) ??
+    (sections && sections.length > 0
+      ? outline.sections.find((os) => os.id === sections[0].outline_section_id)
+      : null) ??
+    outline.sections[0] ??
+    null;
+
+  const current = currentOutline
+    ? sectionsByOutline.get(currentOutline.id) ?? null
+    : null;
   const currentLabel =
     current?.title ?? currentOutline?.title ?? "Pilih section";
+
+  const currentIndex = outline.sections.findIndex(
+    (os) => os.id === currentOutline?.id,
+  );
+  const prevOutline =
+    currentIndex > 0 ? outline.sections[currentIndex - 1] : null;
+  const nextOutline =
+    currentIndex >= 0 && currentIndex < outline.sections.length - 1
+      ? outline.sections[currentIndex + 1]
+      : null;
+  const unwrittenCount = Math.max(
+    0,
+    outline.sections.length - (sections?.length ?? 0),
+  );
 
   const onGenerateAll = async () => {
     if (
@@ -180,12 +211,13 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     confirmReplaceExisting?: boolean,
   ) => {
     try {
+      setSelectedOutlineId(outlineSectionId);
       const s = await generate.mutateAsync({
         projectId,
         outlineSectionId,
         confirmReplaceExisting,
       });
-      setActiveId(s.id);
+      setSelectedOutlineId(s.outline_section_id);
       setReplaceDialogOpen(false);
       setPendingReplaceOutlineId(null);
     } catch (err) {
@@ -205,6 +237,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
 
   const onGenerateOne = async (outlineSectionId: string) => {
     if (generate.isPending) return;
+    setSelectedOutlineId(outlineSectionId);
     if (flushRef.current) {
       const ok = await flushRef.current();
       if (!ok) {
@@ -375,7 +408,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     }
   };
 
-  const selectSection = async (osId: string, sectionId?: string) => {
+  const selectSection = async (osId: string) => {
     if (flushRef.current) {
       const ok = await flushRef.current();
       if (!ok) {
@@ -387,7 +420,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         return;
       }
     }
-    if (sectionId) setActiveId(sectionId);
+    setSelectedOutlineId(osId);
     setPickerOpen(false);
   };
 
@@ -401,114 +434,131 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
     balanceAmount != null && queueCost > balanceAmount && sequential.queue.length > 0;
 
   const sectionList = (
-    <ul className="p-1.5 space-y-0.5">
+    <div className="p-2 space-y-1.5">
       {outline.sections.map((os) => {
         const s = sectionsByOutline.get(os.id);
-        const active =
-          current?.id === s?.id || (!current && os.id === currentOutline?.id);
+        const active = os.id === currentOutline?.id;
+        const isGeneratingThis =
+          generate.isPending && currentOutline?.id === os.id;
+
         return (
-          <li key={os.id}>
-            <button
-              type="button"
-              onClick={() => void selectSection(os.id, s?.id)}
+          <button
+            key={os.id}
+            type="button"
+            onClick={() => void selectSection(os.id)}
+            className={cn(
+              "w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3 border",
+              active
+                ? "bg-blue-50/70 border-[var(--color-publiora-blue)] text-[var(--color-publiora-black)] shadow-xs ring-1 ring-[var(--color-publiora-blue)]/20"
+                : "bg-white border-[var(--color-publiora-border)] hover:bg-[var(--color-surface-2)] text-[var(--color-deep-gray)]",
+            )}
+          >
+            <span
               className={cn(
-                "w-full text-left p-2 rounded-lg transition-colors",
+                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors",
                 active
-                  ? "bg-[var(--color-surface-2)]"
-                  : "hover:bg-[var(--color-surface-2)]",
+                  ? "bg-[var(--color-publiora-blue)] text-white"
+                  : s
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-gray-100 text-gray-500",
               )}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[var(--color-medium-gray)]">
-                  {os.position}
+              {s ? <Check className="h-3.5 w-3.5 stroke-[2.5]" /> : os.position}
+            </span>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-semibold truncate leading-tight">
+                {os.title}
+              </p>
+              <p className="text-[11px] text-[var(--color-medium-gray)] truncate mt-0.5">
+                {s
+                  ? `${s.word_count} kata • ${sectionStatusLabelsId[s.status] ?? s.status}`
+                  : `Target ~${os.estimated_words ?? 700} kata`}
+              </p>
+            </div>
+
+            <div className="shrink-0">
+              {isGeneratingThis ? (
+                <span className="flex items-center gap-1 text-xs font-medium text-[var(--color-publiora-blue)]">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span className="hidden sm:inline">Menulis</span>
                 </span>
-                <span className="text-sm font-medium text-[var(--color-deep-gray)] line-clamp-1 flex-1">
-                  {s?.title ?? os.title}
+              ) : s ? (
+                <Badge
+                  variant={s.status === "edited" ? "info" : "success"}
+                  className="text-[11px] px-1.5 py-0.5"
+                >
+                  {s.word_count}w
+                </Badge>
+              ) : (
+                <span className="text-[11px] font-medium text-[var(--color-medium-gray)] bg-gray-100 px-2 py-0.5 rounded-md">
+                  Draft
                 </span>
-                {s ? (
-                  <>
-                    <Badge
-                      variant={s.status === "edited" ? "info" : "success"}
-                    >
-                      {s.word_count}w
-                    </Badge>
-                    <span className="text-[11px] text-[var(--color-medium-gray)]">
-                      {sectionStatusLabelsId[s.status] ?? s.status}
-                    </span>
-                  </>
-                ) : (
-                  <Badge variant="default">{sectionStatusLabelsId.pending}</Badge>
-                )}
-              </div>
-              {!s && (
-                <div className="mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    loading={generate.isPending}
-                    disabled={generate.isPending || batchBusy}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void onGenerateOne(os.id);
-                    }}
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {workspaceId.writeSection}
-                  </Button>
-                </div>
               )}
-            </button>
-          </li>
+            </div>
+          </button>
         );
       })}
-    </ul>
+    </div>
   );
 
   return (
-    <div className="grid md:grid-cols-[240px_1fr] lg:grid-cols-[260px_1fr] h-full">
+    <div className="grid md:grid-cols-[250px_1fr] lg:grid-cols-[280px_1fr] h-full">
       <aside className="hidden md:flex flex-col border-r border-[var(--color-publiora-border)] bg-white overflow-y-auto min-h-0">
-        <div className="p-2.5 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 border-b border-[var(--color-publiora-border)]">
-          <span className="text-sm font-semibold text-[var(--color-publiora-black)]">
-            Sections
-          </span>
+        <div className="p-3 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 border-b border-[var(--color-publiora-border)]">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-publiora-black)]">
+              Sections
+            </span>
+            <p className="text-[11px] text-[var(--color-medium-gray)] mt-0.5">
+              {sections?.length ?? 0} dari {outline.sections.length} ditulis
+            </p>
+          </div>
           <Button
             size="sm"
             variant="outline"
             onClick={() => void onGenerateAll()}
             loading={batchBusy}
             disabled={batchBusy}
+            title={workspaceId.writeAllSections}
           >
-            <Play className="h-3.5 w-3.5" />
+            <Play className="h-3.5 w-3.5 mr-1" />
             {batchBusy ? "Menulis…" : "Tulis semua"}
           </Button>
         </div>
-        {sectionList}
+        <div className="flex-1 overflow-y-auto">
+          {sectionList}
+        </div>
       </aside>
 
       <div className="overflow-y-auto bg-[var(--color-surface-2)] min-h-0 flex flex-col">
-        <div className="md:hidden sticky top-0 z-20 border-b border-[var(--color-publiora-border)] bg-white">
+        <div className="md:hidden sticky top-0 z-20 border-b border-[var(--color-publiora-border)] bg-white shadow-xs">
           <div className="p-2.5 flex items-center gap-2">
             <button
               type="button"
               onClick={() => setPickerOpen((v) => !v)}
-              className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-lg border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-2.5 py-2 text-left"
+              className="flex-1 min-w-0 flex items-center justify-between gap-2 rounded-xl border border-[var(--color-publiora-border)] bg-[var(--color-surface-2)] px-3 py-2 text-left active:scale-[0.99] transition-transform"
               aria-expanded={pickerOpen}
               aria-haspopup="listbox"
-              aria-label="Select section"
+              aria-label="Pilih section"
             >
-              <span className="min-w-0">
-                <span className="block text-xs text-[var(--color-medium-gray)]">
-                  Section aktif
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-[var(--color-publiora-blue)] bg-blue-100/60 px-1.5 py-0.5 rounded">
+                    #{currentOutline?.position ?? 1}
+                  </span>
+                  <span className="text-[11px] text-[var(--color-medium-gray)]">
+                    {current ? `${current.word_count}w` : "Belum ditulis"}
+                  </span>
+                </div>
+                <span className="block text-xs sm:text-sm font-semibold text-[var(--color-publiora-black)] truncate mt-0.5">
+                  {currentOutline?.title ?? "Pilih section"}
                 </span>
-                <span className="block text-sm font-medium text-[var(--color-publiora-black)] truncate">
-                  {currentLabel}
-                </span>
-              </span>
+              </div>
               <ChevronDown
                 className={cn(
-                  "h-4 w-4 shrink-0 text-[var(--color-medium-gray)] transition-transform",
-                  pickerOpen && "rotate-180",
+                  "h-4 w-4 shrink-0 text-[var(--color-medium-gray)] transition-transform duration-200",
+                  pickerOpen && "rotate-180 text-[var(--color-publiora-blue)]",
                 )}
               />
             </button>
@@ -524,16 +574,15 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               loading={generate.isPending}
               disabled={generate.isPending || batchBusy}
               aria-label={current ? workspaceId.regenerate : workspaceId.generate}
-              className="shrink-0 font-medium"
-              title={current ? "Tulis ulang section aktif" : "Tulis section aktif dengan AI"}
+              className="shrink-0 font-medium px-3"
             >
-              {!generate.isPending && <Sparkles className="h-3.5 w-3.5" />}
+              {!generate.isPending && <Sparkles className="h-3.5 w-3.5 mr-1" />}
               <span>
                 {generate.isPending
                   ? "Menulis…"
                   : current
-                  ? workspaceId.regenerate
-                  : workspaceId.generate}
+                  ? "Tulis ulang"
+                  : "Tulis"}
               </span>
             </Button>
             <Button
@@ -543,18 +592,31 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               loading={batchBusy}
               disabled={batchBusy}
               aria-label={workspaceId.writeAllSections}
-              className="shrink-0"
+              className="shrink-0 px-2.5"
               title={workspaceId.writeAllSections}
             >
               <Play className="h-3.5 w-3.5" />
-              <span className="hidden xs:inline">Semua</span>
+              <span className="text-xs ml-1">Semua</span>
             </Button>
           </div>
           {pickerOpen && (
             <div
               role="listbox"
-              className="max-h-[50vh] overflow-y-auto border-t border-[var(--color-publiora-border)] bg-white overscroll-contain"
+              className="max-h-[60vh] overflow-y-auto border-t border-[var(--color-publiora-border)] bg-gray-50/50 overscroll-contain animate-fade-in"
             >
+              <div className="p-2.5 bg-white border-b border-[var(--color-publiora-border)] flex items-center justify-between">
+                <span className="text-xs font-semibold text-[var(--color-publiora-black)]">
+                  Daftar Section ({sections?.length ?? 0}/{outline.sections.length} ditulis)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(false)}
+                  className="text-xs text-[var(--color-medium-gray)] hover:text-gray-900 p-1 flex items-center gap-1"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span>Tutup</span>
+                </button>
+              </div>
               {sectionList}
             </div>
           )}
@@ -579,79 +641,135 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
           </div>
         )}
 
-        {!current ? (
-          <div className="p-4 sm:p-6 flex-1 flex flex-col items-center justify-center">
+        {!current && currentOutline ? (
+          <div className="p-4 sm:p-8 flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full">
             {generate.isPending ? (
               <AiLoadingAnimation
                 variant="writing"
                 title="AI Sedang Menulis Section"
-                subtitle={
-                  currentOutline?.title
-                    ? `Section: "${currentOutline.title}"`
-                    : undefined
-                }
+                subtitle={`Menyusun section "${currentOutline.title}"...`}
                 className="w-full max-w-md animate-fade-in"
               />
             ) : (
-              <EmptyState
-                icon={<FileText className="h-7 w-7 text-[var(--color-publiora-blue)]" />}
-                title={
-                  currentOutline
-                    ? workspaceId.sectionNotWrittenTitle(currentOutline.title)
-                    : workspaceId.noSectionTitle
-                }
-                description={
-                  currentOutline?.summary
-                    ? currentOutline.summary
-                    : workspaceId.sectionNotWrittenDesc
-                }
-                action={
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 mt-4 w-full max-w-sm">
-                    {currentOutline && (
-                      <Button
-                        size="md"
-                        className="w-full sm:w-auto justify-center"
-                        onClick={() => void onGenerateOne(currentOutline.id)}
-                        loading={generate.isPending}
-                        disabled={generate.isPending || batchBusy}
-                      >
-                        {!generate.isPending && <Sparkles className="h-4 w-4" />}
-                        {generate.isPending
-                          ? "Menulis section…"
-                          : workspaceId.writeCurrentSection}
-                      </Button>
-                    )}
-                    <Button
-                      size="md"
-                      variant="outline"
-                      className="w-full sm:w-auto justify-center"
-                      onClick={() => void onGenerateAll()}
-                      loading={batchBusy}
-                      disabled={batchBusy}
-                    >
-                      <Play className="h-4 w-4" />
-                      {batchBusy ? "Menulis semua…" : workspaceId.writeAllSections}
-                    </Button>
+              <div className="w-full bg-white rounded-2xl border border-[var(--color-publiora-border)] p-5 sm:p-7 shadow-xs space-y-5 animate-fade-in">
+                <div className="flex items-center justify-between gap-2 border-b border-[var(--color-publiora-border)] pb-3.5">
+                  <span className="text-xs font-bold text-[var(--color-publiora-blue)] bg-blue-50 px-2.5 py-1 rounded-full">
+                    Section {currentOutline.position} dari {outline.sections.length}
+                  </span>
+                  <Badge variant="default" className="text-xs">
+                    Belum ditulis
+                  </Badge>
+                </div>
+
+                <div className="space-y-2.5">
+                  <h2 className="text-lg sm:text-xl font-bold text-[var(--color-publiora-black)] leading-snug">
+                    {currentOutline.title}
+                  </h2>
+                  <p className="text-sm text-[var(--color-deep-gray)] leading-relaxed bg-[var(--color-surface-2)] p-3.5 rounded-xl border border-[var(--color-publiora-border)]">
+                    {currentOutline.summary || "Section ini siap ditulis berdasarkan konteks brief dan outline ebook."}
+                  </p>
+                </div>
+
+                {Array.isArray(currentOutline.key_points) && currentOutline.key_points.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-[var(--color-publiora-black)]">
+                      Poin Utama yang Akan Dibahas:
+                    </p>
+                    <ul className="grid gap-1.5 text-xs text-[var(--color-deep-gray)]">
+                      {currentOutline.key_points.map((kp, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{kp}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                }
-              />
+                )}
+
+                <div className="grid grid-cols-2 gap-2.5 pt-1 text-xs text-[var(--color-medium-gray)]">
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-50 border border-[var(--color-publiora-border)]">
+                    <FileText className="h-4 w-4 text-[var(--color-publiora-blue)]" />
+                    <span>Target: <strong className="text-gray-800">~{currentOutline.estimated_words ?? 700} kata</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-50 border border-[var(--color-publiora-border)]">
+                    <Sparkles className="h-4 w-4 text-[var(--color-publiora-blue)]" />
+                    <span>Biaya: <strong className="text-gray-800">1 Kredit AI</strong></span>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 pt-2">
+                  <Button
+                    size="md"
+                    className="w-full justify-center text-sm font-semibold shadow-xs"
+                    onClick={() => void onGenerateOne(currentOutline.id)}
+                    loading={generate.isPending}
+                    disabled={generate.isPending || batchBusy}
+                  >
+                    <Sparkles className="h-4 w-4 mr-1.5" />
+                    Tulis Section Ini Sekarang
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full justify-center text-xs"
+                    onClick={() => void onGenerateAll()}
+                    loading={batchBusy}
+                    disabled={batchBusy}
+                  >
+                    <Play className="h-3.5 w-3.5 mr-1.5" />
+                    Tulis Semua Section yang Tersisa ({unwrittenCount} section)
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
-        ) : (
-          <SectionEditor
-            key={current.id}
-            section={current}
-            projectId={projectId}
-            onRegenerate={() => void onGenerateOne(current.outline_section_id)}
-            onEnhance={(action) => void onEnhance(current.id, action)}
-            generating={generate.isPending || batchBusy}
-            enhancing={enhance.isPending}
-            onDirtyChange={setDirty}
-            registerFlush={(fn) => {
-              flushRef.current = fn;
-            }}
-          />
-        )}
+        ) : current ? (
+          <div className="flex-1 flex flex-col min-h-0">
+            <SectionEditor
+              key={current.id}
+              section={current}
+              projectId={projectId}
+              onRegenerate={() => void onGenerateOne(current.outline_section_id)}
+              onEnhance={(action) => void onEnhance(current.id, action)}
+              generating={generate.isPending || batchBusy}
+              enhancing={enhance.isPending}
+              onDirtyChange={setDirty}
+              registerFlush={(fn) => {
+                flushRef.current = fn;
+              }}
+            />
+
+            <div className="max-w-3xl w-full mx-auto p-3 flex items-center justify-between gap-3 border-t border-[var(--color-publiora-border)] mt-auto bg-white/70">
+              {prevOutline ? (
+                <button
+                  type="button"
+                  onClick={() => void selectSection(prevOutline.id)}
+                  className="flex items-center gap-1.5 text-xs text-[var(--color-deep-gray)] hover:text-gray-900 font-medium px-2.5 py-1.5 rounded-lg border border-[var(--color-publiora-border)] hover:bg-gray-50 transition-colors"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span className="truncate max-w-[120px] sm:max-w-[200px]">
+                    {prevOutline.title}
+                  </span>
+                </button>
+              ) : (
+                <div />
+              )}
+
+              {nextOutline && (
+                <button
+                  type="button"
+                  onClick={() => void selectSection(nextOutline.id)}
+                  className="flex items-center gap-1.5 text-xs text-[var(--color-publiora-blue)] hover:text-blue-700 font-semibold px-2.5 py-1.5 rounded-lg border border-[var(--color-publiora-border)] hover:bg-blue-50/50 transition-colors ml-auto"
+                >
+                  <span className="truncate max-w-[120px] sm:max-w-[200px]">
+                    {nextOutline.title}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <EnhancementReviewDialog

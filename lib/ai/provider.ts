@@ -106,6 +106,179 @@ export async function completeText(opts: {
   );
 }
 
+/**
+ * Attempt to repair common LLM JSON formatting flaws:
+ * - Trailing commas before } or ]
+ * - Raw unescaped control characters inside string literals
+ */
+function attemptJsonRepair(jsonStr: string): string {
+  let repaired = jsonStr.trim();
+  // Remove trailing commas before } or ]
+  repaired = repaired.replace(/,\s*([}\]])/g, "$1");
+
+  // Fix unescaped control chars and newlines only inside string literals
+  let inString = false;
+  let escaped = false;
+  let out = "";
+  for (let i = 0; i < repaired.length; i++) {
+    const ch = repaired[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        out += ch;
+      } else if (ch === "\\") {
+        escaped = true;
+        out += ch;
+      } else if (ch === '"') {
+        inString = false;
+        out += ch;
+      } else if (ch === "\n") {
+        out += "\\n";
+      } else if (ch === "\r") {
+        out += "\\r";
+      } else if (ch === "\t") {
+        out += "\\t";
+      } else if (ch.charCodeAt(0) < 32) {
+        // Drop invalid control characters
+      } else {
+        out += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inString = true;
+      }
+      out += ch;
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Robust regex-based fallback extractor for writer responses.
+ * Recovers fields even when unescaped double quotes inside HTML attributes
+ * or Indonesian quotes break standard JSON.parse.
+ */
+function tryExtractWriterJson<T>(raw: string): T | null {
+  if (!raw.includes("content_html")) return null;
+
+  try {
+    // Title
+    const titleMatch = raw.match(/"title"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    const title = titleMatch ? titleMatch[1].replace(/\\"/g, '"') : undefined;
+
+    // Word count
+    const wcMatch = raw.match(/"word_count"\s*:\s*(\d+)/);
+    const word_count = wcMatch ? parseInt(wcMatch[1], 10) : undefined;
+
+    // Section summary
+    const summaryMatch = raw.match(
+      /"section_summary"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"(?:generation_meta|terms_defined)"|\s*})/
+    );
+    const section_summary = summaryMatch
+      ? summaryMatch[1].replace(/\\"/g, '"').replace(/\\n/g, "\n")
+      : undefined;
+
+    // Extract content_html: everything between `"content_html": "` and the next recognized JSON key
+    const htmlMatch = raw.match(
+      /"content_html"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"(?:word_count|section_summary|generation_meta)"\s*:|\s*})/
+    );
+    if (!htmlMatch) return null;
+
+    let content_html = htmlMatch[1];
+    // Unescape escaped quotes and newlines
+    content_html = content_html
+      .replace(/\\"/g, '"')
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\t/g, "\t");
+
+    // Generation meta (optional)
+    let generation_meta: unknown = undefined;
+    const metaMatch = raw.match(/"generation_meta"\s*:\s*({[\s\S]*?})\s*}/);
+    if (metaMatch) {
+      try {
+        generation_meta = JSON.parse(attemptJsonRepair(metaMatch[1]));
+      } catch {
+        generation_meta = {
+          terms_defined: [],
+          examples_used: [],
+          frameworks_used: [],
+          claims_or_numbers: [],
+          offer_mention_count: 0,
+          contains_cta: false,
+        };
+      }
+    }
+
+    return {
+      title,
+      content_html,
+      word_count,
+      section_summary,
+      generation_meta,
+    } as T;
+  } catch {
+    return null;
+  }
+}
+
+export function safeParseJson<T>(raw: string): T {
+  const cleaned = stripFences(raw);
+
+  // 1. Direct parse attempt
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    // proceed to recovery
+  }
+
+  // 2. Extract substring enclosed by first { ... } or [ ... ]
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  const firstBracket = cleaned.indexOf("[");
+  const lastBracket = cleaned.lastIndexOf("]");
+
+  let sliced = "";
+  if (firstBrace >= 0 && lastBrace > firstBrace && (firstBracket < 0 || firstBrace < firstBracket)) {
+    sliced = cleaned.slice(firstBrace, lastBrace + 1);
+  } else if (firstBracket >= 0 && lastBracket > firstBracket) {
+    sliced = cleaned.slice(firstBracket, lastBracket + 1);
+  }
+
+  if (sliced) {
+    try {
+      return JSON.parse(sliced) as T;
+    } catch {
+      // 3. Attempt repair on sliced string
+      try {
+        const repaired = attemptJsonRepair(sliced);
+        return JSON.parse(repaired) as T;
+      } catch {
+        // proceed
+      }
+    }
+  }
+
+  // 4. Writer-specific regex extractor for unescaped HTML quotes
+  const extractedWriter = tryExtractWriterJson<T>(cleaned);
+  if (extractedWriter) {
+    return extractedWriter;
+  }
+
+  // 5. Attempt repair on cleaned string
+  try {
+    const repaired = attemptJsonRepair(cleaned);
+    return JSON.parse(repaired) as T;
+  } catch {
+    // proceed to error
+  }
+
+  throw new Error(
+    "AI mengembalikan format JSON yang tidak valid atau terpotong. Silakan coba generate ulang section ini."
+  );
+}
+
 export async function completeJson<T>(opts: {
   system: string;
   user: string;
@@ -114,17 +287,7 @@ export async function completeJson<T>(opts: {
     system: opts.system + "\n\nRespond with valid JSON only. No markdown.",
     user: opts.user,
   });
-  const cleaned = stripFences(raw);
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
-    const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      return JSON.parse(cleaned.slice(start, end + 1)) as T;
-    }
-    throw new Error("AI returned invalid JSON");
-  }
+  return safeParseJson<T>(raw);
 }
 
 async function completeOpenAICompatible(

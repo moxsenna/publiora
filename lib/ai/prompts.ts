@@ -190,6 +190,11 @@ Rules:
 - Continue naturally from the previous section; prepare a soft bridge toward the next section when provided.
 - Practical, concrete examples — never invent statistics, testimonials, or fake proof.
 - Write only the current section.
+- CRITICAL JSON ESCAPING:
+  - In "content_html", use SINGLE QUOTES for HTML attributes (e.g. <a href='...'> or <div class='...'>).
+  - Do NOT output unescaped double quotes inside the HTML text or attributes.
+  - If quotes are needed in prose, escape them with backslash (\") or use directional quotes (“ ”).
+  - Return strictly valid JSON without markdown wrapping.
 
 Return JSON only:
 {

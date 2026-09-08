@@ -243,7 +243,15 @@ export async function POST(
         label: "Refund section generate failure",
       }).catch(() => null);
     }
-    const message = err instanceof Error ? err.message : "Server error";
+    let message = err instanceof Error ? err.message : "Server error";
+    if (
+      message.includes("JSON") ||
+      message.includes("SyntaxError") ||
+      message.includes("position")
+    ) {
+      message =
+        "AI mengembalikan format JSON yang tidak valid atau terpotong. Silakan coba generate ulang section ini.";
+    }
     return jsonError(message, 503, "unavailable");
   }
 }
