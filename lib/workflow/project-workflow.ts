@@ -282,7 +282,7 @@ function checkWriteComplete(
       });
       blockers.push({
         code: `missing_section_${outlineSec.id}`,
-        message: `Section "${outlineSec.title}" needs to be generated.`,
+        message: `Section "${outlineSec.title}" belum ditulis.`,
         targetStep: "write",
       });
       allOk = false;

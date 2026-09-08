@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { sectionHasReplaceableContent } from "@/lib/section-revisions";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 import { sectionStatusLabelsId } from "@/lib/i18n/id/common";
+import { workspaceId } from "@/lib/i18n/id/workspace";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
   const { data: outline } = useOutline(projectId);
@@ -452,7 +453,7 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
                     }}
                   >
                     <Sparkles className="h-3.5 w-3.5" />
-                    Generate
+                    {workspaceId.writeSection}
                   </Button>
                 </div>
               )}
@@ -512,13 +513,34 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
             </button>
             <Button
               size="sm"
+              onClick={() => {
+                if (currentOutline) {
+                  void onGenerateOne(currentOutline.id);
+                } else {
+                  void onGenerateAll();
+                }
+              }}
+              loading={generate.isPending}
+              disabled={generate.isPending || batchBusy}
+              aria-label={current ? workspaceId.regenerate : workspaceId.generate}
+              className="shrink-0 font-medium"
+              title={current ? "Tulis ulang section aktif" : "Tulis section aktif dengan AI"}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>{current ? workspaceId.regenerate : workspaceId.generate}</span>
+            </Button>
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => void onGenerateAll()}
               loading={batchBusy}
               disabled={batchBusy}
-              aria-label="Generate semua section"
+              aria-label={workspaceId.writeAllSections}
+              className="shrink-0"
+              title={workspaceId.writeAllSections}
             >
               <Play className="h-3.5 w-3.5" />
+              <span className="hidden xs:inline">Semua</span>
             </Button>
           </div>
           {pickerOpen && (
@@ -551,11 +573,46 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
         )}
 
         {!current ? (
-          <div className="p-6">
+          <div className="p-4 sm:p-6 flex-1 flex flex-col items-center justify-center">
             <EmptyState
-              icon={<FileText className="h-6 w-6" />}
-              title="Belum ada section ter-generate"
-              description="Pilih section di navigator, lalu generate untuk mulai menulis."
+              icon={<FileText className="h-7 w-7 text-[var(--color-publiora-blue)]" />}
+              title={
+                currentOutline
+                  ? workspaceId.sectionNotWrittenTitle(currentOutline.title)
+                  : workspaceId.noSectionTitle
+              }
+              description={
+                currentOutline?.summary
+                  ? currentOutline.summary
+                  : workspaceId.sectionNotWrittenDesc
+              }
+              action={
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 mt-4 w-full max-w-sm">
+                  {currentOutline && (
+                    <Button
+                      size="md"
+                      className="w-full sm:w-auto justify-center"
+                      onClick={() => void onGenerateOne(currentOutline.id)}
+                      loading={generate.isPending}
+                      disabled={generate.isPending || batchBusy}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {workspaceId.writeCurrentSection}
+                    </Button>
+                  )}
+                  <Button
+                    size="md"
+                    variant="outline"
+                    className="w-full sm:w-auto justify-center"
+                    onClick={() => void onGenerateAll()}
+                    loading={batchBusy}
+                    disabled={batchBusy}
+                  >
+                    <Play className="h-4 w-4" />
+                    {batchBusy ? "Menulis semua…" : workspaceId.writeAllSections}
+                  </Button>
+                </div>
+              }
             />
           </div>
         ) : (
@@ -753,7 +810,7 @@ function SectionEditor({
           onClick={onRegenerate}
         >
           <Sparkles className="h-4 w-4" />
-          Regenerate
+          {workspaceId.regenerate}
         </Button>
         <Button
           size="sm"
@@ -762,7 +819,7 @@ function SectionEditor({
           onClick={() => void draft.flushSave()}
         >
           <Save className="h-4 w-4" />
-          {draft.saveState === "error" ? "Coba lagi" : "Save"}
+          {draft.saveState === "error" ? "Coba lagi" : workspaceId.save}
         </Button>
       </div>
       {draft.saveState === "error" && (
