@@ -51,7 +51,7 @@ describe("Enhanced ReviewChecklist and quality mapping", () => {
     expect(screen.getByText("Peringatan")).toBeInTheDocument();
     expect(screen.getByText("Bab 1: Dasar Investasi")).toBeInTheDocument();
     expect(screen.getByText("Panjang kata di bawah target")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Buka bagian/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Buka Dasar Investasi/i })).toBeInTheDocument();
   });
 
   it("maps blocker messages for footer in Indonesian", () => {

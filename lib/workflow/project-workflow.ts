@@ -394,7 +394,7 @@ function checkSectionContentQuality(
   // Check duplicate titles
   const titleCounts = new Map<string, number>();
   for (const sec of sections) {
-    const t = sec.title.trim().toLowerCase();
+    const t = (sec.title ?? "").trim().toLowerCase();
     if (t.length > 0) {
       titleCounts.set(t, (titleCounts.get(t) ?? 0) + 1);
     }
@@ -450,9 +450,12 @@ function checkCtaRules(
   if (!ctaGoal) {
     checks.push({
       id: "no_cta_configured",
+      code: "no_cta_configured",
       label: "No CTA configured",
       severity: "warning",
       targetStep: "review",
+      action_step: "review",
+      action_label: "Atur CTA",
     });
     return;
   }
@@ -461,9 +464,12 @@ function checkCtaRules(
   if (!project.final_cta || project.final_cta.trim().length === 0) {
     checks.push({
       id: "cta_text_empty",
+      code: "cta_text_empty",
       label: "CTA goal selected but CTA text is empty",
       severity: "blocker",
       targetStep: "review",
+      action_step: "review",
+      action_label: "Atur CTA",
     });
     blockers.push({
       code: "cta_text_empty",
@@ -480,9 +486,12 @@ function checkCtaRules(
     if (project.cta_url && !isValidUrl(project.cta_url)) {
       checks.push({
         id: "cta_url_invalid",
+        code: "cta_url_invalid",
         label: "CTA URL is invalid",
         severity: "blocker",
         targetStep: "review",
+        action_step: "review",
+        action_label: "Atur CTA",
       });
       blockers.push({
         code: "cta_url_invalid",
@@ -497,9 +506,12 @@ function checkCtaRules(
     if (!project.cta_url || !isValidUrl(project.cta_url)) {
       checks.push({
         id: "cta_url_missing_or_invalid",
+        code: "cta_url_missing_or_invalid",
         label: "CTA requires a valid destination URL",
         severity: "blocker",
         targetStep: "review",
+        action_step: "review",
+        action_label: "Atur CTA",
       });
       blockers.push({
         code: "cta_url_missing_or_invalid",

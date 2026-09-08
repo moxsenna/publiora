@@ -161,8 +161,8 @@ export function countOfferMentions(
   return count;
 }
 
-export function looksLikeMarkdownDocument(html: string): boolean {
-  const trimmed = html.trim();
+export function looksLikeMarkdownDocument(html: string | null | undefined): boolean {
+  const trimmed = (html ?? "").trim();
   if (!trimmed) return false;
   // Common markdown document artifacts when model returns MD instead of HTML.
   const mdSignals = [

@@ -175,13 +175,42 @@ function CheckItem({
   const sectionTitle = sec?.title ?? outSec?.title;
   const sectionPosition = outSec?.position ?? sec?.position;
 
+  const isCtaCheck =
+    Boolean(check.code && check.code.startsWith("cta_")) ||
+    check.id.startsWith("cta_") ||
+    check.id === "no_cta_configured";
+  const isTitleCheck =
+    Boolean(check.code && (check.code.includes("title") || check.code.includes("subtitle"))) ||
+    check.id.includes("title");
+
   const actionLabel =
     check.action_label ??
     (check.section_id || check.outline_section_id
-      ? reviewId.openSection
+      ? (sectionTitle ? `Buka ${sectionTitle}` : reviewId.openSection)
       : step
         ? getReviewStepActionCopy(step)
         : reviewId.fix);
+
+  const handleActionClick = () => {
+    if (isCtaCheck) {
+      const el = document.getElementById("review-cta-section");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+    }
+    if (isTitleCheck) {
+      const el = document.getElementById("review-title-input");
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+    }
+    if (step && onNavigate) {
+      onNavigate(step, check);
+    }
+  };
 
   return (
     <li
@@ -239,11 +268,11 @@ function CheckItem({
             </p>
           )}
 
-          {step && onNavigate && (
+          {(step || isCtaCheck || isTitleCheck) && (
             <div className="pt-1">
               <button
                 type="button"
-                onClick={() => onNavigate(step, check)}
+                onClick={handleActionClick}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-publiora-blue)] hover:text-blue-800 py-1 px-2.5 rounded-lg bg-white border border-blue-200/80 hover:bg-blue-50/60 shadow-2xs transition-colors active:scale-[0.98]"
               >
                 <span>{actionLabel}</span>
