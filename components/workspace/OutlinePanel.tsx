@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingDots } from "@/components/ui/LoadingDots";
+import { AiLoadingAnimation } from "@/components/ui/AiLoadingAnimation";
 import { TitleSuggestions } from "@/components/workspace/TitleSuggestions";
 import {
   Sparkles,
@@ -185,6 +186,23 @@ export function OutlinePanel({
 
   // ---- Empty state (no outline) ----
   if (!outline) {
+    if (generateOutline.isPending) {
+      return (
+        <div className="p-6 flex flex-col items-center justify-center">
+          <AiLoadingAnimation
+            variant="outline"
+            title="AI Sedang Menyusun Outline"
+            subtitle={strategySummary || "Menghubungkan pilar strategi ke struktur bab komprehensif…"}
+            className="w-full max-w-md animate-fade-in"
+          />
+          <div className="sr-only">
+            <span>Menyusun outline…</span>
+            <LoadingDots size="sm" />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="p-6">
         <EmptyState

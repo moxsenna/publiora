@@ -23,16 +23,17 @@ export function LoadingState({
     <div
       role="status"
       className={cn(
-        "flex min-h-40 flex-col items-center justify-center gap-3 text-center text-sm text-[var(--color-medium-gray)]",
+        "flex min-h-48 flex-col items-center justify-center gap-3.5 text-center text-sm text-[var(--color-medium-gray)]",
         className
       )}
       {...props}
     >
       <div className="relative flex items-center justify-center">
-        <span className="absolute h-8 w-8 rounded-full bg-[var(--color-publiora-blue)]/10 animate-ping" />
+        <span className="absolute h-12 w-12 rounded-full bg-[var(--color-publiora-blue)]/15 blur-md animate-pulse-glow" />
+        <span className="absolute h-10 w-10 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-publiora-border)] shadow-xs" />
         <Loader2
           aria-hidden="true"
-          className="h-6 w-6 animate-spin text-[var(--color-publiora-blue)]"
+          className="relative h-5 w-5 animate-spin text-[var(--color-publiora-blue)]"
         />
       </div>
       <span className="animate-pulse-soft font-medium tracking-wide">{label}</span>

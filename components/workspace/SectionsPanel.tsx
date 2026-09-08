@@ -41,6 +41,7 @@ import { sectionHasReplaceableContent } from "@/lib/section-revisions";
 import { CREDIT_COSTS } from "@/lib/billing/plans";
 import { sectionStatusLabelsId } from "@/lib/i18n/id/common";
 import { workspaceId } from "@/lib/i18n/id/workspace";
+import { AiLoadingAnimation } from "@/components/ui/AiLoadingAnimation";
 
 export function SectionsPanel({ projectId }: { projectId: string }) {
   const { data: outline } = useOutline(projectId);
@@ -526,8 +527,14 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
               className="shrink-0 font-medium"
               title={current ? "Tulis ulang section aktif" : "Tulis section aktif dengan AI"}
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>{current ? workspaceId.regenerate : workspaceId.generate}</span>
+              {!generate.isPending && <Sparkles className="h-3.5 w-3.5" />}
+              <span>
+                {generate.isPending
+                  ? "Menulis…"
+                  : current
+                  ? workspaceId.regenerate
+                  : workspaceId.generate}
+              </span>
             </Button>
             <Button
               size="sm"
@@ -574,46 +581,61 @@ export function SectionsPanel({ projectId }: { projectId: string }) {
 
         {!current ? (
           <div className="p-4 sm:p-6 flex-1 flex flex-col items-center justify-center">
-            <EmptyState
-              icon={<FileText className="h-7 w-7 text-[var(--color-publiora-blue)]" />}
-              title={
-                currentOutline
-                  ? workspaceId.sectionNotWrittenTitle(currentOutline.title)
-                  : workspaceId.noSectionTitle
-              }
-              description={
-                currentOutline?.summary
-                  ? currentOutline.summary
-                  : workspaceId.sectionNotWrittenDesc
-              }
-              action={
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 mt-4 w-full max-w-sm">
-                  {currentOutline && (
+            {generate.isPending ? (
+              <AiLoadingAnimation
+                variant="writing"
+                title="AI Sedang Menulis Section"
+                subtitle={
+                  currentOutline?.title
+                    ? `Section: "${currentOutline.title}"`
+                    : undefined
+                }
+                className="w-full max-w-md animate-fade-in"
+              />
+            ) : (
+              <EmptyState
+                icon={<FileText className="h-7 w-7 text-[var(--color-publiora-blue)]" />}
+                title={
+                  currentOutline
+                    ? workspaceId.sectionNotWrittenTitle(currentOutline.title)
+                    : workspaceId.noSectionTitle
+                }
+                description={
+                  currentOutline?.summary
+                    ? currentOutline.summary
+                    : workspaceId.sectionNotWrittenDesc
+                }
+                action={
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 mt-4 w-full max-w-sm">
+                    {currentOutline && (
+                      <Button
+                        size="md"
+                        className="w-full sm:w-auto justify-center"
+                        onClick={() => void onGenerateOne(currentOutline.id)}
+                        loading={generate.isPending}
+                        disabled={generate.isPending || batchBusy}
+                      >
+                        {!generate.isPending && <Sparkles className="h-4 w-4" />}
+                        {generate.isPending
+                          ? "Menulis section…"
+                          : workspaceId.writeCurrentSection}
+                      </Button>
+                    )}
                     <Button
                       size="md"
+                      variant="outline"
                       className="w-full sm:w-auto justify-center"
-                      onClick={() => void onGenerateOne(currentOutline.id)}
-                      loading={generate.isPending}
-                      disabled={generate.isPending || batchBusy}
+                      onClick={() => void onGenerateAll()}
+                      loading={batchBusy}
+                      disabled={batchBusy}
                     >
-                      <Sparkles className="h-4 w-4" />
-                      {workspaceId.writeCurrentSection}
+                      <Play className="h-4 w-4" />
+                      {batchBusy ? "Menulis semua…" : workspaceId.writeAllSections}
                     </Button>
-                  )}
-                  <Button
-                    size="md"
-                    variant="outline"
-                    className="w-full sm:w-auto justify-center"
-                    onClick={() => void onGenerateAll()}
-                    loading={batchBusy}
-                    disabled={batchBusy}
-                  >
-                    <Play className="h-4 w-4" />
-                    {batchBusy ? "Menulis semua…" : workspaceId.writeAllSections}
-                  </Button>
-                </div>
-              }
-            />
+                  </div>
+                }
+              />
+            )}
           </div>
         ) : (
           <SectionEditor

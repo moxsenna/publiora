@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "gold" | "outline";
@@ -63,15 +64,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading ? (
           size === "icon" ? (
-            <span
+            <Loader2
               aria-hidden="true"
-              className="h-4 w-4 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
+              className="h-4 w-4 shrink-0 animate-spin"
             />
           ) : (
             <>
-              <span
+              <Loader2
                 aria-hidden="true"
-                className="h-4 w-4 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
+                className="h-4 w-4 shrink-0 animate-spin"
               />
               {children}
             </>
