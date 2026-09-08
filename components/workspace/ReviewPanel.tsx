@@ -41,6 +41,8 @@ export function ReviewPanel({
   onContinueToPublish,
 }: ReviewPanelProps) {
   const { data: project } = useProject(projectId);
+  const { data: outline } = useOutline(projectId);
+  const { data: sections } = useSections(projectId);
   const updateProject = useUpdateProject();
   const pushToast = useUiStore((s) => s.pushToast);
 
@@ -113,6 +115,8 @@ export function ReviewPanel({
             </h3>
             <ReviewChecklist
               checks={checks}
+              sections={sections}
+              outlineSections={outline?.sections}
               onNavigateCheck={onNavigate}
             />
           </section>

@@ -131,18 +131,19 @@ export function buildSemanticReviewChecks(input: {
 
     for (const issue of result.issues) {
       if (issue.severity === "info") continue;
+      const displayLabel = sec.title ? `${sec.title}: ${issue.message}` : issue.message;
       checks.push({
         id: `${issue.code}_${sec.id}`,
         code: issue.code,
         category: "content",
-        label: issue.message,
-        title: issue.message,
+        label: displayLabel,
+        title: displayLabel,
         description: issue.repair_instruction,
         severity: issue.severity === "blocker" ? "warning" : "warning",
         // Content quality issues are warnings for publish unless empty.
         targetStep: "write",
         action_step: "write",
-        action_label: "Buka section",
+        action_label: sec.title ? `Buka ${sec.title}` : "Buka bagian",
         section_id: sec.id,
         outline_section_id: sec.outline_section_id,
       });
@@ -159,7 +160,7 @@ export function buildSemanticReviewChecks(input: {
         section_id: sec.id,
         outline_section_id: sec.outline_section_id,
         action_step: "write",
-        action_label: "Buka section",
+        action_label: sec.title ? `Buka ${sec.title}` : "Buka bagian",
       });
     }
 
@@ -179,7 +180,7 @@ export function buildSemanticReviewChecks(input: {
           section_id: sec.id,
           outline_section_id: sec.outline_section_id,
           action_step: "write",
-          action_label: "Buka section",
+          action_label: sec.title ? `Buka ${sec.title}` : "Buka bagian",
         });
       }
     }

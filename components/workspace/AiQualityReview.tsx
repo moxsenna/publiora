@@ -45,18 +45,26 @@ export function AiQualityReview({ projectId }: { projectId: string }) {
   };
 
   return (
-    <div className="space-y-3 rounded-xl border border-[var(--color-publiora-border)] p-3">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--color-publiora-black)]">
-            Review semantik AI
-          </h3>
-          <p className="text-xs text-[var(--color-medium-gray)]">
-            Opsional. Tidak mengubah konten secara otomatis.
+    <div className="space-y-3 rounded-2xl border border-[var(--color-publiora-border)] bg-white p-3.5 sm:p-4 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 text-[var(--color-publiora-blue)]" />
+            <h3 className="text-sm font-semibold text-[var(--color-publiora-black)]">
+              Review semantik AI
+            </h3>
+          </div>
+          <p className="text-xs text-[var(--color-medium-gray)] leading-relaxed">
+            Opsional. Analisis mendalam alur tulisan tanpa mengubah konten otomatis.
           </p>
         </div>
-        <Button size="sm" onClick={() => void run()} loading={loading}>
-          <Sparkles className="h-3.5 w-3.5" />
+        <Button
+          size="sm"
+          onClick={() => void run()}
+          loading={loading}
+          className="w-full sm:w-auto shrink-0 justify-center"
+        >
+          <Sparkles className="h-3.5 w-3.5 mr-1" />
           {reviewId.aiReview(cost)}
         </Button>
       </div>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { AlertTriangle, Rocket, ArrowRight } from "lucide-react";
 import type { ProjectWorkflowStep, ProjectWorkflowState } from "@/types/workflow";
+import { getBlockerMessage } from "@/lib/i18n/id/review";
 
 const STEP_ORDER: ProjectWorkflowStep[] = [
   "strategy",
@@ -58,9 +59,12 @@ export function WorkspaceStageFooter({
 
           {/* Blocker message */}
           {currentBlockers.length > 0 && (
-            <div className="flex items-center gap-1.5 text-xs text-[var(--color-gold)] min-w-0">
+            <div
+              className="flex items-center gap-1.5 text-xs text-[var(--color-gold)] min-w-0"
+              title={getBlockerMessage(currentBlockers[0])}
+            >
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{currentBlockers[0].message}</span>
+              <span className="truncate">{getBlockerMessage(currentBlockers[0])}</span>
             </div>
           )}
         </div>
