@@ -279,6 +279,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initFromStorage: async () => {
     if (get().initialized) return;
 
+    if (typeof window !== "undefined") {
+      const mockSession = window.localStorage.getItem("__publiora_test_session");
+      if (mockSession) {
+        try {
+          const parsed = JSON.parse(mockSession);
+          set({ user: parsed.user, profile: parsed.profile, initialized: true });
+          return;
+        } catch {}
+      }
+    }
+
     if (!hasSupabaseEnv()) {
       set({ user: null, profile: null, initialized: true });
       return;

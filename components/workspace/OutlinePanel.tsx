@@ -283,12 +283,14 @@ export function OutlinePanel({
   };
 
   return (
-    <div className="p-5 space-y-5 max-w-3xl mx-auto">
+    <div className="p-3.5 sm:p-5 space-y-4 sm:space-y-5 max-w-3xl mx-auto w-full">
       {/* ---- Header with title and approve/continue ---- */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-[var(--color-publiora-black)]">{outline.title}</h2>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base sm:text-lg font-semibold text-[var(--color-publiora-black)] break-words">
+              {outline.title}
+            </h2>
             {outline.approved ? (
               <Badge variant="success">
                 <Check className="h-3 w-3" /> {workspaceId.approved}
@@ -305,21 +307,23 @@ export function OutlinePanel({
               </span>
             ) : null}
           </div>
-          <p className="text-sm text-[var(--color-medium-gray)] mt-1">{outline.description}</p>
+          <p className="text-xs sm:text-sm text-[var(--color-medium-gray)] mt-1 break-words">
+            {outline.description}
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-0.5 sm:pt-0">
           {outline.approved ? (
-            <Button size="sm" onClick={onContinueToWrite} disabled={!onContinueToWrite}>
+            <Button size="sm" onClick={onContinueToWrite} disabled={!onContinueToWrite} className="w-full sm:w-auto">
               <ArrowRight className="h-4 w-4" />
               {workspaceId.continueToWrite}
             </Button>
           ) : (
             <>
-              <Button variant="outline" size="sm" onClick={add}>
+              <Button variant="outline" size="sm" onClick={add} className="flex-1 sm:flex-initial justify-center">
                 <Plus className="h-4 w-4" /> {workspaceId.newSection}
               </Button>
-              <Button size="sm" onClick={onApprove} loading={approve.isPending} disabled={!canApprove}>
+              <Button size="sm" onClick={onApprove} loading={approve.isPending} disabled={!canApprove} className="flex-1 sm:flex-initial justify-center">
                 {workspaceId.approveOutline}
               </Button>
             </>
@@ -339,20 +343,20 @@ export function OutlinePanel({
 
       {/* ---- Regenerate bar ---- */}
       {!outline.approved && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <Textarea
             value={userInstruction}
             onChange={(e) => setUserInstruction(e.target.value)}
-            rows={1}
+            rows={2}
             placeholder={workspaceId.regenerateInstructionPlaceholder}
-            className="flex-1"
+            className="w-full sm:flex-1 text-xs sm:text-sm"
           />
           <Button
             variant="outline"
             size="sm"
             onClick={() => onGenerate(false)}
             disabled={generateOutline.isPending}
-            className="shrink-0"
+            className="w-full sm:w-auto shrink-0 justify-center h-9"
           >
             {generateOutline.isPending ? (
               <span className="inline-flex items-center gap-1.5">

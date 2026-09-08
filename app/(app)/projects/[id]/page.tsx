@@ -357,7 +357,7 @@ function StageContent({
       {/* Actual panel content */}
       {step === "strategy" && <StrategyPanel projectId={projectId} />}
       {step === "outline" && (
-        <div className="h-full overflow-y-auto">
+        <div className="h-full overflow-y-auto overflow-x-hidden">
           <OutlinePanel
             projectId={projectId}
             onContinueToWrite={() => onNavigate("write")}

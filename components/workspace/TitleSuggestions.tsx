@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Sparkles, Check, Heading } from "lucide-react";
 import { TITLE_STYLES } from "@/types/agent";
 import type { TitleSuggestion } from "@/types/ai-suggestions";
+import { workspaceId } from "@/lib/i18n/id/workspace";
 
 export function TitleSuggestions({ projectId }: { projectId: string }) {
   const generate = useGenerateTitles();
@@ -117,7 +118,7 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
                   <div className="flex items-center gap-2">
                     {selectedTitle === s.title ? (
                       <Badge variant="success">
-                        <Check className="h-3 w-3" /> Applied
+                        <Check className="h-3 w-3" /> {workspaceId.titleApplied}
                       </Badge>
                     ) : (
                       <Button
@@ -127,10 +128,10 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
                         loading={updateProject.isPending}
                       >
                         <Check className="h-3.5 w-3.5" />
-                        Use this title
+                        {workspaceId.useThisTitle}
                       </Button>
                     )}
-                    <CopyButton value={s.title} label="Copy" />
+                    <CopyButton value={s.title} label={workspaceId.copy} />
                   </div>
                 </div>
               </CardBody>
@@ -141,7 +142,7 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
 
       {!generate.isPending && suggestions.length === 0 && (
         <p className="text-xs text-[var(--color-medium-gray)]">
-          Click Generate to get AI-powered title suggestions based on your strategy.
+          {workspaceId.titleEmptyHint}
         </p>
       )}
     </div>

@@ -106,14 +106,14 @@ export function OutlineSectionCard({
             "border-[var(--color-publiora-blue)]/60 shadow-sm animate-pulse-soft"
         )}
       >
-        <CardBody>
+        <CardBody className="p-3 sm:p-4">
           <div className="flex items-start gap-2 sm:gap-3 min-w-0">
             <div className="flex flex-col items-center gap-1 pt-1 shrink-0">
               <button
                 type="button"
                 ref={setActivatorNodeRef}
                 className={cn(
-                  "text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] touch-none",
+                  "p-1 rounded text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] touch-none",
                   disabled && "opacity-40 pointer-events-none",
                 )}
                 aria-label="Seret untuk menyusun ulang"
@@ -125,7 +125,7 @@ export function OutlineSectionCard({
               <button
                 type="button"
                 onClick={() => onMove?.(index, -1)}
-                className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
+                className="p-1 rounded text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] disabled:opacity-30"
                 aria-label="Pindah ke atas"
                 disabled={disabled || !onMove}
               >
@@ -137,19 +137,20 @@ export function OutlineSectionCard({
               <button
                 type="button"
                 onClick={() => onMove?.(index, 1)}
-                className="text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)]"
+                className="p-1 rounded text-[var(--color-medium-gray)] hover:text-[var(--color-deep-gray)] disabled:opacity-30"
                 aria-label="Pindah ke bawah"
                 disabled={disabled || !onMove}
               >
                 <ChevronDown className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex-1 min-w-0 space-y-3">
+            <div className="flex-1 min-w-0 space-y-2 sm:space-y-3">
               <Input
                 value={section.title}
                 onChange={(e) => handleUpdate({ title: e.target.value })}
                 placeholder={workspaceId.sectionTitlePlaceholder}
                 disabled={disabled}
+                className="text-sm font-medium"
               />
               <Textarea
                 value={section.summary ?? ""}
@@ -157,8 +158,9 @@ export function OutlineSectionCard({
                 rows={2}
                 placeholder={workspaceId.sectionSummaryPlaceholder}
                 disabled={disabled}
+                className="text-xs sm:text-sm"
               />
-              <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 min-w-0 pt-0.5">
                 <span className="text-xs text-[var(--color-medium-gray)] truncate">
                   ~{wordCount} kata
                 </span>
@@ -168,7 +170,7 @@ export function OutlineSectionCard({
             <button
               type="button"
               onClick={handleRemove}
-              className="text-[var(--color-medium-gray)] hover:text-[var(--color-danger)] pt-1 shrink-0"
+              className="p-1.5 rounded text-[var(--color-medium-gray)] hover:text-[var(--color-danger)] pt-1 shrink-0"
               aria-label="Hapus"
               disabled={disabled}
             >
