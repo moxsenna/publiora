@@ -28,7 +28,7 @@ interface AuthState {
     email: string,
     password: string,
     marketingEmailConsent?: boolean
-  ) => Promise<Profile>;
+  ) => Promise<Profile | { confirmationRequired: true }>;
   signOut: () => Promise<void>;
   /** Restore session from Supabase on first load. */
   initFromStorage: () => Promise<void>;
@@ -235,10 +235,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true });
     try {
       const supabase = createClient();
+      const emailRedirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback?next=/dashboard`
+          : undefined;
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { name } },
+        options: {
+          data: { name },
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        },
       });
       if (error) throw new Error(mapAuthError(error));
       if (!data.user) throw new Error("Register gagal: user kosong");
@@ -252,14 +260,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return profile;
       }
 
-      const profile = minimalProfileFromUser(data.user);
       // no session yet (confirm email on) — clear auth UI state and keep the
       // context cookie alive for completion after the first login.
       stashPendingConsent(marketingEmailConsent);
       set({ user: null, profile: null });
-      throw new Error(
-        "Akun dibuat. Cek email untuk konfirmasi, lalu login."
-      );
+      return { confirmationRequired: true };
     } finally {
       set({ loading: false });
     }

@@ -86,10 +86,9 @@ describe("authStore signup context completion", () => {
       error: null,
     });
 
-    // Email-confirm path: signUp throws with no session, stashing consent.
-    await expect(
-      useAuthStore.getState().signUp("Nara", "nara@contoh.id", "rahasia123", true)
-    ).rejects.toThrow("Akun dibuat. Cek email untuk konfirmasi, lalu login.");
+    // Email-confirm path: signUp returns confirmationRequired when no session, stashing consent.
+    const result = await useAuthStore.getState().signUp("Nara", "nara@contoh.id", "rahasia123", true);
+    expect(result).toEqual({ confirmationRequired: true });
     expect(window.localStorage.getItem("publiora_pending_marketing_consent")).toBe("1");
 
     // The user confirms by email and signs in — consent is picked up.

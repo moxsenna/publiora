@@ -27,15 +27,42 @@ describe("RegisterForm", () => {
     expect(name).toHaveAttribute("aria-invalid", "true");
   });
 
-  it("shows confirmation flow without redirecting", async () => {
-    useAuthStore.setState({ signUp: vi.fn().mockRejectedValue(new Error("Akun dibuat. Cek email untuk konfirmasi, lalu login.")) });
+  it("shows friendly email confirmation card when email confirmation is required", async () => {
+    const signUp = vi.fn().mockResolvedValue({ confirmationRequired: true });
+    useAuthStore.setState({ signUp });
     render(<RegisterForm />);
     await fillForm();
     await userEvent.click(screen.getByRole("button", { name: "Daftar" }));
     const status = await screen.findByRole("status");
-    expect(status).toHaveTextContent("Akun berhasil dibuat. Periksa email untuk mengonfirmasi akun sebelum masuk.");
     expect(status).toHaveAttribute("tabindex", "-1");
     await waitFor(() => expect(status).toHaveFocus());
+    expect(screen.getByRole("heading", { name: "Periksa Email Anda" })).toBeInTheDocument();
+    expect(screen.getByText("nara@contoh.id")).toBeInTheDocument();
+    expect(screen.getByText(/Tautan konfirmasi telah dikirim ke/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Nama")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Kata sandi")).not.toBeInTheDocument();
+    const backLink = screen.getByRole("link", { name: "Kembali ke halaman Masuk" });
+    expect(backLink).toBeInTheDocument();
+    expect(backLink).toHaveAttribute("href", "/login");
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("shows confirmation flow without redirecting when confirmation error is thrown", async () => {
+    useAuthStore.setState({
+      signUp: vi.fn().mockRejectedValue(new Error("Akun dibuat. Cek email untuk konfirmasi, lalu login.")),
+    });
+    render(<RegisterForm returnTo="/claim/CLAIM123" />);
+    await fillForm();
+    await userEvent.click(screen.getByRole("button", { name: "Daftar" }));
+    const status = await screen.findByRole("status");
+    expect(status).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(status).toHaveFocus());
+    expect(screen.getByRole("heading", { name: "Periksa Email Anda" })).toBeInTheDocument();
+    expect(screen.getByText("nara@contoh.id")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Nama")).not.toBeInTheDocument();
+    const backLink = screen.getByRole("link", { name: "Kembali ke halaman Masuk" });
+    expect(backLink).toHaveAttribute("href", "/login?return_to=%2Fclaim%2FCLAIM123");
     expect(replace).not.toHaveBeenCalled();
   });
 
