@@ -12,6 +12,13 @@ export const authId = {
   confirmationRequired: "Akun berhasil dibuat. Periksa email untuk mengonfirmasi akun sebelum masuk.",
   resetSubmit: "Kirim tautan pengaturan ulang",
   resetSuccess: "Jika alamat tersebut terdaftar, petunjuk pengaturan ulang sudah dikirim melalui email.",
+  confirmPassword: "Ulangi kata sandi",
+  passwordsDoNotMatch: "Konfirmasi kata sandi tidak cocok.",
+  resetPasswordTitle: "Atur ulang kata sandi",
+  resetPasswordDesc: "Buat kata sandi baru untuk akun Anda.",
+  resetPasswordSuccess: "Kata sandi berhasil diperbarui. Mengalihkan ke dashboard…",
+  resetTokenInvalid: "Tautan pengaturan ulang kata sandi tidak valid atau telah kedaluwarsa.",
+  backToForgot: "Minta tautan baru",
   marketingConsentLabel: "Saya ingin menerima tips membuat ebook dan informasi terbaru dari Publiora.",
 } as const;
 
