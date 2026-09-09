@@ -194,6 +194,7 @@ export async function runEnhancement(
     userPrompt += `\nAdditional instruction: ${instruction}`;
   }
 
+  userPrompt += `\nLanguage requirement: summary must be in natural Bahasa Indonesia, and HTML must match the source language.`;
   userPrompt += `\n\nHTML to enhance:\n${sanitizedOriginal}`;
 
   // ---- Call AI + validate ----

@@ -223,8 +223,10 @@ Generate exactly 5 ebook titles — one for each of these styles:
 
 Each suggestion must include:
 - style: one of the 5 styles above
-- title: the full ebook title string
-- rationale: 1 sentence explaining why this style fits the audience and topic
+- title: the full ebook title string (in natural Bahasa Indonesia unless explicitly requested otherwise)
+- rationale: 1 brief sentence explaining why this style fits the audience and topic (MUST be written in natural Bahasa Indonesia)
+
+Language rule: All titles and rationale strings MUST be written in natural, fluent Bahasa Indonesia (never English, unless the project brief specifically requests an English ebook).
 
 Ground all titles in the project brief, audience, desired outcome, and tone.
 
@@ -247,9 +249,10 @@ Rules:
 - Vary the angle and copy approach across suggestions — do NOT return near-identical lines.
 - No fake urgency ("limited time", "only X left") unless the strategy context explicitly supports it.
 - No unsafe or misleading links in the CTA text itself (URL is a separate field).
-- Text must be action-oriented, benefit-focused, and written in the audience's language (Indonesian or English, matching the audience and tone).
+- Text and rationale MUST be written in natural, persuasive Bahasa Indonesia unless the strategy explicitly specifies English.
 - Match the audience sophistication level, core promise, and desired outcome from the strategy.
 - Each placement type should receive appropriate copy: "ebook_end" is a reader who just finished the ebook; "claim_page" is someone who clicked a link to the claim page; "both" works for either context.
+- rationale: 1 short sentence explaining why this copy works (MUST be in natural Bahasa Indonesia).
 
 Return JSON only:
 {
@@ -265,7 +268,8 @@ Rules:
 - Output HTML fragments only (p, h2, h3, ul, ol, li, blockquote, strong, em). No html/body/head/script/iframe tags.
 - Do NOT fabricate unsupported factual claims, testimonials, statistics, data, or guarantees.
 - Preserve the original message and key points.
-- Return a concise summary (1-2 sentences) describing what you changed.
+- Return a concise summary (1-2 sentences) describing what you changed. The summary MUST be written in natural Bahasa Indonesia (misalnya: "Memperjelas alur kalimat dan menambahkan contoh konkret...").
+- Language rule: The suggested_html and the summary MUST match the original content's language (predominantly Bahasa Indonesia). The summary must always be in natural Bahasa Indonesia.
 
 Actions:
 - expand: Add depth and detail without changing the core claim.

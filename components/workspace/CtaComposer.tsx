@@ -75,8 +75,8 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
   const onGenerate = async () => {
     if (urlRequired && !urlValid) {
       pushToast({
-        title: "URL required",
-        description: "Enter a valid https:// destination before generating CTAs.",
+        title: workspaceId.ctaUrlRequiredTitle,
+        description: workspaceId.ctaUrlRequiredDesc,
         variant: "danger",
       });
       return;
@@ -273,7 +273,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
           disabled={urlError}
         >
           <Check className="h-3.5 w-3.5" />
-          Save CTA
+          {workspaceId.saveCta}
         </Button>
       </div>
 
@@ -282,7 +282,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
         <div className="flex items-center gap-2 text-xs text-[var(--color-medium-gray)] bg-[var(--color-surface-2)] rounded-lg px-3 py-2 border border-[var(--color-publiora-border)]">
           <Check className="h-3.5 w-3.5 text-green-600" />
           <span>
-            Current:{" "}
+            {workspaceId.currentCta}
             <span className="text-[var(--color-deep-gray)] font-medium">
               {currentSaved}
             </span>
@@ -307,7 +307,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
       {!generateCtas.isPending && suggestions.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-[var(--color-publiora-black)]">
-            Suggestions
+            {workspaceId.suggestions}
           </h4>
           {suggestions.map((s, i) => (
             <Card key={i}>
@@ -322,9 +322,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
                     </span>
                   </div>
                   <p className="text-xs text-[var(--color-medium-gray)]">
-                    {s.placement !== "both"
-                      ? `Penempatan: ${s.placement}`
-                      : "Penempatan: akhir ebook + halaman klaim"}
+                    {`Penempatan: ${PLACEMENT_LABELS[s.placement] ?? s.placement}`}
                     {" \u2022 "}
                     {s.rationale}
                   </p>
@@ -338,7 +336,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
                       <Check className="h-3.5 w-3.5" />
                       Gunakan
                     </Button>
-                    <CopyButton value={s.text} label="Copy" />
+                    <CopyButton value={s.text} label={workspaceId.copy} />
                   </div>
                 </div>
               </CardBody>
@@ -349,8 +347,7 @@ export function CtaComposer({ projectId, project }: CtaComposerProps) {
 
       {!generateCtas.isPending && suggestions.length === 0 && !currentSaved && (
         <p className="text-xs text-[var(--color-medium-gray)]">
-          Configure a goal and click Generate to get AI-powered CTA
-          suggestions based on your ebook content.
+          {workspaceId.ctaEmptyHint}
         </p>
       )}
     </div>

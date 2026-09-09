@@ -32,7 +32,7 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
       if (e?.code === "insufficient_credits") {
         pushToast({
           title: "Kredit tidak cukup",
-          description: "Buka Billing untuk top-up atau upgrade paket.",
+          description: "Buka menu Tagihan untuk isi ulang atau tingkatkan paket.",
           variant: "danger",
         });
         return;
@@ -73,16 +73,21 @@ export function TitleSuggestions({ projectId }: { projectId: string }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Heading className="h-4 w-4 text-[var(--color-publiora-black)]" />
-          <h3 className="text-sm font-semibold text-[var(--color-publiora-black)]">
-            Saran judul
-          </h3>
+          <Heading className="h-4 w-4 text-[var(--color-publiora-black)] shrink-0" />
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--color-publiora-black)]">
+              Eksplorasi Alternatif Judul
+            </h3>
+            <p className="text-[11px] text-[var(--color-medium-gray)]">
+              Opsional: bandingkan 5 gaya copywriting judul untuk variasi atau A/B testing
+            </p>
+          </div>
         </div>
-        <Button size="sm" variant="outline" onClick={onGenerate} loading={generate.isPending} disabled={generate.isPending}>
+        <Button size="sm" variant="outline" onClick={onGenerate} loading={generate.isPending} disabled={generate.isPending} className="shrink-0">
           <Sparkles className="h-3.5 w-3.5" />
-          Buat saran
+          Buat variasi
         </Button>
       </div>
 

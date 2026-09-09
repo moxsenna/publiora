@@ -9,13 +9,13 @@ import { Check, X, RefreshCw, Undo2, AlertTriangle } from "lucide-react";
 import type { EnhancementSuggestion } from "@/types/ai-suggestions";
 
 const ACTION_LABELS: Record<string, string> = {
-  expand: "Expand",
-  shorten: "Shorten",
-  simplify: "Simplify",
-  persuasive: "More persuasive",
-  professional: "More professional",
-  add_examples: "Add examples",
-  add_checklist: "Add checklist",
+  expand: "Perluas",
+  shorten: "Persingkat",
+  simplify: "Sederhanakan",
+  persuasive: "Lebih persuasif",
+  professional: "Lebih profesional",
+  add_examples: "Tambah contoh",
+  add_checklist: "Tambah checklist",
 };
 
 function wordCountFromHtml(html: string): number {
@@ -79,8 +79,8 @@ export function EnhancementReviewDialog({
     <Modal
       open={open}
       onClose={handleClose}
-      title="Review AI Enhancement"
-      description={`AI enhancement: ${actionLabel}`}
+      title="Tinjau Penyempurnaan AI"
+      description={`Penyempurnaan AI: ${actionLabel}`}
       size="lg"
     >
       <div className="space-y-4">
@@ -90,14 +90,14 @@ export function EnhancementReviewDialog({
           <span className="opacity-60">|</span>
           <span>{suggestion.summary}</span>
           <span className="opacity-60">|</span>
-          <span>Original: <strong className="text-[var(--color-deep-gray)]">{originalWc}w</strong></span>
+          <span>Asli: <strong className="text-[var(--color-deep-gray)]">{originalWc} kata</strong></span>
           <span className="opacity-60">|</span>
-          <span>Suggested: <strong className="text-[var(--color-deep-gray)]">{suggestedWc}w</strong></span>
+          <span>Rekomendasi: <strong className="text-[var(--color-deep-gray)]">{suggestedWc} kata</strong></span>
           <span className="opacity-60">|</span>
           <span className={cn(
             suggestedWc > originalWc ? "text-[var(--color-info)]" : "text-[var(--color-warning)]"
           )}>
-            {suggestedWc > originalWc ? "+" : ""}{suggestedWc - originalWc}w
+            {suggestedWc > originalWc ? "+" : ""}{suggestedWc - originalWc} kata
           </span>
         </div>
 
@@ -114,8 +114,8 @@ export function EnhancementReviewDialog({
           {/* Original */}
           <div className="rounded-lg border border-[var(--color-publiora-border)] overflow-hidden">
             <div className="px-3 py-1.5 bg-[var(--color-surface-2)] border-b border-[var(--color-publiora-border)]">
-              <span className="text-xs font-semibold text-[var(--color-deep-gray)]">Original</span>
-              <span className="ml-2 text-[11px] text-[var(--color-medium-gray)]">{originalWc} words</span>
+              <span className="text-xs font-semibold text-[var(--color-deep-gray)]">Teks Asli</span>
+              <span className="ml-2 text-[11px] text-[var(--color-medium-gray)]">{originalWc} kata</span>
             </div>
             <div
               className="p-3 text-sm leading-relaxed text-[var(--color-deep-gray)] max-h-[360px] overflow-y-auto overscroll-contain prose prose-sm"
@@ -126,8 +126,8 @@ export function EnhancementReviewDialog({
           {/* Suggested */}
           <div className="rounded-lg border border-[var(--color-publiora-border)] overflow-hidden">
             <div className="px-3 py-1.5 bg-[var(--color-surface-2)] border-b border-[var(--color-publiora-border)]">
-              <span className="text-xs font-semibold text-[var(--color-publiora-black)]">Suggested</span>
-              <span className="ml-2 text-[11px] text-[var(--color-medium-gray)]">{suggestedWc} words</span>
+              <span className="text-xs font-semibold text-[var(--color-publiora-black)]">Hasil Rekomendasi</span>
+              <span className="ml-2 text-[11px] text-[var(--color-medium-gray)]">{suggestedWc} kata</span>
             </div>
             <div
               className="p-3 text-sm leading-relaxed text-[var(--color-deep-gray)] max-h-[360px] overflow-y-auto overscroll-contain prose prose-sm"
@@ -149,7 +149,7 @@ export function EnhancementReviewDialog({
               disabled={accepting || rejecting || regenerating || undoing}
             >
               <Undo2 className="h-3.5 w-3.5" />
-              Session Undo
+              Kembalikan
             </Button>
           )}
         </div>
@@ -165,7 +165,7 @@ export function EnhancementReviewDialog({
             loading={rejecting}
           >
             <X className="h-3.5 w-3.5" />
-            Reject
+            Tolak
           </Button>
           <Button
             variant="outline"
@@ -175,7 +175,7 @@ export function EnhancementReviewDialog({
             disabled={accepting || rejecting || undoing || regenerating}
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Regenerate
+            Buat Ulang
           </Button>
           <Button
             variant="primary"
@@ -185,7 +185,7 @@ export function EnhancementReviewDialog({
             disabled={regenerating || rejecting || undoing || accepting}
           >
             <Check className="h-3.5 w-3.5" />
-            Accept
+            Terapkan
           </Button>
         </div>
       </div>

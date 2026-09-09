@@ -121,7 +121,7 @@ export const workspaceId = {
   titleApplied: "Diterapkan",
   useThisTitle: "Gunakan judul ini",
   titleEmptyHint:
-    "Klik Buat saran untuk mendapatkan saran judul bertenaga AI berdasarkan strategi Anda.",
+    "Klik Buat variasi untuk mengeksplorasi opsi judul bertenaga AI dari strategi ebook Anda.",
 } as const;
 
 export const workflowStepLabelsId = {

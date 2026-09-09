@@ -9,7 +9,7 @@ loadEnvFiles([
 ]);
 
 // Prefer 3005 — 3000 is often occupied by other local proxies on this machine.
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "https://baca.staging.publiora.biz.id";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3005";
 const port = new URL(baseURL).port || "3005";
 
 export default defineConfig({
@@ -35,13 +35,15 @@ export default defineConfig({
   ],
   webServer: {
     // Disabled for staging tests - we test against deployed staging.publiora.biz.id
-    command: `npm run start -- --hostname 127.0.0.1 --port ${port}`,
-    url: baseURL,
+    command: `node .next/standalone/server.js`,
+    url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
+    timeout: 60_000,
     cwd: __dirname,
     env: {
       ...process.env,
+      PORT: String(port),
+      HOSTNAME: "127.0.0.1",
       NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--max-old-space-size=2048",
     },
   },
