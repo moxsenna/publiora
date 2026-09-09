@@ -20,6 +20,7 @@ export const authId = {
   resetTokenInvalid: "Tautan pengaturan ulang kata sandi tidak valid atau telah kedaluwarsa.",
   backToForgot: "Minta tautan baru",
   marketingConsentLabel: "Saya ingin menerima tips membuat ebook dan informasi terbaru dari Publiora.",
+  callbackFailed: "Tautan verifikasi tidak valid atau telah kedaluwarsa. Silakan masuk atau minta tautan baru.",
 } as const;
 
 export type AuthErrorContext = "login" | "register" | "reset";

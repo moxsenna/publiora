@@ -12,13 +12,32 @@ import { authId, mapSafeAuthError } from "@/lib/i18n/id/auth";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 
-export function LoginForm({ returnTo = "/dashboard" }: { returnTo?: string }) {
+export function LoginForm({
+  returnTo = "/dashboard",
+  callbackError,
+}: {
+  returnTo?: string;
+  callbackError?: string | null;
+}) {
   const router = useRouter();
   const signIn = useAuthStore((s) => s.signIn);
   const pushToast = useUiStore((s) => s.pushToast);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [activeCallbackError, setActiveCallbackError] = React.useState<string | null>(callbackError ?? null);
   const errorRef = React.useRef<HTMLParagraphElement>(null);
+
+  React.useEffect(() => {
+    if (callbackError) {
+      setActiveCallbackError(callbackError);
+    } else if (typeof window !== "undefined") {
+      const paramError = new URLSearchParams(window.location.search).get("error");
+      if (paramError) {
+        setActiveCallbackError(paramError);
+      }
+    }
+  }, [callbackError]);
+
   React.useEffect(() => {
     if (error) errorRef.current?.focus();
   }, [error]);
@@ -40,6 +59,15 @@ export function LoginForm({ returnTo = "/dashboard" }: { returnTo?: string }) {
 
   return (
     <form method="post" action="/login" onSubmit={(event) => { event.preventDefault(); event.stopPropagation(); void handleSubmit(onSubmit)(event); }} className="space-y-4" noValidate>
+      {activeCallbackError === "auth_callback_failed" && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-xl border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/5 p-3 text-sm text-[var(--color-danger)]"
+        >
+          {authId.callbackFailed}
+        </div>
+      )}
       <div>
         <Label htmlFor="email">{authId.email}</Label>
         <Input id="email" type="email" placeholder="nama@contoh.id" autoComplete="email" spellCheck={false} aria-invalid={errors.email ? true : undefined} aria-describedby={errors.email ? "email-error" : undefined} {...register("email")} />

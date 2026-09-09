@@ -58,4 +58,10 @@ describe("LoginForm", () => {
     await waitFor(() => expect(signIn).toHaveBeenCalledWith("nama@contoh.id", "rahasia"));
     expect(replace).toHaveBeenCalledWith("/claim/ABC123");
   });
+
+  it("renders friendly alert banner when auth callback fails", () => {
+    render(<LoginForm callbackError="auth_callback_failed" />);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Tautan verifikasi tidak valid atau telah kedaluwarsa.");
+  });
 });
