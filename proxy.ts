@@ -33,6 +33,8 @@ export const config = {
     "/billing/:path*",
     "/login",
     "/register",
+    "/reset-password",
+    "/auth/callback",
     "/claim/:path*",
     "/read/:path*",
   ],
