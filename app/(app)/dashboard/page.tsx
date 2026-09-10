@@ -23,6 +23,7 @@ import {
 import { useCreditBalance } from "@/lib/api/hooks";
 import { ReaderToCreatorCard } from "@/components/dashboard/ReaderToCreatorCard";
 import { greeting } from "@/lib/utils";
+import { resolveBookCoverColor } from "@/lib/books/colors";
 import { dashboardId, formatClaimCount, formatCreditBalance, formatDashboardRelativeTime, formatReaderCount } from "@/lib/i18n/id/dashboard";
 import { formatSectionCount } from "@/lib/i18n/id/projects";
 import { ErrorState } from "@/components/ui/PageState";
@@ -182,7 +183,13 @@ export default function DashboardPage() {
                 <Card className="hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-shadow transition-transform h-full cursor-pointer">
                   <div
                     className="h-16 rounded-t-[var(--radius-card)] relative overflow-hidden"
-                    style={{ background: p.cover_color }}
+                    style={{
+                      background: resolveBookCoverColor({
+                        coverColor: p.cover_color,
+                        id: p.id,
+                        title: p.title,
+                      }),
+                    }}
                   >
                     {(p.status === "generating" || p.progress > 0) &&
                       p.status !== "published" && (
@@ -242,7 +249,13 @@ export default function DashboardPage() {
                     <div className="flex items-start gap-2.5">
                       <div
                         className="h-9 w-9 rounded-lg shrink-0"
-                        style={{ background: p.cover_color }}
+                        style={{
+                          background: resolveBookCoverColor({
+                            coverColor: p.cover_color,
+                            id: p.id,
+                            title: p.title,
+                          }),
+                        }}
                       />
                       <div className="min-w-0">
                         <CardTitle className="truncate text-sm">{p.title}</CardTitle>

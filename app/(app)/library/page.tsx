@@ -154,6 +154,7 @@ export default function LibraryPage() {
                   className="group/spotlight shrink-0 focus-visible:outline-none"
                 >
                   <BookCover
+                    id={spotlightBook.ebook_id}
                     title={spotlightBook.ebook_title}
                     author={spotlightBook.author}
                     coverColor={spotlightBook.cover_color}
@@ -363,6 +364,7 @@ export default function LibraryPage() {
                           className="group/book focus-visible:outline-none"
                         >
                           <BookCover
+                            id={e.ebook_id}
                             title={e.ebook_title}
                             author={e.author}
                             coverColor={e.cover_color}

@@ -9,6 +9,7 @@ import {
   DEFAULT_COVER_COLOR,
   DEFAULT_TONE,
 } from "@/lib/projects/project-create-defaults";
+import { resolveBookCoverColor } from "@/lib/books/colors";
 import {
   EBOOK_TYPE_LABELS,
   LEAD_GOAL_LABELS,
@@ -180,13 +181,15 @@ export function mapCreateRequestToProjectInsert(
       : input.business_context.cta_url;
   }
 
+  const workingTitle = buildWorkingTitle({
+    working_title: input.common.working_title,
+    topic: input.common.topic,
+    ebook_type: input.ebook_type,
+  });
+
   return {
     owner_id: ownerId,
-    title: buildWorkingTitle({
-      working_title: input.common.working_title,
-      topic: input.common.topic,
-      ebook_type: input.ebook_type,
-    }),
+    title: workingTitle,
     author: input.common.author,
     subtitle: null,
     description: buildProjectDescription(input),
@@ -199,7 +202,10 @@ export function mapCreateRequestToProjectInsert(
     progress: 0,
     sections_generated: 0,
     total_sections: 0,
-    cover_color: DEFAULT_COVER_COLOR,
+    cover_color: resolveBookCoverColor({
+      title: workingTitle,
+      category: input.common.niche,
+    }),
     cta_goal,
     cta_url,
     final_cta: null,
@@ -337,13 +343,15 @@ export function normalizeCreateProjectV3(
     `${EBOOK_TYPE_LABELS[input.ebook_type]}${audience ? ` untuk ${audience}` : ""}${productName ? ` · terkait ${productName}` : ""}`;
   description = description.slice(0, 4000);
 
+  const projectTitle = buildWorkingTitle({
+    working_title: input.common.working_title,
+    topic,
+    ebook_type: input.ebook_type,
+  });
+
   const projectInsert: ProjectInsertPayload = {
     owner_id: ownerId,
-    title: buildWorkingTitle({
-      working_title: input.common.working_title,
-      topic,
-      ebook_type: input.ebook_type,
-    }),
+    title: projectTitle,
     author: input.common.author,
     subtitle: null,
     description,
@@ -356,7 +364,10 @@ export function normalizeCreateProjectV3(
     progress: 0,
     sections_generated: 0,
     total_sections: 0,
-    cover_color: DEFAULT_COVER_COLOR,
+    cover_color: resolveBookCoverColor({
+      title: projectTitle,
+      category: niche,
+    }),
     cta_goal,
     cta_url,
     final_cta: null,
@@ -428,7 +439,10 @@ export function normalizeLegacyCreateProject(
     progress: 0,
     sections_generated: 0,
     total_sections: 0,
-    cover_color: DEFAULT_COVER_COLOR,
+    cover_color: resolveBookCoverColor({
+      title: input.title,
+      category: input.niche,
+    }),
     cta_goal: null,
     cta_url: null,
     final_cta: null,

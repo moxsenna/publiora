@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { List, Pencil, X } from "lucide-react";
 import { readerId } from "@/lib/i18n/id/reader";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { resolveBookCoverColor } from "@/lib/books/colors";
 
 interface ReaderProps {
   document: ReaderDocument;
@@ -207,7 +208,13 @@ export function Reader({
         <article className="flex-1 min-w-0">
           <div
             className="rounded-[var(--radius-card)] p-8 md:p-12 mb-10 text-white"
-            style={{ background: ebook.cover_color }}
+            style={{
+              background: resolveBookCoverColor({
+                coverColor: ebook.cover_color,
+                id: ebook.id,
+                title: ebook.title,
+              }),
+            }}
           >
             <div className="text-xs uppercase tracking-wide opacity-70 mb-3">
               Publiora

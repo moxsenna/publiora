@@ -1,10 +1,18 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import {
+  resolveBookCoverColor,
+  EDITORIAL_BOOK_PALETTE,
+  CATEGORY_PALETTES,
+} from "@/lib/books/colors";
+
+export { resolveBookCoverColor, EDITORIAL_BOOK_PALETTE, CATEGORY_PALETTES };
 
 export type BookCoverSize = "sm" | "md" | "lg" | "fill";
 
 export interface BookCoverProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
+  id?: string;
   author?: string;
   subtitle?: string | null;
   category?: string;
@@ -42,16 +50,23 @@ const sizeClasses: Record<BookCoverSize, { container: string; title: string; aut
 
 export function BookCover({
   title,
+  id,
   author,
   subtitle,
   category,
-  coverColor = "#1F2937",
+  coverColor,
   size = "md",
   badge,
   className,
   ...props
 }: BookCoverProps) {
   const currentSize = sizeClasses[size];
+  const resolvedBg = resolveBookCoverColor({
+    coverColor,
+    id,
+    title,
+    category,
+  });
 
   return (
     <div
@@ -63,7 +78,7 @@ export function BookCover({
         className
       )}
       style={{
-        backgroundColor: coverColor,
+        backgroundColor: resolvedBg,
         backgroundImage:
           "linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.25) 100%)",
       }}

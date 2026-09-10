@@ -9,7 +9,7 @@ import { ProjectStatusPill } from "@/components/ui/StatusPill";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { BookCover } from "@/components/books/BookCover";
+import { BookCover, resolveBookCoverColor } from "@/components/books/BookCover";
 import {
   Plus,
   Search,
@@ -309,6 +309,7 @@ export default function ProjectsPage() {
                     className="shrink-0 group/cover focus-visible:outline-none"
                   >
                     <BookCover
+                      id={p.id}
                       title={p.title}
                       author={p.author}
                       category={p.niche}
@@ -411,7 +412,14 @@ export default function ProjectsPage() {
                   <Link href={`/projects/${p.id}`} className="shrink-0">
                     <div
                       className="w-10 h-14 rounded-r-sm rounded-l-xs shadow-sm flex items-center justify-center text-white text-[8px] font-bold select-none"
-                      style={{ backgroundColor: p.cover_color }}
+                      style={{
+                        backgroundColor: resolveBookCoverColor({
+                          coverColor: p.cover_color,
+                          id: p.id,
+                          title: p.title,
+                          category: p.niche,
+                        }),
+                      }}
                     >
                       PUB
                     </div>

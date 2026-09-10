@@ -6,12 +6,23 @@ import { buildPublishedReaderUrl } from "@/lib/urls";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { publishedId } from "@/lib/i18n/id/published";
+import { resolveBookCoverColor } from "@/lib/books/colors";
 import type { PublishedEbook } from "@/types/published-ebook";
 
 export function PublishedHeader({ ebook, onCreateClaimLink }: { ebook: PublishedEbook; onCreateClaimLink: () => void }) {
   return <Card><CardBody>
     <div className="flex flex-col gap-4 sm:flex-row sm:flex-row sm:items-start">
-      <div aria-hidden="true" className="h-20 w-16 shrink-0 rounded-lg" style={{ background: ebook.cover_color }} />
+      <div
+        aria-hidden="true"
+        className="h-20 w-16 shrink-0 rounded-lg"
+        style={{
+          background: resolveBookCoverColor({
+            coverColor: ebook.cover_color,
+            id: ebook.id,
+            title: ebook.title,
+          }),
+        }}
+      />
       <div className="min-w-0 flex-1">
         <h1 className="break-words text-2xl font-bold text-[var(--color-publiora-black)]">{ebook.title}</h1>
         {ebook.subtitle && <p className="mt-1 break-words text-[var(--color-medium-gray)]">{ebook.subtitle}</p>}
