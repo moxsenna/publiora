@@ -40,18 +40,24 @@ function resolve(
 describe("detectHostKind", () => {
   it("classifies canonical hosts including ports", () => {
     expect(detectHostKind("publiora.biz.id")).toBe("marketing");
+    expect(detectHostKind("www.publiora.biz.id")).toBe("marketing");
     expect(detectHostKind("app.publiora.biz.id")).toBe("app");
     expect(detectHostKind("baca.publiora.biz.id")).toBe("reader");
     expect(detectHostKind("baca.publiora.biz.id:443")).toBe("reader");
+    expect(detectHostKind("read.publiora.biz.id")).toBe("reader");
+    expect(detectHostKind("read.publiora.biz.id:443")).toBe("reader");
   });
 
   it("classifies subdomains of the parent domain", () => {
     expect(detectHostKind("preview.app.publiora.biz.id")).toBe("app");
+    expect(detectHostKind("preview.read.publiora.biz.id")).toBe("reader");
+    expect(detectHostKind("preview.baca.publiora.biz.id")).toBe("reader");
   });
 
-  it("returns unknown for dev and unrelated hosts", () => {
+  it("returns unknown for dev, unrelated, and arbitrary subdomains", () => {
     expect(detectHostKind("localhost:3000")).toBe("unknown");
     expect(detectHostKind("example.com")).toBe("unknown");
+    expect(detectHostKind("unknown.publiora.biz.id")).toBe("unknown");
     expect(detectHostKind(undefined)).toBe("unknown");
   });
 });
@@ -130,6 +136,9 @@ describe("resolveHostBoundary", () => {
   it("already-correct requests do not redirect", () => {
     expect(resolve("app.publiora.biz.id", "/dashboard")).toBeNull();
     expect(resolve("baca.publiora.biz.id", "/read/abc")).toBeNull();
+    expect(resolve("read.publiora.biz.id", "/read/abc")).toBeNull();
+    expect(resolve("read.publiora.biz.id", "/library")).toBeNull();
+    expect(resolve("read.publiora.biz.id", "/claim/ABC123")).toBeNull();
     expect(resolve("publiora.biz.id", "/")).toBeNull();
   });
 

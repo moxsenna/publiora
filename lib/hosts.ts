@@ -43,23 +43,58 @@ export const MARKETING_ROUTE_PREFIXES = [
 /** Auth routes shared by app + reader hosts (never redirected between them). */
 const SHARED_AUTH_PREFIXES = ["/login", "/register", "/auth/start"] as const;
 
-const CANONICAL_HOSTS: Record<Exclude<HostKind, "unknown">, string> = {
-  marketing: "publiora.biz.id",
-  app: "app.publiora.biz.id",
-  reader: "baca.publiora.biz.id",
+const CANONICAL_HOSTS: Record<Exclude<HostKind, "unknown">, readonly string[]> = {
+  marketing: ["publiora.biz.id", "www.publiora.biz.id"],
+  app: ["app.publiora.biz.id"],
+  reader: ["baca.publiora.biz.id", "read.publiora.biz.id"],
 };
 
-function matchesHost(host: string, canonical: string): boolean {
-  return host === canonical || host.endsWith(`.${canonical}`);
+function extractHostname(urlStr: string | undefined): string | null {
+  if (!urlStr) return null;
+  try {
+    return new URL(urlStr).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
 }
 
 /** Classify an incoming Host header. Unknown hosts are never redirected. */
 export function detectHostKind(host: string | undefined): HostKind {
   if (!host) return "unknown";
   const normalized = host.toLowerCase().split(":")[0];
-  if (matchesHost(normalized, CANONICAL_HOSTS.app)) return "app";
-  if (matchesHost(normalized, CANONICAL_HOSTS.reader)) return "reader";
-  if (matchesHost(normalized, CANONICAL_HOSTS.marketing)) return "marketing";
+
+  // 1. Reader hosts (baca or read subdomains, plus env override)
+  const envReaderHost = extractHostname(process.env.NEXT_PUBLIC_READER_URL);
+  if (
+    normalized === "baca.publiora.biz.id" ||
+    normalized.endsWith(".baca.publiora.biz.id") ||
+    normalized === "read.publiora.biz.id" ||
+    normalized.endsWith(".read.publiora.biz.id") ||
+    (envReaderHost && (normalized === envReaderHost || normalized.endsWith(`.${envReaderHost}`)))
+  ) {
+    return "reader";
+  }
+
+  // 2. App hosts (app subdomain, plus env override)
+  const envAppHost = extractHostname(process.env.NEXT_PUBLIC_APP_URL);
+  if (
+    normalized === "app.publiora.biz.id" ||
+    normalized.endsWith(".app.publiora.biz.id") ||
+    (envAppHost && (normalized === envAppHost || normalized.endsWith(`.${envAppHost}`)))
+  ) {
+    return "app";
+  }
+
+  // 3. Marketing hosts (root apex and www only, plus env override)
+  const envMarketingHost = extractHostname(process.env.NEXT_PUBLIC_MARKETING_URL);
+  if (
+    normalized === "publiora.biz.id" ||
+    normalized === "www.publiora.biz.id" ||
+    (envMarketingHost && (normalized === envMarketingHost || normalized === `www.${envMarketingHost}`))
+  ) {
+    return "marketing";
+  }
+
   return "unknown";
 }
 
@@ -121,5 +156,20 @@ export function resolveHostBoundary(
   const zone = zoneOf(pathname);
   if (!zone || zone === "marketing") return null;
   if (zone === hostKind) return null;
-  return buildZoneUrl(zone, pathname, search);
+
+  const target = buildZoneUrl(zone, pathname, search);
+
+  // LOOP DEFENSE: Never redirect to the same host that initiated the request
+  if (host) {
+    try {
+      const normalizedHost = host.toLowerCase().split(":")[0];
+      const targetUrl = new URL(target);
+      const targetHost = targetUrl.hostname.toLowerCase();
+      if (normalizedHost === targetHost) {
+        return null;
+      }
+    } catch {}
+  }
+
+  return target;
 }
