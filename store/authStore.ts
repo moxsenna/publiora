@@ -7,6 +7,7 @@ import type { Profile, SignupOrigin, MarketingConsentSource } from "@/types/auth
 import type { PlanId } from "@/types/billing";
 import { createClient, hasSupabaseEnv } from "@/lib/supabase/client";
 import { mapAuthError } from "@/lib/supabase/errors";
+import { normalizeEmail } from "@/lib/auth/email-normalize";
 
 export interface AuthUser {
   id: string;
@@ -213,8 +214,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     set({ loading: true });
     try {
+      const normalizedEmail = normalizeEmail(email);
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
       if (error) throw new Error(mapAuthError(error));
       if (!data.user) throw new Error("Login gagal: user kosong");
       // A pending context from an email-confirmed signup is finalized here,
@@ -234,6 +239,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     set({ loading: true });
     try {
+      const normalizedEmail = normalizeEmail(email);
       const supabase = createClient();
       const emailRedirectTo =
         typeof window !== "undefined"
@@ -241,7 +247,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           : undefined;
 
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           data: { name },

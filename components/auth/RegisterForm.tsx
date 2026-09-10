@@ -13,6 +13,8 @@ import { authId, isRegistrationConfirmation, mapSafeAuthError } from "@/lib/i18n
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 import { withSignupReturnPath } from "@/lib/auth/return-path";
+import { TurnstileWidget, type TurnstileWidgetRef } from "@/components/auth/TurnstileWidget";
+import { normalizeEmail } from "@/lib/auth/email-normalize";
 
 const fields = [
   { name: "name", label: authId.name, type: "text", placeholder: "Nama lengkap", autoComplete: "name" },
@@ -29,6 +31,8 @@ export function RegisterForm({ returnTo = "/dashboard" }: { returnTo?: string })
   const [confirmation, setConfirmation] = React.useState(false);
   const [submittedEmail, setSubmittedEmail] = React.useState("");
   const [marketingConsent, setMarketingConsent] = React.useState(false);
+  const [turnstileToken, setTurnstileToken] = React.useState<string | null>(null);
+  const turnstileRef = React.useRef<TurnstileWidgetRef>(null);
   const messageRef = React.useRef<HTMLDivElement | HTMLParagraphElement>(null);
 
   React.useEffect(() => {
@@ -45,18 +49,57 @@ export function RegisterForm({ returnTo = "/dashboard" }: { returnTo?: string })
     setSubmitting(true);
     setError(null);
     setConfirmation(false);
+
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+      if (!turnstileToken) {
+        setError(authId.turnstileRequired);
+        setSubmitting(false);
+        return;
+      }
+
+      if (turnstileToken !== "bypass") {
+        try {
+          const verifyRes = await fetch("/api/auth/verify-turnstile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: turnstileToken }),
+          });
+          const verifyData = await verifyRes.json().catch(() => ({ ok: false }));
+          if (!verifyData.ok) {
+            setError(verifyData.error || authId.turnstileFailed);
+            turnstileRef.current?.reset();
+            setTurnstileToken(null);
+            setSubmitting(false);
+            return;
+          }
+        } catch {
+          setError(authId.turnstileFailed);
+          turnstileRef.current?.reset();
+          setTurnstileToken(null);
+          setSubmitting(false);
+          return;
+        }
+      }
+    }
+
+    const cleanEmail = normalizeEmail(data.email);
+
     try {
-      const res = await signUp(data.name, data.email, data.password, marketingConsent);
+      const res = await signUp(data.name, cleanEmail, data.password, marketingConsent);
       if (res && "confirmationRequired" in res && res.confirmationRequired) {
-        setSubmittedEmail(data.email);
+        setSubmittedEmail(cleanEmail);
         setConfirmation(true);
         return;
       }
       pushToast({ title: "Akun berhasil dibuat", variant: "success" });
       router.replace(returnTo);
     } catch (err) {
+      turnstileRef.current?.reset();
+      if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && turnstileToken !== "bypass") {
+        setTurnstileToken(null);
+      }
       if (isRegistrationConfirmation(err)) {
-        setSubmittedEmail(data.email);
+        setSubmittedEmail(cleanEmail);
         setConfirmation(true);
       } else {
         setError(mapSafeAuthError(err, "register"));
@@ -174,7 +217,22 @@ export function RegisterForm({ returnTo = "/dashboard" }: { returnTo?: string })
           {error}
         </p>
       )}
-      <Button type="submit" className="w-full min-h-11" loading={submitting} disabled={submitting}>
+      <TurnstileWidget
+        ref={turnstileRef}
+        onVerify={(token) => setTurnstileToken(token)}
+        onError={() => setTurnstileToken(null)}
+        onExpire={() => setTurnstileToken(null)}
+      />
+      <Button
+        type="submit"
+        className="w-full min-h-11"
+        loading={submitting}
+        disabled={
+          submitting ||
+          (Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) &&
+            turnstileToken === null)
+        }
+      >
         {authId.signUp}
       </Button>
     </form>

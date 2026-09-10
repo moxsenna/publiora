@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { hasSubaddressing, isDisposableEmail } from '@/lib/auth/email-normalize';
 
 export const loginSchema = z.object({
   email: z.string().trim().email('Format email tidak valid'),
@@ -7,7 +8,16 @@ export const loginSchema = z.object({
 
 export const registerSchema = z.object({
   name: z.string().trim().min(1, 'Nama wajib diisi').max(100),
-  email: z.string().trim().email('Format email tidak valid'),
+  email: z
+    .string()
+    .trim()
+    .email('Format email tidak valid')
+    .refine((email) => !hasSubaddressing(email), {
+      message: 'Penggunaan alias email (+) tidak diizinkan untuk registrasi akun gratis',
+    })
+    .refine((email) => !isDisposableEmail(email), {
+      message: 'Email sementara (disposable/temp-mail) tidak diizinkan. Gunakan email pribadi atau kantor.',
+    }),
   password: z.string().min(8, 'Password minimal 8 karakter').max(128),
 });
 

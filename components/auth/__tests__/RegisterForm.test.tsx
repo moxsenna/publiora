@@ -119,4 +119,49 @@ describe("RegisterForm", () => {
     await waitFor(() => expect(signUp).toHaveBeenCalledWith("Nara Pustaka", "nara@contoh.id", "rahasia123", true));
     expect(replace).toHaveBeenCalledWith("/dashboard");
   });
+
+  it("normalizes Gmail address with dots before calling signUp", async () => {
+    const signUp = vi.fn().mockResolvedValue({});
+    useAuthStore.setState({ signUp });
+    render(<RegisterForm />);
+    await userEvent.type(screen.getByLabelText("Nama"), "Bima Pratama");
+    await userEvent.type(screen.getByLabelText("Email"), "b.i.m.a@gmail.com");
+    await userEvent.type(screen.getByLabelText("Kata sandi"), "rahasia123");
+    await userEvent.click(screen.getByRole("button", { name: "Daftar" }));
+
+    await waitFor(() => {
+      expect(signUp).toHaveBeenCalledWith(
+        "Bima Pratama",
+        "bima@gmail.com",
+        "rahasia123",
+        false
+      );
+    });
+  });
+
+  it("rejects disposable email at form validation level", async () => {
+    const signUp = vi.fn();
+    useAuthStore.setState({ signUp });
+    render(<RegisterForm />);
+    await userEvent.type(screen.getByLabelText("Nama"), "Spam Bot");
+    await userEvent.type(screen.getByLabelText("Email"), "spambot@10minutemail.com");
+    await userEvent.type(screen.getByLabelText("Kata sandi"), "rahasia123");
+    await userEvent.click(screen.getByRole("button", { name: "Daftar" }));
+
+    expect(await screen.findByText(/Email sementara/i)).toBeInTheDocument();
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
+  it("rejects plus subaddressing (+tag) at form validation level", async () => {
+    const signUp = vi.fn();
+    useAuthStore.setState({ signUp });
+    render(<RegisterForm />);
+    await userEvent.type(screen.getByLabelText("Nama"), "Abuse User");
+    await userEvent.type(screen.getByLabelText("Email"), "bima+free1@gmail.com");
+    await userEvent.type(screen.getByLabelText("Kata sandi"), "rahasia123");
+    await userEvent.click(screen.getByRole("button", { name: "Daftar" }));
+
+    expect(await screen.findByText(/alias email \(\+\)/i)).toBeInTheDocument();
+    expect(signUp).not.toHaveBeenCalled();
+  });
 });

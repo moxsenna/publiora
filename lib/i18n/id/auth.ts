@@ -21,6 +21,8 @@ export const authId = {
   backToForgot: "Minta tautan baru",
   marketingConsentLabel: "Saya ingin menerima tips membuat ebook dan informasi terbaru dari Publiora.",
   callbackFailed: "Tautan verifikasi tidak valid atau telah kedaluwarsa. Silakan masuk atau minta tautan baru.",
+  turnstileFailed: "Verifikasi keamanan bot gagal. Silakan coba kembali.",
+  turnstileRequired: "Selesaikan verifikasi keamanan sebelum melanjutkan.",
 } as const;
 
 export type AuthErrorContext = "login" | "register" | "reset";
