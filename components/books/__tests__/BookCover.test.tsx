@@ -2,7 +2,12 @@
 import "@testing-library/jest-dom/vitest";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { BookCover, resolveBookCoverColor } from "../BookCover";
+import {
+  BookCover,
+  resolveBookCoverColor,
+  getContrastTextColor,
+  isDarkColor,
+} from "../BookCover";
 
 describe("BookCover component", () => {
   it("renders title, author and category correctly", () => {
@@ -50,15 +55,41 @@ describe("BookCover component", () => {
     expect(coverDiv.style.backgroundColor).not.toBe("rgb(99, 102, 241)");
   });
 
-  it("preserves explicit custom cover colors", () => {
-    const { container } = render(
+  it("renders crisp white title text on dark book covers", () => {
+    render(
       <BookCover
-        title="Custom Color Book"
-        coverColor="#2563EB"
+        title="Buku Sampul Gelap"
+        coverColor="#1e293b"
       />
     );
-    const coverDiv = container.firstElementChild as HTMLElement;
-    expect(coverDiv.style.backgroundColor).toBe("rgb(37, 99, 235)");
+    const titleEl = screen.getByText("Buku Sampul Gelap");
+    expect(titleEl.style.color).toBe("rgb(255, 255, 255)");
+  });
+
+  it("renders dark title text on light book covers for high contrast", () => {
+    render(
+      <BookCover
+        title="Buku Sampul Terang"
+        coverColor="#FEF08A"
+      />
+    );
+    const titleEl = screen.getByText("Buku Sampul Terang");
+    expect(titleEl.style.color).toBe("rgb(15, 23, 42)");
+  });
+});
+
+describe("getContrastTextColor & isDarkColor", () => {
+  it("detects dark colors and returns #FFFFFF", () => {
+    expect(isDarkColor("#1e3a8a")).toBe(true);
+    expect(isDarkColor("#064e3b")).toBe(true);
+    expect(isDarkColor("#881337")).toBe(true);
+    expect(getContrastTextColor("#1e3a8a")).toBe("#FFFFFF");
+  });
+
+  it("detects light colors and returns #0F172A", () => {
+    expect(isDarkColor("#FFFFFF")).toBe(false);
+    expect(isDarkColor("#FEF08A")).toBe(false);
+    expect(getContrastTextColor("#FFFFFF")).toBe("#0F172A");
   });
 });
 

@@ -115,3 +115,38 @@ export function resolveBookCoverColor(params: ResolveBookCoverColorParams = {}):
   const index = Math.abs(hash) % pool.length;
   return pool[index];
 }
+
+/**
+ * Calculates WCAG relative luminance of a hex color.
+ */
+export function getRelativeLuminance(hexColor: string): number {
+  const clean = hexColor.replace("#", "").trim();
+  if (clean.length !== 6 && clean.length !== 3) {
+    return 0.1; // fallback to dark
+  }
+  const full =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : clean;
+
+  const r = parseInt(full.substring(0, 2), 16) / 255;
+  const g = parseInt(full.substring(2, 4), 16) / 255;
+  const b = parseInt(full.substring(4, 6), 16) / 255;
+
+  const toLinear = (val: number) =>
+    val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+export function isDarkColor(hexColor: string): boolean {
+  return getRelativeLuminance(hexColor) <= 0.45;
+}
+
+export function getContrastTextColor(hexColor: string): "#FFFFFF" | "#0F172A" {
+  return isDarkColor(hexColor) ? "#FFFFFF" : "#0F172A";
+}
+

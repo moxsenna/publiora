@@ -4,9 +4,17 @@ import {
   resolveBookCoverColor,
   EDITORIAL_BOOK_PALETTE,
   CATEGORY_PALETTES,
+  getContrastTextColor,
+  isDarkColor,
 } from "@/lib/books/colors";
 
-export { resolveBookCoverColor, EDITORIAL_BOOK_PALETTE, CATEGORY_PALETTES };
+export {
+  resolveBookCoverColor,
+  EDITORIAL_BOOK_PALETTE,
+  CATEGORY_PALETTES,
+  getContrastTextColor,
+  isDarkColor,
+};
 
 export type BookCoverSize = "sm" | "md" | "lg" | "fill";
 
@@ -68,10 +76,18 @@ export function BookCover({
     category,
   });
 
+  const isDark = isDarkColor(resolvedBg);
+  const textColor = isDark ? "#FFFFFF" : "#0F172A";
+  const textMuted = isDark ? "rgba(255, 255, 255, 0.82)" : "rgba(15, 23, 42, 0.78)";
+  const textFaint = isDark ? "rgba(255, 255, 255, 0.45)" : "rgba(15, 23, 42, 0.45)";
+  const spineLineColor = isDark ? "bg-white/20" : "bg-black/15";
+  const spineBorderColor = isDark ? "border-white/10" : "border-black/10";
+  const dividerBorderColor = isDark ? "border-white/15" : "border-black/15";
+
   return (
     <div
       className={cn(
-        "relative select-none overflow-hidden text-white flex flex-col justify-between p-3 sm:p-3.5 transition-all duration-200",
+        "relative select-none overflow-hidden flex flex-col justify-between p-3 sm:p-3.5 transition-all duration-200",
         "shadow-[2px_4px_16px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.12)]",
         "ring-1 ring-black/10",
         currentSize.container,
@@ -79,20 +95,24 @@ export function BookCover({
       )}
       style={{
         backgroundColor: resolvedBg,
-        backgroundImage:
-          "linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.25) 100%)",
+        backgroundImage: isDark
+          ? "linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.25) 100%)"
+          : "linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.08) 100%)",
       }}
       {...props}
     >
       {/* Spine 3D simulation crease (left edge) */}
       <div
         aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-2.5 pointer-events-none bg-gradient-to-r from-black/35 via-black/10 to-transparent border-r border-white/10"
+        className={cn(
+          "absolute inset-y-0 left-0 w-2.5 pointer-events-none bg-gradient-to-r from-black/35 via-black/10 to-transparent border-r",
+          spineBorderColor
+        )}
       />
       {/* Book spine highlight line */}
       <div
         aria-hidden="true"
-        className="absolute inset-y-0 left-1 w-px pointer-events-none bg-white/20"
+        className={cn("absolute inset-y-0 left-1 w-px pointer-events-none", spineLineColor)}
       />
 
       {/* Page edge trim highlight (right edge) */}
@@ -106,9 +126,10 @@ export function BookCover({
         <div className="flex flex-col min-w-0">
           <span
             className={cn(
-              "font-semibold tracking-[0.18em] uppercase opacity-70 truncate font-sans",
+              "font-semibold tracking-[0.18em] uppercase truncate font-sans",
               currentSize.brand
             )}
+            style={{ color: textMuted }}
           >
             {category || "PUBLIORA"}
           </span>
@@ -118,32 +139,41 @@ export function BookCover({
 
       {/* Center / Body: Title and Subtitle */}
       <div className="relative z-10 my-auto py-1">
-        <h4
+        <div
+          role="heading"
+          aria-level={4}
           className={cn(
-            "text-white font-semibold tracking-tight drop-shadow-sm text-balance",
+            "font-semibold tracking-tight text-balance leading-snug drop-shadow-xs",
             currentSize.title
           )}
+          style={{ color: textColor }}
         >
           {title}
-        </h4>
+        </div>
         {subtitle && size !== "sm" ? (
-          <p className="mt-1 text-[11px] leading-tight text-white/75 line-clamp-1 font-normal">
+          <p
+            className="mt-1 text-[11px] leading-tight line-clamp-1 font-normal"
+            style={{ color: textMuted }}
+          >
             {subtitle}
           </p>
         ) : null}
       </div>
 
       {/* Bottom Footer: Author & Subtle watermark */}
-      <div className="relative z-10 pt-1 flex items-end justify-between gap-1 border-t border-white/15">
+      <div
+        className={cn("relative z-10 pt-1 flex items-end justify-between gap-1 border-t", dividerBorderColor)}
+      >
         <span
-          className={cn(
-            "font-medium text-white/90 truncate",
-            currentSize.author
-          )}
+          className={cn("font-medium truncate", currentSize.author)}
+          style={{ color: textColor }}
         >
           {author || "Publiora Creator"}
         </span>
-        <span className="text-[8px] tracking-widest uppercase text-white/40 font-mono shrink-0">
+        <span
+          className="text-[8px] tracking-widest uppercase font-mono shrink-0"
+          style={{ color: textFaint }}
+        >
           ED.
         </span>
       </div>

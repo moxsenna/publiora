@@ -219,7 +219,7 @@ export function Reader({
             <div className="text-xs uppercase tracking-wide opacity-70 mb-3">
               Publiora
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+            <h1 className="text-3xl md:text-4xl font-bold leading-tight text-white">
               {ebook.title}
             </h1>
             {ebook.subtitle && (

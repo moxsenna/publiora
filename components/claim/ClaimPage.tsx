@@ -76,7 +76,7 @@ export function ClaimPage({ token, preview }: { token: string; preview: ClaimPre
 
   const { ebook } = preview;
   return <ClaimFrame token={token}><Card className="max-w-md w-full overflow-hidden">
-    <div className="h-40 p-6 flex flex-col justify-end text-white" style={{ background: ebook.cover_color }}><div className="text-xs uppercase tracking-wide opacity-70">Klaim Publiora</div><h1 className="text-2xl font-bold leading-tight mt-1">{ebook.title}</h1>{ebook.subtitle && <p className="text-sm opacity-85 mt-1">{ebook.subtitle}</p>}</div>
+    <div className="h-40 p-6 flex flex-col justify-end text-white" style={{ background: ebook.cover_color }}><div className="text-xs uppercase tracking-wide opacity-70">Klaim Publiora</div><h1 className="text-2xl font-bold leading-tight mt-1 text-white">{ebook.title}</h1>{ebook.subtitle && <p className="text-sm opacity-85 mt-1">{ebook.subtitle}</p>}</div>
     <CardBody className="space-y-4">
       <div className="flex items-center gap-2 text-sm text-[var(--color-medium-gray)]"><BookOpen className="h-4 w-4" />{readerId.by} {ebook.author} · {ebook.sections.length} {readerId.section}</div>
       {!profile ? <form className="space-y-3" onSubmit={onAuthAndClaim} noValidate>
